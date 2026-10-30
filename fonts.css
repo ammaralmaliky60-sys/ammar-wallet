@@ -46,3 +46,150 @@ button,input,select,textarea{font-synthesis:weight;}
 @media print{
   body{font-family:"IBM Plex Sans Arabic",Mizan,Tahoma,Arial,sans-serif}
 }
+
+
+/* 2026-10-31 · Typography & mobile usability refinements.
+   Pure presentation: financial operations, storage keys and data stay untouched. */
+:root{--amount-unit-gap:7px}
+h1,h2,h3,.brand>span,.mobile-brand{font-weight:600;letter-spacing:-.25px}
+.brand>span,.mobile-brand{font-weight:700}
+.page-head h1{font-weight:600;line-height:1.52;letter-spacing:-.3px}
+.page-head p{font-size:12.5px;line-height:1.95}
+.section-heading h2{font-weight:600}
+.section-heading p{font-size:11.5px;line-height:1.9}
+.hero-total{font-weight:550;letter-spacing:-.55px;line-height:1.38}
+.stat-amount,.wallet-balance,.ob-detail b{font-weight:550;letter-spacing:-.3px}
+.hero-total,.stat-amount,.wallet-balance,.ob-detail b{
+  display:inline-flex;
+  align-items:baseline;
+  justify-content:flex-start;
+  gap:var(--amount-unit-gap);
+  max-width:100%;
+}
+.hero-total .num,.stat-amount .num,.wallet-balance .num,.ob-detail b .num{white-space:nowrap}
+.hero-total small,.stat-amount small,.wallet-balance small,.ob-detail b small{
+  margin:0!important;
+  flex:none;
+  white-space:nowrap;
+  letter-spacing:0;
+  font-size:11px;
+  font-weight:400;
+}
+.hero-total small{font-size:13px;color:#e0c9a0}
+.hero-bottom b{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  align-items:baseline;
+  gap:4px;
+}
+.hero-bottom b .num{font-family:"IBM Plex Sans Arabic",Tahoma,Arial,sans-serif;white-space:nowrap}
+.hero-bottom b small{margin:0;font-size:10px}
+.hero-bottom>div{min-width:0}
+.hero-bottom>div>span{font-size:11.5px;color:#c5c4bf;line-height:1.65}
+.hero-sub{font-size:11.5px;line-height:1.85}
+.hero-label{font-size:12.5px}
+.hero-badge{font-size:10.5px}
+.cycle-range{font-size:12px}
+.progress-meta{font-size:11px;line-height:1.65}
+.stat-top{font-size:11px;line-height:1.65;gap:6px}
+.stat-note{font-size:10.5px;line-height:1.7;min-height:1.7em}
+.wallet-name{font-size:12px}
+.wallet-detail,.wallet-foot{font-size:11px;line-height:1.7}
+.wallet-foot{gap:6px}
+.ob-detail{font-size:12px;line-height:1.7;gap:8px}
+.ob-detail b{font-size:17px}
+.eyebrow{font-size:11px}
+.chip{font-size:10px;line-height:1.5}
+.flow-step p{font-size:12px;line-height:1.9}
+.notice{font-size:12px;line-height:1.9}
+.insight{font-size:11px;line-height:1.8}
+.demo-banner{font-size:12px;line-height:1.8}
+.demo-banner button{font-size:12px}
+.schedule-body p,.schedule-note{font-size:11.5px;line-height:1.8}
+.schedule-bottom{font-size:11px}
+.schedule-bottom>.muted{font-size:10.5px}
+.schedule-bottom b small{font-size:11px}
+.cell-name small{font-size:11px;line-height:1.7}
+table{font-size:12px}
+th{font-size:10.5px}
+.legend-row{font-size:11px}
+.legend-row span{color:var(--muted)}
+.donut-label small{font-size:10.5px}
+.keyval{font-size:12.5px}
+.field label{font-size:12px;color:var(--muted)}
+.field small{font-size:11px}
+body.dark .field label{color:#c0c6cf}
+.btn{min-height:44px;border-radius:10px;font-size:12px;line-height:1.6}
+.btn.small{min-height:36px;font-size:11px;padding:8px 12px}
+.btn svg{flex:none}
+.form-actions .btn{min-height:44px}
+.ob-actions .btn{min-height:40px}
+.local-status{font-size:11px}
+body.dark .hero-bottom small{color:#c4c0b9}
+body.dark .hero-bottom>div>span{color:#c6c3bf}
+body.dark .stat-note:not(.positive){color:#b9c0cb}
+@media(max-width:760px){
+  .page-head{align-items:flex-start;gap:10px;margin-bottom:20px}
+  .page-head>div:first-child{min-width:0;flex:1}
+  .page-head h1{font-size:clamp(19px,5.7vw,23px);font-weight:600;line-height:1.52;letter-spacing:-.25px}
+  .page-head p{font-size:11.5px;line-height:1.85;margin-top:5px}
+  .head-actions{flex:0 0 auto;gap:8px}
+  .head-actions>.btn{font-size:11px;min-height:43px;padding:8px 11px;white-space:nowrap}
+  .hero{padding:24px 22px}
+  .hero-total{margin-top:12px;font-weight:550;font-size:clamp(29px,8.7vw,40px);gap:8px}
+  .hero-total .num{font-size:inherit}
+  .hero-total small{font-size:12px}
+  .hero-sub{font-size:11.5px;line-height:1.8;margin-top:7px}
+  .hero-label{font-size:11.5px}
+  .hero-badge{font-size:10px}
+  .hero-bottom{gap:10px}
+  .hero-bottom>div>span{font-size:10.5px}
+  .hero-bottom b{font-size:13px;line-height:1.5;gap:3px}
+  .hero-bottom b .num{font-size:clamp(11px,3.35vw,14px)}
+  .hero-bottom b small{font-size:9.5px}
+  .section-heading h2{font-size:15px;font-weight:600}
+  .section-heading p{font-size:11.5px}
+  .stat-top{font-size:10.5px}
+  .stat-amount,.wallet-balance{font-size:clamp(18px,5vw,22px);gap:5px}
+  .stat-amount small,.wallet-balance small{font-size:9.5px}
+  .stat-note,.wallet-detail,.wallet-foot{font-size:10.5px;line-height:1.7}
+  .wallet-name{font-size:11px}
+  .cycle-range,.progress-meta{font-size:11.5px}
+  .cycle-card h2{font-size:16px;font-weight:600}
+  .ob-card h3{font-size:14px}
+  .ob-detail{font-size:11.5px;flex-wrap:wrap}
+  .ob-detail b{font-size:16px}
+  .ob-actions{gap:8px}
+  .ob-actions .btn{min-height:42px;padding:9px 12px}
+  .notice,.demo-banner{font-size:11.5px;line-height:1.95}
+  .flow-step p,.schedule-body p{font-size:11.5px}
+  .schedule-panel .section-heading p{font-size:11px}
+  .schedule-bottom>.muted{font-size:10.5px}
+  .schedule-body .chip{font-size:9.5px}
+  .local-status{font-size:10.5px}
+  .mobile-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .mobile-shortcuts a{justify-content:center;min-height:44px;padding:9px 7px;font-size:11px;line-height:1.5;white-space:normal;text-align:center}
+  .mobile-shortcuts svg{flex:none}
+  .sidebar,.sidebar nav{min-height:72px}
+  .sidebar{height:calc(74px + env(safe-area-inset-bottom))}
+  .sidebar nav{height:72px}
+  .nav-link{font-size:10px;line-height:1.4;gap:3px;padding:9px 4px}
+  .app-shell{padding-bottom:83px}
+  .btn.small{min-height:40px}
+  .field label{font-size:12px}
+  .field small{font-size:11px}
+  .cell-name small{font-size:10.5px}
+  .legend-row{font-size:10.5px}
+}
+@media(max-width:360px){
+  .page-head h1{font-size:18px;letter-spacing:-.3px}
+  .head-actions>.btn{padding:8px 9px;font-size:10.5px}
+  .hero-total{font-size:clamp(26px,8vw,34px)}
+  .hero-total small{font-size:10.5px}
+  .hero-bottom b .num{font-size:11px}
+  .stat-amount,.wallet-balance{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .btn,.nav-link{transition:none!important}
+}
