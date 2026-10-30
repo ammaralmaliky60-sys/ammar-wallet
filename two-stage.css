@@ -176,3 +176,60 @@ body:not(.dark) .wf-living-page-summary p{color:#675a4a}
 @media(max-width:355px){
   .wf-living-grid>.wf-living-card:last-child:nth-child(odd){grid-column:auto}
 }
+
+
+/* Monthly cumulative budget, two funding phases, discreet "other" receipts. */
+.wf-living-phases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:14px 0}
+.wf-phase{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface)}
+.wf-phase>div:first-child{display:flex;align-items:flex-start;flex-direction:column;gap:3px}
+.wf-phase h2{font:600 16px/1.6 "Alexandria","IBM Plex Sans Arabic",sans-serif;margin:0}
+.wf-phase .chip{display:inline-block;margin:8px 0 12px}
+.wf-phase-amounts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wf-phase-amounts>span{border-radius:9px;padding:9px;background:var(--bg);color:var(--muted);font-size:11px;line-height:1.8}
+.wf-phase-amounts b{display:block;font-weight:650;font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.wf-other-line{display:flex;justify-content:space-between;gap:12px;padding:10px 0 5px;border-top:1px solid #d0b17147;margin-top:14px}
+.wf-other-line span{font-size:12px;color:#e5cfaa}
+.wf-other-line b{font-size:15px;font-weight:650;color:#f5dba4}
+.wf-living-top-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.wf-living-top-actions .btn{min-height:44px}
+.wf-living-target{border-top:1px solid var(--line);padding:8px 0;margin:6px 0 10px;font-size:11px;color:var(--muted);line-height:1.7}
+.wf-living-target b{color:var(--ink);font-weight:650}
+.wf-budget-field small{display:block;font-size:10.5px;line-height:1.7;color:var(--muted);margin-top:5px}
+body:not(.dark) .wf-other-line span{color:#604a29}
+body:not(.dark) .wf-other-line b{color:#765321}
+@media(max-width:760px){
+ .wf-living-phases{grid-template-columns:1fr;gap:10px}
+ .wf-phase{padding:13px}
+ .wf-phase h2{font-size:15px}
+ .wf-living-top-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .wf-living-top-actions .btn{min-width:0;font-size:11px;padding:8px 7px}
+ .wf-phase-amounts b{font-size:13px}
+}
+@media(max-width:360px){.wf-living-top-actions{grid-template-columns:1fr}}
+
+/* On-device A4 PDF export using the browser's Arabic-capable print engine. */
+#mizan-live-report{display:none}
+@media print{
+ @page{size:A4 portrait;margin:13mm 11mm 13mm 11mm}
+ body{background:white!important;color:#111!important}
+ body>*:not(#mizan-live-report){display:none!important}
+ #mizan-live-report{display:block!important;position:static!important;visibility:visible!important;
+   font:11px/1.7 "IBM Plex Sans Arabic",Tahoma,Arial,sans-serif;direction:rtl;color:#202020;background:white}
+ #mizan-live-report *{color:inherit;box-shadow:none!important;text-shadow:none!important}
+ #mizan-live-report h1,#mizan-live-report h2{font-family:"Alexandria","IBM Plex Sans Arabic",sans-serif}
+ #mizan-live-report h1{font-size:21px;line-height:1.55;margin:0}
+ #mizan-live-report h2{font-size:13px;margin:18px 0 7px;padding-bottom:5px;border-bottom:1px solid #bbb}
+ #mizan-live-report .print-report-title{border-bottom:2px solid #987442;padding-bottom:12px;margin-bottom:13px}
+ #mizan-live-report .print-report-title p{font-size:10.5px;line-height:1.6;margin:3px 0}
+ #mizan-live-report .print-report-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:17px}
+ #mizan-live-report .print-report-stats span{border:1px solid #ccc;padding:7px;border-radius:3px;font-size:10px}
+ #mizan-live-report .print-report-stats b{display:block;font-size:12px;font-weight:650}
+ #mizan-live-report table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:9px}
+ #mizan-live-report th,#mizan-live-report td{border:1px solid #ccc;text-align:right;padding:5px 4px;vertical-align:top;overflow-wrap:anywhere}
+ #mizan-live-report th{background:#f1ede4!important;font-weight:650;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #mizan-live-report thead{display:table-header-group}
+ #mizan-live-report tr{break-inside:avoid}
+ #mizan-live-report .num{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+ #mizan-live-report footer{margin-top:18px;border-top:1px solid #bbb;font-size:9px;line-height:1.7}
+ #mizan-live-report footer p{margin:4px 0}
+}
