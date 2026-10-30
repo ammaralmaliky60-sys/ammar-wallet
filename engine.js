@@ -85,7 +85,7 @@
       obligationIds.add(o.id);
       text(o.name, 100, 'اسم الالتزام');
       money(o.amount);
-      if (!o.name.trim() || !validDate(o.due) || typeof o.recurring !== 'boolean') fail('بيانات الالتزام غير صالحة.');
+      if (!o.name.trim() || !validDate(o.due) || typeof o.recurring !== 'boolean' || (o.archived !== undefined && typeof o.archived !== 'boolean')) fail('بيانات الالتزام غير صالحة.');
     }
     const archiveIds = new Set();
     for (const h of state.history) {
