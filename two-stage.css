@@ -63,3 +63,44 @@ body:not(.dark) .wf-done{background:#e9f5eb;color:#246e3b;border-color:#9fcdab}
  .wf-month input{max-width:158px}
 }
 @media(max-width:360px){.wf-form-grid{grid-template-columns:1fr}.wf-month{align-items:flex-start;flex-direction:column}.wf-month input{max-width:none;width:100%}}
+
+/* Fix: legacy mobile CSS hides .head-actions > .btn.secondary, including
+   the crucial "تحديد مبالغ الشهر" button. Restore it prominently. */
+.page-head .head-actions > .btn[data-action="wf-config"],
+body.dark .page-head .head-actions > .btn[data-action="wf-config"]{
+ display:inline-flex !important;
+ align-items:center;
+ justify-content:center;
+ gap:9px;
+ background:linear-gradient(120deg,#f3d69d 0%,#dfb76e 60%,#c9984f 100%);
+ color:#21190f;
+ border:1px solid #efcf89;
+ font-weight:700;
+ box-shadow:0 8px 19px #0000002f;
+}
+@media(max-width:760px){
+ main .page-head:has(.head-actions > [data-action="wf-config"]),
+ main .page-head:has(.head-actions > [data-action="wf-activate"]){
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:13px;
+  margin-bottom:18px;
+ }
+ main .page-head .head-actions:has(> [data-action="wf-config"]),
+ main .page-head .head-actions:has(> [data-action="wf-activate"]){
+  display:flex;
+  width:100%;
+  align-items:stretch;
+  justify-content:stretch;
+ }
+ main .page-head .head-actions > .btn[data-action="wf-config"],
+ main .page-head .head-actions > .btn[data-action="wf-activate"]{
+  display:inline-flex !important;
+  width:100%;
+  min-height:52px;
+  padding:12px 15px;
+  font-size:14px;
+  justify-content:center;
+ }
+}
