@@ -89,7 +89,7 @@ try {
     localStorage.setItem(skinKey,'1');
   }
 }catch(e){state.settings.theme='dark'}
-const navs=[['workflow','calendar','الحوافز والراتب'],['living','wallet','مصاريف المعيشة'],['ledger','ledger','سجل الحركات'],['settings','settings','الإعدادات']];
+const navs=[['workflow','calendar','الحوافز والراتب'],['living','wallet','مصاريف المعيشة'],['reports','chart','التقارير'],['ledger','ledger','سجل الحركات'],['settings','settings','الإعدادات']];
 const THUKHR_THEME_KEY='thukhr-appearance-v1';
 const THUKHR_THEMES=[['classic','الأساسي','عاجي وذهبي'],['night','الليلي','فحمي وذهبي'],['warm','الدافئ','عائلي وهادئ'],['modern','العصري','بنفسجي وذهبي']];
 function thukhrTheme(){
@@ -401,9 +401,30 @@ function livingPage(){
      <div class="wf-living-top-actions">
        ${btn('wf-living-direct','إضافة مصروف','wallet')}
        ${btn('wf-living-extra','أخرى','income','secondary')}
-       ${btn('wf-living-pdf','كشف PDF حتى الآن','download','secondary')}
+       ${btn('wf-living-pdf','تنزيل PDF','download','secondary')}
      </div>
    </div>`+sections+wfLivingPanel();
+}
+function statementPage(){
+ const r=S.receipts(state,'incentives',wfMonth).slice().sort((a,b)=>a.date.localeCompare(b.date)),
+    start=r[0]?.date||'لم يتم الاستلام',stats=currentStats(),
+    entries=state.transactions.filter(t=>t.date>=start&&t.date<=today());
+ return head('التقارير المالية','تنزيل كشف مالي مباشر بصيغة PDF، دون المرور بشاشة الطباعة.')+
+ `<section class="wf-report-dashboard">
+     <div class="wf-report-eyebrow">كشف من أول استلام الحوافز</div>
+     <h2>الكشف المالي المفصل</h2>
+     <p>يشمل كل حركة من <b>${safe(start)}</b> إلى الآن، مع ملخص محافظ المعيشة والأرصدة والمبالغ المحجوزة والمدفوعة.</p>
+     <div class="wf-report-metrics">
+       <div><span>الرصيد الحالي</span><strong>${money(stats.total)}</strong></div>
+       <div><span>المتاح بعد الحجوزات</span><strong>${money(stats.unallocated)}</strong></div>
+       <div><span>الحركات المسجلة منذ الحوافز</span><strong>${r.length?entries.length:'—'}</strong></div>
+     </div>
+     <button type="button" class="btn wf-report-download" data-action="wf-living-pdf" ${r.length?'':'disabled title="سجل استلام الحوافز أولاً"'}>
+       ${icon('download')} تنزيل PDF
+     </button>
+     ${r.length?'':'<p class="wf-report-hint">بعد تسجيل استلام الحوافز لهذا الشهر، يتفعّل زر تنزيل الكشف المالي.</p>'}
+     <p class="wf-report-foot">يتكوّن الملف محلياً على جهازك؛ لا تُرسل معاملاتك إلى خادم خارجي، ويمكن تنزيله دون إنترنت بعد اكتمال تثبيت التطبيق.</p>
+   </section>`;
 }
 function wfLivingPanel(){
  const stats=currentStats(),targets=livingTargets(),covered=livingNeeds(targets);
@@ -489,49 +510,40 @@ function wfLivingExtra(){
 }
 function wfLivingReport(){
  const receipts=S.receipts(state,'incentives',wfMonth).slice().sort((a,b)=>a.date.localeCompare(b.date));
- if(!receipts.length)throw Error('سجّل استلام الحوافز للشهر أولاً حتى يبدأ الكشف من تاريخ الاستلام الفعلي.');
- const first=receipts[0].date,issued=new Date(),
-   rows=state.transactions.filter(t=>t.date>=first&&t.date<=today()).slice().sort((a,b)=>a.date.localeCompare(b.date)),
-   stats=currentStats();
- const subtotals=kind=>rows.filter(t=>t.type===kind).reduce((sum,t)=>sum+t.amount,0);
- const kinds={income:'دخل مستلم',expense:'مصروف فعلي',pay:'سداد التزام',reserve:'حجز التزام',
-    unreserve:'إلغاء حجز',allocate:'تخصيص لمحفظة',release:'إرجاع للمتاح',
-    transfer:'تحويل بين المحافظ',account:'نقل بين البطاقة والنقد'};
- const walletName=id=>state.wallets.find(w=>w.id===id)?.name||'';
- const obligationName=id=>state.obligations.find(o=>o.id===id)?.name||'';
- const title='كشف ذُخر المالي - '+wfMonth;
- const detail=rows.map((t,i)=>{
-  const category=t.walletId?walletName(t.walletId):t.obligationId?obligationName(t.obligationId):'';
-  const note=t.note||t.sourceName||category||'';
-  return `<tr><td>${i+1}</td><td>${safe(t.date)}</td><td>${safe(kinds[t.type]||'حركة')}</td>
-    <td>${safe(note)}</td><td>${safe(category)}</td><td class="num">${fmt(t.amount)}</td></tr>`;
- }).join('');
- const budgets=WF_LIVING.map(w=>`<tr><td>${safe(w.label)}</td><td class="num">${fmt(livingSpent(w.id))}</td>
-   <td class="num">${fmt(stats.wallets[w.id]||0)}</td><td class="num">${fmt(livingTargets()[w.id]||0)}</td></tr>`).join('');
- let sheet=document.getElementById('mizan-live-report');
- if(!sheet){sheet=document.createElement('section');sheet.id='mizan-live-report';document.body.append(sheet);}
- sheet.innerHTML=`<header class="print-report-title"><h1>${safe(title)}</h1>
-   <p>الفترة: من ${safe(first)} إلى لحظة الإصدار ${safe(issued.toLocaleString('ar-IQ'))}</p>
-   <p>التقرير يستند إلى الحركات المسجلة في جهازك حتى وقت التوليد.</p></header>
-   <div class="print-report-stats">
-    <span>الدخل المستلم <b>${money(subtotals('income'))}</b></span>
-    <span>المصروف الفعلي <b>${money(subtotals('expense'))}</b></span>
-    <span>الالتزامات المدفوعة <b>${money(subtotals('pay'))}</b></span>
-    <span>الرصيد الحالي <b>${money(stats.total)}</b></span>
-    <span>المتاح للتوزيع <b>${money(stats.unallocated)}</b></span>
-    <span>المحجوز حالياً <b>${money(Object.values(stats.reserved).reduce((n,a)=>n+a,0))}</b></span>
-   </div>
-   <h2>ملخص محافظ المعيشة</h2>
-   <table><thead><tr><th>المحفظة</th><th>المصروف خلال الشهر</th><th>المتبقي</th><th>الميزانية المعتمدة</th></tr></thead><tbody>${budgets}</tbody></table>
-   <h2>سجل الحركات التفصيلي (${rows.length})</h2>
-   <table><thead><tr><th>ت</th><th>التاريخ</th><th>الحركة</th><th>البيان</th><th>المحفظة / الالتزام</th><th>المبلغ (${safe(unit())})</th></tr></thead>
-   <tbody>${detail||'<tr><td colspan="6">لا توجد حركات ضمن هذه الفترة.</td></tr>'}</tbody></table>
-   <footer><p>الحجز والتخصيص ليسا مصروفاً نقدياً. المبالغ المدفوعة تظهر مستقلة لمنع التكرار في المجاميع.</p>
-    <p>ذُخر — كشف شخصي صادر آلياً، لا يمثل مستنداً مصرفياً رسمياً.</p></footer>`;
- document.title=title;
- window.print();
+ if(!receipts.length)throw Error('لا يمكن تنزيل الكشف قبل تسجيل استلام الحوافز للشهر المختار.');
+ if(!window.ThukhrPDF||typeof window.ThukhrPDF.download!=='function')
+  throw Error('ملف تنزيل PDF لم يكتمل تحميله. أعد فتح التطبيق وحاول مرة أخرى.');
+ const first=receipts[0].date,now=today(),dateTime=new Date().toLocaleString('ar-IQ'),
+       rows=state.transactions.filter(t=>t.date>=first&&t.date<=now).slice().sort((a,b)=>a.date.localeCompare(b.date)),
+       stats=currentStats();
+ const total=kind=>rows.filter(t=>t.type===kind).reduce((a,t)=>a+t.amount,0);
+ const types={income:'دخل مستلم',expense:'مصروف فعلي',pay:'سداد التزام',reserve:'حجز التزام',
+    unreserve:'إلغاء حجز',allocate:'تخصيص للمعيشة',release:'إرجاع للمتاح',
+    transfer:'تحويل',account:'نقل بين النقد والبطاقة'};
+ const nameOf=t=>t.walletId?state.wallets.find(w=>w.id===t.walletId)?.name||'':
+   t.obligationId?state.obligations.find(o=>o.id===t.obligationId)?.name||'':'';
+ const report={
+  period:wfMonth,from:first,issuedAt:dateTime,currency:unit(),
+  stats:{
+   income:fmt(total('income')),expenses:fmt(total('expense')),paid:fmt(total('pay')),
+   total:fmt(stats.total),available:fmt(stats.unallocated),
+   reserved:fmt(Object.values(stats.reserved).reduce((a,b)=>a+b,0))
+  },
+  wallets:WF_LIVING.map(w=>({
+   name:w.label,budget:fmt(livingTargets()[w.id]||0),
+   spent:fmt(rows.filter(t=>t.type==='expense'&&t.walletId===w.id).reduce((a,t)=>a+t.amount,0)),
+   balance:fmt(stats.wallets[w.id]||0)
+  })),
+  entries:rows.map(t=>({
+   date:t.date,type:types[t.type]||'حركة',category:nameOf(t),
+   note:t.note||t.sourceName||nameOf(t)||'—',amount:fmt(t.amount)
+  }))
+ };
+ toast('جاري تجهيز ملف PDF للتنزيل...');
+ Promise.resolve(window.ThukhrPDF.download(report))
+  .then(info=>toast('تم تنزيل كشف PDF — '+info.pages+' صفحة'))
+  .catch(e=>showError('تعذر تنزيل PDF: '+(e?.message||'حدث خطأ غير معروف')));
 }
-
 function wfLivingDirect(initialId=''){
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً قبل تسجيل المصروف.');
  const stats=currentStats(),usable=WF_LIVING.reduce((sum,w)=>sum+(stats.wallets[w.id]||0),0)+stats.unallocated;
@@ -597,7 +609,7 @@ function settingsPage(){return head('إعدادات تناسبك','تفضيلا�
  <button type="button" id="thukhrFamilyRemove" class="btn secondary" hidden>إزالة الصورة</button>
  </div><p id="thukhrFamilyStatus" class="thukhr-privacy" role="status">لم تُضف صورة.</p>
  </section><section class="panel">${section('بياناتك تحت سيطرتك','تخزين محلي، دون مزامنة تلقائية.')}<p class="help-text">البيانات المالية محفوظة داخل هذا المتصفح. كل جهاز له سجل مستقل. نزّل نسخة JSON دورياً وقبل الانتقال إلى جهاز آخر. الاستعادة تستبدل السجل بعد التحقق منه.</p><div class="settings-actions">${btn('backup','نسخة احتياطية JSON','download')}${btn('restore','استعادة نسخة','upload','secondary')}${btn('csv','تصدير CSV','ledger','secondary')}</div><div class="notice">يمكن استيراد نسخة JSON من تطبيق «محافظ عمار» القديم. تبقى الأرصدة والحركات، وتُحفظ الدورات القديمة ضمن ملف النسخة الاحتياطية.</div></section><section class="panel">${section('دورة الدخل','ابدأ من يوم الاستلام الفعلي.')}<div class="keyval"><span>بداية الدورة</span><b>${date(state.cycle.start,true)}</b></div><div class="keyval"><span>المدة</span><b>${state.cycle.days} يوماً</b></div><div class="settings-actions">${btn('income-sources','مواعيد الدخل الشهري','calendar','soft')}${btn('new-cycle','بدء دورة تخطيط جديدة','calendar','secondary')}</div><p class="help-text" style="margin-top:14px">الحوافز والراتب دفعتان داخل الخطة؛ سجّلهما من قسم الدخل. بدء دورة تخطيط جديدة إجراء مستقل، وتُرحّل فيه كل الأرصدة والالتزامات غير المدفوعة. تجديد الالتزام المتكرر متاح من بطاقته، مع منع تكرار الاستحقاق نفسه.</p></section><section class="panel">${section('التثبيت والاستخدام','واجهة متجاوبة على الهاتف والحاسوب.')}<p class="help-text">على iPhone: افتح Safari ثم مشاركة ← إضافة إلى الشاشة الرئيسية.<br>على Android أو Windows: قائمة المتصفح ← تثبيت التطبيق.<br>يتوفر العمل دون اتصال بعد اكتمال حفظ ملفات التطبيق، بحسب دعم المتصفح.</p><div class="settings-actions">${btn('help','دليل الحسابات','help','secondary')}<button class="btn secondary" id="installBtn" hidden>تثبيت ميزان</button></div></section></div><section class="panel">${section('بداية جديدة','صدّر بياناتك أولاً، ثم أنشئ خطة جديدة عند الحاجة.')}<div class="settings-actions">${btn('setup','إنشاء خطة جديدة','plus','danger')}${!state.demo?btn('demo','عرض مثال توضيحي','grid','secondary'):''}</div></section>`}
-function render(){page=location.hash.slice(1)||page;if(!navs.some(n=>n[0]===page))page='workflow';$('nav').innerHTML=navs.map(([p,ic,label])=>`<a class="nav-link ${page===p?'active':''}" href="#${p}" data-page="${p}">${icon(ic)}<span>${label}</span>${page===p?'<i class="nav-dot"></i>':''}</a>`).join('');$('breadcrumb').textContent=navs.find(n=>n[0]===page)[2];let banner=state.demo?`<div class="demo-banner"><span><b>أنت تتصفح خطة توضيحية</b> · الأرقام مثال للتجربة، ابدأ بخطة تحمل أرقامك.</span><button class="text-btn" data-action="setup">ابدأ خطتك ${icon('arrow')}</button></div>`:'';if(storageError)banner+=`<div class="notice warn">${safe(storageError)} ${brokenRaw?'<button class="text-btn" data-action="rescue">تنزيل البيانات الأصلية</button>':''}</div>`;const renders={workflow:workflowPage,living:livingPage,overview,income:incomePage,obligations:obligationsPage,plan:planPage,ledger:ledgerPage,reports:reportsPage,settings:settingsPage};const mobile='';$('main').innerHTML=mobile+banner+renders[page]();paintIcons();window.ThukhrFamily?.sync();document.querySelectorAll('[data-neo-page]').forEach(a=>{const active=a.dataset.neoPage===page;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});const neoMore=document.querySelector('.neo-more');if(neoMore)neoMore.open=false;bindPage();}
+function render(){page=location.hash.slice(1)||page;if(!navs.some(n=>n[0]===page))page='workflow';$('nav').innerHTML=navs.map(([p,ic,label])=>`<a class="nav-link ${page===p?'active':''}" href="#${p}" data-page="${p}">${icon(ic)}<span>${label}</span>${page===p?'<i class="nav-dot"></i>':''}</a>`).join('');$('breadcrumb').textContent=navs.find(n=>n[0]===page)[2];let banner=state.demo?`<div class="demo-banner"><span><b>أنت تتصفح خطة توضيحية</b> · الأرقام مثال للتجربة، ابدأ بخطة تحمل أرقامك.</span><button class="text-btn" data-action="setup">ابدأ خطتك ${icon('arrow')}</button></div>`:'';if(storageError)banner+=`<div class="notice warn">${safe(storageError)} ${brokenRaw?'<button class="text-btn" data-action="rescue">تنزيل البيانات الأصلية</button>':''}</div>`;const renders={workflow:workflowPage,living:livingPage,reports:statementPage,overview,income:incomePage,obligations:obligationsPage,plan:planPage,ledger:ledgerPage,reports:reportsPage,settings:settingsPage};const mobile='';$('main').innerHTML=mobile+banner+renders[page]();paintIcons();window.ThukhrFamily?.sync();document.querySelectorAll('[data-neo-page]').forEach(a=>{const active=a.dataset.neoPage===page;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});const neoMore=document.querySelector('.neo-more');if(neoMore)neoMore.open=false;bindPage();}
 function field(label,name,type='text',value='',extra=''){return `<div class="field"><label for="f-${name}">${label}</label><input id="f-${name}" name="${name}" type="${type}" value="${safe(value)}" ${extra}></div>`}
 function select(label,name,options,value=''){return `<div class="field"><label for="f-${name}">${label}</label><select id="f-${name}" name="${name}">${options.map(([v,l])=>`<option value="${safe(v)}" ${v===value?'selected':''}>${safe(l)}</option>`).join('')}</select></div>`}
 const walletOptions=()=>state.wallets.map(w=>[w.id,w.name]);const methodOptions=[['card','البطاقة المصرفية'],['cash','نقداً']];
