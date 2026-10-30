@@ -150,3 +150,29 @@ body.dark .page-head .head-actions > .btn[data-action="wf-config"]{
 @media(max-width:355px){
  .wf-living-grid{grid-template-columns:1fr}
 }
+
+
+/* Standalone living-expenses page (isolated from incentive / salary steps). */
+.wf-living-page-summary{
+  margin:12px 0 20px;padding:21px 23px;border:1px solid #d8b87865;
+  border-radius:17px;background:linear-gradient(120deg,#2d2827,#191b21);
+  box-shadow:0 9px 30px #00000025
+}
+.wf-living-page-summary>div{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.wf-living-page-summary span{font-size:13px;line-height:1.8;color:#e5cfaa}
+.wf-living-page-summary strong{font-family:"Alexandria","IBM Plex Sans Arabic",sans-serif;color:#f5dba4;font-size:clamp(23px,4.5vw,31px);font-weight:600}
+.wf-living-page-summary p{color:#c8c3ba;margin:13px 0 0;font-size:12px;line-height:1.9}
+body:not(.dark) .wf-living-page-summary{background:linear-gradient(120deg,#f4e8d1,#fff9ed);border-color:#d3b67c}
+body:not(.dark) .wf-living-page-summary span{color:#604a29}
+body:not(.dark) .wf-living-page-summary strong{color:#765321}
+body:not(.dark) .wf-living-page-summary p{color:#675a4a}
+@media(max-width:760px){
+  .wf-living-page-summary{padding:16px 17px;margin:9px 0 13px}
+  .wf-living-page-summary>div{flex-direction:column;align-items:flex-start;gap:4px}
+  .wf-living-page-summary strong{font-size:24px}
+  .wf-living-page-summary p{font-size:11.5px;margin-top:9px}
+  .wf-living-grid>.wf-living-card:last-child:nth-child(odd){grid-column:1/-1}
+}
+@media(max-width:355px){
+  .wf-living-grid>.wf-living-card:last-child:nth-child(odd){grid-column:auto}
+}
