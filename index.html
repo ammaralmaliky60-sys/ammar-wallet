@@ -1,36 +1,28 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0c0d10"><meta name="color-scheme" content="dark light"><meta name="description" content="ميزان: خطتك المالية من استلام الدخل إلى الالتزامات والمحافظ والادخار."><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="stylesheet" href="./style.css?v=gold-20261031-r2"><link rel="stylesheet" href="./fonts.css?v=money-groups-20261031-r1"><link rel="stylesheet" href="./modern-ui.css?v=20261031-v3"><link rel="stylesheet" href="./overview-motion.css?v=20261031-r1"><link rel="stylesheet" href="./mizan-neo.css?v=20261031-r1"><link rel="stylesheet" href="./mizan-neo-compact.css?v=20261031-r1"><title>ميزان — خطتك المالية</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0c0d10"><meta name="color-scheme" content="dark light"><meta name="description" content="ميزان: تنظيم الحوافز الشهرية ثم الراتب، استقطاعات الهايبر ماركت والإسكان ونصف سلفة الدوام وحجز الإنترنت والمولدة وسلفة المصرف."><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="stylesheet" href="./style.css?v=gold-20261031-r2"><link rel="stylesheet" href="./fonts.css?v=money-groups-20261031-r1"><link rel="stylesheet" href="./modern-ui.css?v=20261031-v3"><link rel="stylesheet" href="./overview-motion.css?v=20261031-r1"><link rel="stylesheet" href="./mizan-neo.css?v=20261031-r1"><link rel="stylesheet" href="./two-stage.css?v=two-income-neo-20261031-r1"><title>ميزان — خطتك المالية</title>
 </head>
 <body class="dark">
 <aside class="sidebar" aria-label="التنقل الرئيسي">
-<a class="brand" href="#overview"><img src="./icon.svg" alt=""><span>ميزان<small>مساحة لحياة أكثر اتزاناً</small></span></a>
+<a class="brand" href="#workflow"><img src="./icon.svg" alt=""><span>ميزان<small>مساحة لحياة أكثر اتزاناً</small></span></a>
 <div class="nav-caption">مساحتك المالية</div>
 <nav id="nav"></nav>
 <div class="sidebar-bottom"><div class="privacy-icon" data-icon="shield"></div><strong>أموالك أوضح. قراراتك أهدأ.</strong><p>خطوة صغيرة اليوم،<br>واستقرار أكبر غداً.</p><span><i></i> بياناتك محفوظة على جهازك</span></div>
 <button class="profile" data-action="settings"><span class="avatar" id="avatar">م</span><span><b id="profileName">مساحتك الشخصية</b><small>إدارة الحساب والإعدادات</small></span><span data-icon="chevron"></span></button>
 </aside>
 <div class="app-shell">
-<header class="topbar"><div class="mobile-brand"><img src="./icon.svg" alt="" width="35" height="35"><span>ميزان</span></div><div class="breadcrumb">مساحتك المالية <span>/</span> <b id="breadcrumb">نظرة عامة</b></div><div class="top-actions"><span class="local-status"><i></i> حفظ محلي</span><button class="icon-btn" data-action="theme" aria-label="تغيير المظهر" data-icon="moon"></button><button class="icon-btn" data-action="help" aria-label="دليل الاستخدام" data-icon="help"></button></div></header>
+<header class="topbar"><div class="mobile-brand"><img src="./icon.svg" alt="" width="35" height="35"><span>ميزان</span></div><div class="breadcrumb">مساحتك المالية <span>/</span> <b id="breadcrumb">دورة الحوافز والراتب</b></div><div class="top-actions"><span class="local-status"><i></i> حفظ محلي</span><button class="icon-btn" data-action="theme" aria-label="تغيير المظهر" data-icon="moon"></button><button class="icon-btn" data-action="help" aria-label="دليل الاستخدام" data-icon="help"></button></div></header>
 <main id="main" tabindex="-1"></main>
 <footer>ميزان <span>•</span> كل مبلغ له مكان، وكل هدف له خطة.<span class="footer-left">بُني لحياة مالية أكثر وضوحاً</span></footer>
 </div>
 <dialog id="modal"><div id="modalContent"></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 <input id="restoreFile" type="file" accept=".json,application/json" hidden>
-<nav class="neo-mobile-dock" aria-label="التنقل السريع في ميزان">
-<a class="neo-dock-link" href="#overview" data-neo-page="overview"><span data-icon="home" aria-hidden="true"></span><span>الرئيسية</span></a>
-<a class="neo-dock-link" href="#plan" data-neo-page="plan"><span data-icon="wallet" aria-hidden="true"></span><span>المحافظ</span></a>
-<button type="button" class="neo-dock-add" data-action="expense" aria-label="إضافة مصروف"><span data-icon="plus" aria-hidden="true"></span></button>
-<a class="neo-dock-link" href="#obligations" data-neo-page="obligations"><span data-icon="calendar" aria-hidden="true"></span><span>الالتزامات</span></a>
-<details class="neo-more"><summary class="neo-dock-link" aria-label="المزيد من الصفحات"><span data-icon="grid" aria-hidden="true"></span><span>المزيد</span></summary>
-<div class="neo-more-sheet">
-<a href="#income" data-neo-page="income"><span data-icon="income" aria-hidden="true"></span>الدخل والاستلام</a>
-<a href="#ledger" data-neo-page="ledger"><span data-icon="ledger" aria-hidden="true"></span>سجل الحركات</a>
-<a href="#reports" data-neo-page="reports"><span data-icon="chart" aria-hidden="true"></span>التقارير والتحليل</a>
-<a href="#settings" data-neo-page="settings"><span data-icon="settings" aria-hidden="true"></span>الإعدادات</a>
-</div></details>
+<nav class="neo-mobile-dock" aria-label="دورة الحوافز والراتب">
+<a class="neo-dock-link" href="#workflow" data-neo-page="workflow"><span data-icon="calendar" aria-hidden="true"></span><span>دورة الدفعتين</span></a>
+<a class="neo-dock-link" href="#ledger" data-neo-page="ledger"><span data-icon="ledger" aria-hidden="true"></span><span>السجل</span></a>
+<a class="neo-dock-link" href="#settings" data-neo-page="settings"><span data-icon="settings" aria-hidden="true"></span><span>الإعدادات</span></a>
 </nav>
-<script src="./schedule.js"></script><script src="./engine.js"></script><script src="./migration.js"></script><script src="./app.js?v=mizan-neo-compact-20261031-r1"></script>
+<script src="./schedule.js"></script><script src="./engine.js"></script><script src="./migration.js"></script><script src="./app.js?v=two-income-neo-20261031-r1"></script>
 </body></html>
