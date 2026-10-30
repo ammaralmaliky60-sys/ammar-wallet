@@ -207,34 +207,6 @@ body:not(.dark) .wf-other-line b{color:#765321}
 }
 @media(max-width:360px){.wf-living-top-actions{grid-template-columns:1fr}}
 
-/* On-device A4 PDF export using the browser's Arabic-capable print engine. */
-#mizan-live-report{display:none}
-@media print{
- @page{size:A4 portrait;margin:13mm 11mm 13mm 11mm}
- body{background:white!important;color:#111!important}
- body>*:not(#mizan-live-report){display:none!important}
- #mizan-live-report{display:block!important;position:static!important;visibility:visible!important;
-   font:11px/1.7 "IBM Plex Sans Arabic",Tahoma,Arial,sans-serif;direction:rtl;color:#202020;background:white}
- #mizan-live-report *{color:inherit;box-shadow:none!important;text-shadow:none!important}
- #mizan-live-report h1,#mizan-live-report h2{font-family:"Alexandria","IBM Plex Sans Arabic",sans-serif}
- #mizan-live-report h1{font-size:21px;line-height:1.55;margin:0}
- #mizan-live-report h2{font-size:13px;margin:18px 0 7px;padding-bottom:5px;border-bottom:1px solid #bbb}
- #mizan-live-report .print-report-title{border-bottom:2px solid #987442;padding-bottom:12px;margin-bottom:13px}
- #mizan-live-report .print-report-title p{font-size:10.5px;line-height:1.6;margin:3px 0}
- #mizan-live-report .print-report-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:17px}
- #mizan-live-report .print-report-stats span{border:1px solid #ccc;padding:7px;border-radius:3px;font-size:10px}
- #mizan-live-report .print-report-stats b{display:block;font-size:12px;font-weight:650}
- #mizan-live-report table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:9px}
- #mizan-live-report th,#mizan-live-report td{border:1px solid #ccc;text-align:right;padding:5px 4px;vertical-align:top;overflow-wrap:anywhere}
- #mizan-live-report th{background:#f1ede4!important;font-weight:650;-webkit-print-color-adjust:exact;print-color-adjust:exact}
- #mizan-live-report thead{display:table-header-group}
- #mizan-live-report tr{break-inside:avoid}
- #mizan-live-report .num{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
- #mizan-live-report footer{margin-top:18px;border-top:1px solid #bbb;font-size:9px;line-height:1.7}
- #mizan-live-report footer p{margin:4px 0}
-}
-
-
 /* Immediate living expenses: clear one-tap entry, including before budget setup. */
 .wf-living-top-actions>.btn:first-child{
  display:inline-flex!important;
@@ -267,4 +239,38 @@ body:not(.dark) .wf-other-line b{color:#765321}
 }
 @media(max-width:360px){
  .wf-living-top-actions>.btn:first-child{grid-column:auto}
+}
+/* Reports: downloadable PDF only. The browser's printing interface is never invoked. */
+.wf-report-dashboard{max-width:1040px;margin:18px auto 28px;padding:28px;border-radius:20px;
+ border:1px solid var(--line);background:var(--surface);box-shadow:0 12px 35px #00000020}
+.wf-report-eyebrow{font-size:12px;font-weight:650;color:var(--green);letter-spacing:.1px}
+.wf-report-dashboard>h2{font-family:"Alexandria","IBM Plex Sans Arabic",sans-serif;font-size:clamp(22px,3vw,30px);font-weight:650;color:var(--ink);line-height:1.6;margin:6px 0}
+.wf-report-dashboard>p{color:var(--muted);font-size:13px;line-height:2;margin:8px 0 20px}
+.wf-report-dashboard>p b{color:var(--ink)}
+.wf-report-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:20px 0 22px}
+.wf-report-metrics>div{background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:16px;min-width:0}
+.wf-report-metrics span{font-size:11.5px;color:var(--muted);line-height:1.7;display:block}
+.wf-report-metrics strong{display:block;font-size:clamp(17px,2.5vw,24px);font-family:"Alexandria","IBM Plex Sans Arabic",sans-serif;
+ font-weight:650;color:var(--ink);margin-top:8px;overflow-wrap:anywhere}
+.wf-report-download{min-height:58px;width:100%;display:inline-flex!important;align-items:center;justify-content:center;gap:9px;
+ font-size:17px;font-weight:750;border:1px solid #e4c183;
+ background:linear-gradient(120deg,#f2d9a5,#ddb574 70%,#cb994c);color:#241b12;
+ box-shadow:0 9px 20px #00000020;border-radius:13px}
+.wf-report-download svg{height:22px;width:22px}
+.wf-report-download:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.wf-report-dashboard>.wf-report-foot{font-size:11.5px;color:var(--muted);line-height:1.8;margin:13px 0 0}
+.wf-report-hint{font-size:12px;color:var(--muted);margin:10px 0}
+@media(max-width:760px){
+ .wf-report-dashboard{margin:10px 0 16px;padding:19px 16px;border-radius:15px}
+ .wf-report-dashboard>h2{font-size:22px}
+ .wf-report-dashboard>p{font-size:12px}
+ .wf-report-metrics{grid-template-columns:1fr 1fr;gap:9px;margin:15px 0}
+ .wf-report-metrics>div:first-child{grid-column:1/-1}
+ .wf-report-metrics>div{padding:12px}
+ .wf-report-metrics strong{font-size:17px}
+ .wf-report-download{min-height:55px;font-size:15px}
+}
+@media(max-width:360px){
+ .wf-report-metrics{grid-template-columns:1fr}
+ .wf-report-metrics>div:first-child{grid-column:auto}
 }
