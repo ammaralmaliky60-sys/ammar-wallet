@@ -46,3 +46,18 @@ button,input,select,textarea{font-synthesis:weight;}
 @media print{
   body{font-family:"IBM Plex Sans Arabic",Mizan,Tahoma,Arial,sans-serif}
 }
+
+/* Numeric entry: LTR grouping inside RTL forms; financial values remain unchanged. */
+input[data-money]{
+  direction:ltr;
+  unicode-bidi:isolate;
+  text-align:center;
+  font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+  letter-spacing:.3px;
+  font-size:16px;
+  font-weight:500;
+}
+input[data-money]:focus{letter-spacing:.35px}
+@media(max-width:760px){input[data-money]{font-size:18px;min-height:50px}}
