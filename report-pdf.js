@@ -43,7 +43,7 @@ function drawHeading(ctx,title,y){
 function pageHeader(ctx,data,isFirst){
   rect(ctx,0,0,PAGE_W,isFirst?213:146,C.navy);
   rect(ctx,0,isFirst?207:140,PAGE_W,6,C.gold);
-  rtl(ctx,'ذُخر  |  التقرير المالي',1175,47,25,C.goldLight,600);
+  rtl(ctx,(data.brand||'ميزان')+'  |  التقرير المالي',1175,47,25,C.goldLight,600);
   if(isFirst){
     rtl(ctx,'الكشف المالي الشخصي',1175,110,44,C.white,700,1080,true);
     rtl(ctx,'من '+data.from+' إلى '+data.issuedAt,1175,167,20,C.goldLight,400,1080);
@@ -165,14 +165,14 @@ function buildPDF(jpegs){
 async function download(report){
   if(!report||!Array.isArray(report.entries)||!Array.isArray(report.wallets))throw Error('تعذر تحضير بيانات الكشف.');
   if(document.fonts&&document.fonts.load){
-    await Promise.all([
+    await Promise.allSettled([
       document.fonts.load('600 26px "IBM Plex Sans Arabic"'),
       document.fonts.load('700 26px "IBM Plex Sans Arabic"'),
       document.fonts.load('600 28px "Alexandria"')
     ]);
   }
   const rows=report.entries;
-  const firstCount=6,nextCount=18;
+  const firstCount=6,nextCount=17;
   const sets=[rows.slice(0,firstCount)];
   for(let i=firstCount;i<rows.length;i+=nextCount)sets.push(rows.slice(i,i+nextCount));
   if(sets.length>100)throw Error('الكشف كبير جداً؛ قسّم الفترة إلى أشهر أصغر.');
@@ -181,7 +181,7 @@ async function download(report){
   const blob=buildPDF(jpegs);
   if(blob.size<3000)throw Error('لم يكتمل توليد ملف PDF.');
   const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,13);
-  const filename='Thukhr_Statement_'+fmt(report.period).replace(/[^0-9-]/g,'')+'_'+stamp+'.pdf';
+  const filename=(report.brand==='ميزان'?'Mizan':'Thukhr')+'_Statement_'+fmt(report.period).replace(/[^0-9-]/g,'')+'_'+stamp+'.pdf';
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=filename;a.style.display='none';document.body.appendChild(a);
   try{a.click();}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
