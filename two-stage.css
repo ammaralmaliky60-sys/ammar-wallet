@@ -104,3 +104,49 @@ body.dark .page-head .head-actions > .btn[data-action="wf-config"]{
   justify-content:center;
  }
 }
+
+/* Second stage — living expenses and five user-controlled envelopes. */
+.wf-living-shortcut{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:13px;
+ padding:15px 18px;margin:12px 0 22px;border:1px solid #c4a36865;
+ border-radius:14px;background:linear-gradient(110deg,#b38a442a,#191a2008)
+}
+.wf-living-shortcut span{font-size:13px;color:var(--ink);line-height:1.7;font-weight:600}
+.wf-living-shortcut>.btn{min-height:44px;white-space:nowrap}
+.wf-living{border-color:#b69d6766;scroll-margin-top:20px}
+.wf-living-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.wf-living-overview>div{padding:13px 15px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.wf-living-overview span{font-size:11px;line-height:1.8;color:var(--muted);display:block}
+.wf-living-overview strong{display:block;margin-top:5px;font-size:19px;color:var(--ink);font-weight:600}
+.wf-living-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;margin:20px 0}
+.wf-living-card{min-width:0;padding:16px;border-radius:13px;background:var(--bg);border:1px solid var(--line);position:relative;overflow:hidden}
+.wf-living-card:before{content:"";height:3px;position:absolute;right:0;left:0;top:0;background:var(--wf-category)}
+.wf-living-label{display:flex;align-items:center;gap:8px}
+.wf-living-label strong{font-size:13px;font-weight:600;color:var(--ink)}
+.wf-living-dot{height:11px;width:11px;flex:none;border-radius:4px;background:var(--wf-category)}
+.wf-living-amount{font-size:clamp(16px,2vw,20px);font-weight:650;margin:10px 0 5px;color:var(--ink)}
+.wf-living-spent{font-size:11px;line-height:1.8;color:var(--muted);margin-bottom:11px}
+.wf-living-card .btn{width:100%;min-height:39px;font-size:11px}
+.wf-living-card .btn:disabled{opacity:.43;cursor:not-allowed}
+.wf-living-actions{display:flex;flex-wrap:wrap;gap:9px;margin:17px 0}
+.wf-living-actions .btn{min-height:44px}
+@media(max-width:760px){
+ .wf-living-shortcut{margin:8px 0 15px;padding:12px 14px;gap:8px}
+ .wf-living-shortcut span{font-size:12px}
+ .wf-living-shortcut>.btn{width:100%;font-size:12px}
+ .wf-living-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0}
+ .wf-living-card{padding:12px 10px}
+ .wf-living-label strong{font-size:12px}
+ .wf-living-amount{font-size:15px}
+ .wf-living-spent{font-size:10px}
+ .wf-living-overview{gap:8px}
+ .wf-living-overview>div{padding:11px}
+ .wf-living-overview span{font-size:10px}
+ .wf-living-overview strong{font-size:14px}
+ .wf-living-actions{display:grid;grid-template-columns:1fr;gap:8px}
+ .wf-living-actions .btn{width:100%;font-size:12px}
+ .wf-living-card .btn{font-size:10.5px;padding:7px 5px}
+}
+@media(max-width:355px){
+ .wf-living-grid{grid-template-columns:1fr}
+}
