@@ -1,0 +1,65 @@
+
+/* Mizan – personal incentives/salary cycle, compact RTL mobile-first layout */
+.wf-intro{background:linear-gradient(135deg,#26232a,#171a20);border:1px solid #a5834944;border-radius:18px;padding:20px 22px;margin:0 0 18px;box-shadow:0 12px 34px #0002}
+.wf-month{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:18px}
+.wf-month label{font-size:13px;color:#dcc99e;font-weight:600}
+.wf-month input{min-height:44px;border:1px solid #6b5839;border-radius:10px;padding:8px 12px;background:#22242b;color:#f6f1e4;font-family:"IBM Plex Sans Arabic",sans-serif;font-size:15px;color-scheme:dark;max-width:185px}
+.wf-snapshot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.wf-snapshot>div{border:1px solid #ffffff15;border-radius:12px;padding:12px;background:#ffffff07;min-width:0}
+.wf-snapshot span{font-size:11px;color:#c5bba8;display:block;line-height:1.7}
+.wf-snapshot strong{font-size:clamp(15px,2.1vw,23px);font-weight:600;color:#efd29d;display:block;margin-top:4px;overflow-wrap:anywhere}
+.wf-stage{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;margin:17px 0 22px;box-shadow:0 8px 25px #00000012}
+.wf-stage-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px}
+.wf-stage-top h2,.wf-stage>h2{font:600 clamp(17px,2.3vw,21px)/1.6 "Alexandria","IBM Plex Sans Arabic",sans-serif;color:var(--ink)}
+.wf-kicker{display:block;font-size:11px;color:var(--green);margin:0 0 2px;font-weight:600}
+.wf-stage-top .chip{white-space:normal;text-align:center;max-width:160px}
+.wf-receipt{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;background:var(--bg);border-radius:11px;margin:14px 0}
+.wf-receipt span{color:var(--muted);font-size:12px}
+.wf-receipt strong{color:var(--ink);font-size:15px;font-weight:600}
+.wf-receipt .btn{min-height:42px}
+.wf-steps{display:grid;gap:3px}
+.wf-step{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.wf-step:last-child{border-bottom:0}
+.wf-step>span{color:var(--ink);min-width:0}
+.wf-step>b{white-space:nowrap;font-weight:600;font-size:14px;color:var(--green)}
+.wf-stage-footer{margin:9px 0 13px;padding-top:13px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wf-stage-footer span{font-size:12px;color:var(--muted)}
+.wf-stage-footer strong{font-size:17px;font-weight:600;color:var(--ink)}
+.wf-help{font-size:12px;color:var(--muted);line-height:1.9;margin:12px 0}
+.wf-done{display:flex;align-items:center;gap:7px;background:#227c5140;color:#69d39b;padding:11px 13px;border:1px solid #5da57a4a;border-radius:11px;font-size:12px;margin-top:12px}
+.wf-done svg{width:17px;height:17px}
+.wf-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:12px 0 20px}
+.wf-parts span{display:block;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:11px;color:var(--muted)}
+.wf-parts b{color:var(--green);font-size:15px;display:block;margin-top:7px}
+.wf-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.wf-form-grid .field{min-width:0}
+.wf-form-grid label{font-size:12px;color:var(--muted)}
+.wf-form-grid input{font-size:16px;min-height:48px}
+body:not(.dark) .wf-intro{background:linear-gradient(135deg,#f1e7d2,#fffaf0)}
+body:not(.dark) .wf-intro .wf-snapshot span,body:not(.dark) .wf-month label{color:#665039}
+body:not(.dark) .wf-snapshot strong{color:#6e5025}
+body:not(.dark) .wf-month input{background:#fffaf1;color:#332819;color-scheme:light}
+body:not(.dark) .wf-snapshot>div{border-color:#c9b38566}
+body:not(.dark) .wf-done{background:#e9f5eb;color:#246e3b;border-color:#9fcdab}
+@media(max-width:760px){
+ .wf-intro{padding:15px;margin-bottom:14px;border-radius:15px}
+ .wf-snapshot{grid-template-columns:1fr 1fr;gap:8px}
+ .wf-snapshot>div:first-child{grid-column:1/-1}
+ .wf-snapshot strong{font-size:19px}
+ .wf-snapshot span{font-size:11px}
+ .wf-stage{padding:16px;border-radius:15px;margin:13px 0 16px}
+ .wf-stage-top{flex-direction:column;gap:7px}
+ .wf-stage-top h2{font-size:16px}
+ .wf-stage-top .chip{max-width:none}
+ .wf-step{font-size:12px;gap:6px}
+ .wf-step>b{font-size:12px}
+ .wf-parts{grid-template-columns:1fr 1fr}
+ .wf-parts span:first-child{grid-column:1/-1}
+ .wf-form-grid{grid-template-columns:1fr 1fr;gap:10px}
+ .wf-form-grid label{font-size:11px}
+ .wf-stage .btn{width:100%;justify-content:center}
+ .wf-receipt .btn{width:100%}
+ .wf-month label{font-size:12px}
+ .wf-month input{max-width:158px}
+}
+@media(max-width:360px){.wf-form-grid{grid-template-columns:1fr}.wf-month{align-items:flex-start;flex-direction:column}.wf-month input{max-width:none;width:100%}}
