@@ -523,7 +523,7 @@ function wfLivingReport(){
  const nameOf=t=>t.walletId?state.wallets.find(w=>w.id===t.walletId)?.name||'':
    t.obligationId?state.obligations.find(o=>o.id===t.obligationId)?.name||'':'';
  const report={
-  period:wfMonth,from:first,issuedAt:dateTime,currency:unit(),
+  period:wfMonth,from:first,issuedAt:dateTime,currency:unit(),brand:'ذُخر',
   stats:{
    income:fmt(total('income')),expenses:fmt(total('expense')),paid:fmt(total('pay')),
    total:fmt(stats.total),available:fmt(stats.unallocated),
