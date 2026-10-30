@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0c0d10"><meta name="color-scheme" content="dark light"><meta name="description" content="ميزان: خطتك المالية من استلام الدخل إلى الالتزامات والمحافظ والادخار."><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="stylesheet" href="./style.css?v=gold-20261031-r2"><link rel="stylesheet" href="./fonts.css?v=money-groups-20261031-r1"><link rel="stylesheet" href="./modern-ui.css?v=20261031-v3"><link rel="stylesheet" href="./overview-motion.css?v=20261031-r1"><title>ميزان — خطتك المالية</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0c0d10"><meta name="color-scheme" content="dark light"><meta name="description" content="ميزان: خطتك المالية من استلام الدخل إلى الالتزامات والمحافظ والادخار."><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="stylesheet" href="./style.css?v=gold-20261031-r2"><link rel="stylesheet" href="./fonts.css?v=money-groups-20261031-r1"><link rel="stylesheet" href="./modern-ui.css?v=20261031-v3"><link rel="stylesheet" href="./overview-motion.css?v=20261031-r1"><link rel="stylesheet" href="./mizan-neo.css?v=20261031-r1"><title>ميزان — خطتك المالية</title>
 </head>
 <body class="dark">
 <aside class="sidebar" aria-label="التنقل الرئيسي">
@@ -12,12 +12,25 @@
 <button class="profile" data-action="settings"><span class="avatar" id="avatar">م</span><span><b id="profileName">مساحتك الشخصية</b><small>إدارة الحساب والإعدادات</small></span><span data-icon="chevron"></span></button>
 </aside>
 <div class="app-shell">
-<header class="topbar"><div class="mobile-brand">ميزان<span>●</span></div><div class="breadcrumb">مساحتك المالية <span>/</span> <b id="breadcrumb">نظرة عامة</b></div><div class="top-actions"><span class="local-status"><i></i> حفظ محلي</span><button class="icon-btn" data-action="theme" aria-label="تغيير المظهر" data-icon="moon"></button><button class="icon-btn" data-action="help" aria-label="دليل الاستخدام" data-icon="help"></button></div></header>
+<header class="topbar"><div class="mobile-brand"><img src="./icon.svg" alt="" width="35" height="35"><span>ميزان</span></div><div class="breadcrumb">مساحتك المالية <span>/</span> <b id="breadcrumb">نظرة عامة</b></div><div class="top-actions"><span class="local-status"><i></i> حفظ محلي</span><button class="icon-btn" data-action="theme" aria-label="تغيير المظهر" data-icon="moon"></button><button class="icon-btn" data-action="help" aria-label="دليل الاستخدام" data-icon="help"></button></div></header>
 <main id="main" tabindex="-1"></main>
 <footer>ميزان <span>•</span> كل مبلغ له مكان، وكل هدف له خطة.<span class="footer-left">بُني لحياة مالية أكثر وضوحاً</span></footer>
 </div>
 <dialog id="modal"><div id="modalContent"></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 <input id="restoreFile" type="file" accept=".json,application/json" hidden>
-<script src="./schedule.js"></script><script src="./engine.js"></script><script src="./migration.js"></script><script src="./app.js?v=money-mobile-20261031-r2"></script>
+<nav class="neo-mobile-dock" aria-label="التنقل السريع في ميزان">
+<a class="neo-dock-link" href="#overview" data-neo-page="overview"><span data-icon="home" aria-hidden="true"></span><span>الرئيسية</span></a>
+<a class="neo-dock-link" href="#plan" data-neo-page="plan"><span data-icon="wallet" aria-hidden="true"></span><span>المحافظ</span></a>
+<button type="button" class="neo-dock-add" data-action="expense" aria-label="إضافة مصروف"><span data-icon="plus" aria-hidden="true"></span></button>
+<a class="neo-dock-link" href="#obligations" data-neo-page="obligations"><span data-icon="calendar" aria-hidden="true"></span><span>الالتزامات</span></a>
+<details class="neo-more"><summary class="neo-dock-link" aria-label="المزيد من الصفحات"><span data-icon="grid" aria-hidden="true"></span><span>المزيد</span></summary>
+<div class="neo-more-sheet">
+<a href="#income" data-neo-page="income"><span data-icon="income" aria-hidden="true"></span>الدخل والاستلام</a>
+<a href="#ledger" data-neo-page="ledger"><span data-icon="ledger" aria-hidden="true"></span>سجل الحركات</a>
+<a href="#reports" data-neo-page="reports"><span data-icon="chart" aria-hidden="true"></span>التقارير والتحليل</a>
+<a href="#settings" data-neo-page="settings"><span data-icon="settings" aria-hidden="true"></span>الإعدادات</a>
+</div></details>
+</nav>
+<script src="./schedule.js"></script><script src="./engine.js"></script><script src="./migration.js"></script><script src="./app.js?v=mizan-neo-20261031-r1"></script>
 </body></html>
