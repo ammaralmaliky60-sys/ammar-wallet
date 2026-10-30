@@ -1,0 +1,48 @@
+/* Mizan typography: locally hosted, OFL licensed and available offline.
+   Alexandria: headings and prominent financial figures.
+   IBM Plex Sans Arabic: body, controls, tables, and numerical data.
+   Licenses: ./fonts/OFL-Alexandria.txt and ./fonts/OFL-IBM-Plex-Sans-Arabic.txt */
+@font-face{
+  font-family:"Alexandria";
+  src:url("./fonts/Alexandria%5Bwght%5D.ttf") format("truetype");
+  font-style:normal;
+  font-weight:100 900;
+  font-display:swap;
+}
+@font-face{
+  font-family:"IBM Plex Sans Arabic";
+  src:url("./fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+}
+@font-face{
+  font-family:"IBM Plex Sans Arabic";
+  src:url("./fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");
+  font-style:normal;
+  font-weight:500;
+  font-display:swap;
+}
+@font-face{
+  font-family:"IBM Plex Sans Arabic";
+  src:url("./fonts/IBMPlexSansArabic-Bold.ttf") format("truetype");
+  font-style:normal;
+  font-weight:700;
+  font-display:swap;
+}
+body,button,input,select,textarea{
+  font-family:"IBM Plex Sans Arabic",Mizan,"Segoe UI",Tahoma,Arial,sans-serif;
+}
+h1,h2,h3,.brand>span,.mobile-brand,.hero-total,.stat-amount,.wallet-balance,.ob-detail b,.cycle-card h2,.modal-head h2{
+  font-family:"Alexandria","IBM Plex Sans Arabic",Mizan,Tahoma,sans-serif;
+  font-synthesis:weight;
+}
+.num{
+  font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+}
+button,input,select,textarea{font-synthesis:weight;}
+@media print{
+  body{font-family:"IBM Plex Sans Arabic",Mizan,Tahoma,Arial,sans-serif}
+}
