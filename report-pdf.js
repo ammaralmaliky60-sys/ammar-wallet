@@ -205,7 +205,7 @@ async function download(report){
      'السداد '+fmt(report.stats.paid),'رصيد الافتتاح '+fmt(report.stats.opening),
      'رصيد الختام '+fmt(report.stats.total),'المتاح '+fmt(report.stats.available)
    ]:[]),
-   ...(page.walletRows||i===0?report.wallets.slice(0,12):[]).map(w=>
+   ...(page.walletRows||(i===0?report.wallets.slice(0,12):[])).map(w=>
      [fmt(w.name),fmt(w.budget),fmt(w.spent),fmt(w.balance)].join(' | ')),
    ...page.rows.map(e=>[fmt(e.date),fmt(e.type),fmt(e.category),fmt(e.note),fmt(e.amount)].join(' | '))
   ].join('\n'));
