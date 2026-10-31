@@ -7,8 +7,9 @@ const root=path.join(__dirname,'..');
 const get=p=>fs.readFileSync(path.join(root,p),'utf8');
 const app=get('app.js'),html=get('index.html'),css=get('thukhr-design-system.css'),sw=get('sw.js');
 test('new design is linked and cached for offline use',()=>{
- assert.match(html,/thukhr-design-system\.css\?v=20261031-gross-r1/);
- assert.match(sw,/thukhr-design-system\.css\?v=20261031-gross-r1/);
+ const cssVersion=html.match(/thukhr-design-system\.css\?v=([^"']+)/)?.[1];
+ assert.ok(cssVersion,'Versioned visual stylesheet missing');
+ assert.ok(sw.includes('thukhr-design-system.css?v='+cssVersion),'Offline assets must use the same stylesheet version');
 });
 test('date filters have explicit visible labels and human-readable Arabic dates',()=>{
  assert.match(app,/class="thukhr-date-filter"/);
