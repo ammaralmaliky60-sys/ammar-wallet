@@ -2062,6 +2062,38 @@ function simpleReportPage(){
   ].map(([label,v])=>'<article><span>'+label+'</span><strong>'+money(v)+'</strong></article>').join('')+
   '</section><div class="fz-lite-note">الاستقطاعات من المصدر قبل وصول الصافي توثيق فقط، ولا تخصم مرة ثانية من رصيد الحساب. يمكنك مراجعة الحركات الكاملة في الوضع المتقدم.</div></div>';
 }
+function simpleSetupStart(){
+ if(state.transactions.length||state.obligations.length||state.history.length){
+  throw Error('هذه المساحة تحتوي بيانات سابقة. لاستبدالها استخدم «تهيئة البيانات» من الإعدادات مع نسخة احتياطية.');
+ }
+ modal('ابدأ مع فِرزة','ثلاث معلومات تكفي. تقدر تضيف الثوابت والميزانية بعد البداية.',
+  '<div class="form-grid">'+
+   field('اسم اختياري','name','text',state.settings.name||'','maxlength="40"')+
+   select('نوع دخلك','incomeMode',[['salary-only','راتب فقط'],['both','راتب وحافز']],state.settings.wfDefaultIncomeMode||'salary-only')+
+   moneyField('رصيد البداية الموجود فعلياً','opening','0','required')+
+   select('مكان الرصيد','method',methodOptions,'card')+
+  '</div><div class="notice">رصيد البداية مبلغ موجود فعلياً، مو راتب مستقبلي. إذا ما عندك مبلغ حالياً خله صفر، وبعدها سجّل الراتب أو الحافز وقت استلامه. ما نضيف أي التزامات جاهزة.</div>',
+  f=>{
+   if(state.transactions.length||state.obligations.length||state.history.length)
+    throw Error('تغيّرت بيانات المساحة. أعد فتح النموذج.');
+   if(!['both','salary-only'].includes(f.incomeMode))throw Error('اختر نوع الدخل.');
+   const opening=amount(f.opening,true);
+   if(!['card','cash'].includes(f.method))throw Error('اختر مكان الرصيد.');
+   let next=E.initial();next.demo=false;
+   next.settings={...next.settings,name:String(f.name||'').trim().slice(0,40),
+    currency:state.settings.currency,digits:state.settings.digits,
+    wfDefaultIncomeMode:f.incomeMode,wfIncomeModeSince:today().slice(0,7),
+    wfIncomeModes:{[today().slice(0,7)]:f.incomeMode},
+    wfFields:[],wfHiddenFields:[]};
+   next.cycle={...next.cycle,start:today(),days:30};
+   if(opening)next=event(next,{type:'income',date:today(),amount:opening,
+    method:f.method,note:'رصيد البداية · مبلغ موجود فعلياً'});
+   E.validate(next);
+   save(next,'تم إنشاء ميزانيتك البسيطة دون التزامات أو مصروفات افتراضية.',false);
+   closeModal();needsFirstSetup=false;location.hash='dashboard';
+  },'بدء الميزانية');
+}
+
 function simpleBudgetEdit(){
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
  const month=today().slice(0,7);
@@ -2276,6 +2308,7 @@ function render(){
  document.body.dataset.firzaView=simple?'simple':'advanced';
  const extraRoutes={overview:'الملخص السابق',income:'سجل الدخل',obligations:'الالتزامات العامة',plan:'المحافظ'};
  const activeNavs=simple?SIMPLE_NAVS:navs;
+ if(simple&&['dashboard','fixed','living'].includes(page))wfMonth=today().slice(0,7);
  if(simple&&!['dashboard','fixed','living','reports','settings'].includes(page))page='dashboard';
  else if(!simple&&!navs.some(n=>n[0]===page)&&!extraRoutes[page])page='dashboard';
  $('nav').innerHTML=activeNavs.map(([p,ic,label])=>'<a class="nav-link '+(page===p?'active':'')+
@@ -2705,5 +2738,5 @@ $('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0
 let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('installBtn'))$('installBtn').hidden=false});document.addEventListener('click',async e=>{if(e.target.id==='installBtn'&&installPrompt){await installPrompt.prompt();installPrompt=null;e.target.hidden=true}});
 window.addEventListener('hashchange',()=>{render();window.scrollTo({top:0,behavior:'instant'})});window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const next=JSON.parse(e.newValue);E.validate(next);state=next;applySettings();render();toast('تم تحديث البيانات من تبويب آخر')}catch{toast('تعذر قراءة تحديث التبويب الآخر')}}});window.addEventListener('focus',()=>{if(!$('modal').open)render()});
 $('modal').addEventListener('click',e=>{if(e.target===$('modal')){const r=$('modal').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeModal()}});
-applySettings();render();paintIcons();if(needsFirstSetup&&!storageError&&!brokenRaw)setupStart();if('serviceWorker'in navigator&&location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+applySettings();render();paintIcons();if(needsFirstSetup&&!storageError&&!brokenRaw){if(firzaViewMode()==='simple')simpleSetupStart();else setupStart();}if('serviceWorker'in navigator&&location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();
