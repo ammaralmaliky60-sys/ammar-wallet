@@ -27,7 +27,7 @@ function fixture(state,mode='salary-only'){
    return {...o,key:o.key,amount:part,fullAmount:full};
   }).filter(o=>o.amount>0),
   event:(st,t)=>E.commit(st,{id:E.uid(),date:day,...t})};
- const api=new Function('env','with(env){'+source+';return {smartBuild,smartStage,smartPrior}}')(env);
+ const api=new Function('env','with(env){'+source+';return {smartBuild,smartStage,smartPrior,fundLivingTargets}}')(env);
  return api;
 }
 const draft=(st,opts={})=>({base:JSON.stringify(st),month,mode:'salary-only',stage:'salary',existing:false,
@@ -53,10 +53,26 @@ test('income already received is used without a second credit',()=>{
  assert.equal(result.totals.income,0);assert.equal(result.after.total,720000);
  assert.equal(result.next.transactions.filter(t=>t.type==='income').length,1);
 });
-test('insufficient distributable money rejects whole preview',()=>{
+test('insufficient funding preserves full budget without inventing income or cash',()=>{
  const st=base(),raw=JSON.stringify(st);
- assert.throws(()=>fixture(st).smartBuild(st,draft(st,{targets:{home:400000}})));
+ const result=fixture(st).smartBuild(st,draft(st,{targets:{home:400000}}));
  assert.equal(JSON.stringify(st),raw);
+ assert.equal(result.totals.living,0);
+ assert.equal(result.funding.pending,400000);
+ assert.equal(result.funding.shortfall,130000);
+ assert.equal(result.next.settings.livingTargets[month].home,400000);
+ assert.equal(result.after.card,720000);
+ assert.equal(result.after.unallocated,270000);
+ assert.equal(result.next.transactions.filter(t=>t.type==='allocate').length,0);
+});
+test('funding uses only confirmed available cash and does not duplicate allocation',()=>{
+ const st=base(),out=fixture(st).smartBuild(st,draft(st));
+ assert.equal(out.totals.living,100000);
+ assert.equal(out.funding.pending,0);
+ assert.equal(out.funding.shortfall,0);
+ const funded=fixture(st).fundLivingTargets(out.next,{home:100000},month);
+ assert.equal(funded.allocated,0);
+ assert.equal(funded.next.transactions.length,out.next.transactions.length);
 });
 test('stale draft is rejected',()=>{
  const st=base(),d=draft(st);d.base='invalid';
