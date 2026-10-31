@@ -346,3 +346,30 @@ body[data-thukhr-theme] .wf-settlement-result .wf-commitment-projection-item{
  body[data-thukhr-theme] .wf-gross-equation>span{padding:8px 7px;font-size:11px}
  body[data-thukhr-theme] .wf-gross-equation b{font-size:12px}
 }
+
+/* Current-file reset guard: never conflate a new cycle with data deletion. */
+.thukhr-reset-section{
+ margin-top:18px;padding:16px 15px;border-radius:15px;
+ border:1px solid color-mix(in srgb,var(--danger,#b94e4e) 50%,var(--line,#ddd));
+ background:color-mix(in srgb,var(--danger,#b94e4e) 4%,var(--surface,#fff));
+ display:grid;gap:9px;
+}
+.thukhr-reset-section>strong{font-weight:800;font-size:15px;color:var(--ink,#242424)}
+.thukhr-reset-section .help-text{margin:0;line-height:1.85}
+.thukhr-reset-section .btn{justify-self:start;max-width:100%;white-space:normal}
+.thukhr-reset-summary{
+ display:grid;gap:9px;margin:6px 0 14px;padding:14px;
+ border-radius:13px;border:1px solid var(--line,#e0d5c6);
+ background:var(--surface,#fff);
+}
+.thukhr-reset-summary>strong{font-size:15px;font-weight:800;line-height:1.7}
+.thukhr-reset-summary>span{font-weight:700;font-variant-numeric:tabular-nums}
+.thukhr-reset-summary p{font-size:13px;line-height:1.95;margin:0;color:var(--muted,#666)}
+.thukhr-reset-summary b{overflow-wrap:anywhere}
+.thukhr-reset-download{display:flex;width:100%;align-items:center;justify-content:center;gap:7px;margin:9px 0}
+@media(max-width:760px){
+ .thukhr-reset-section{padding:14px 12px}
+ .thukhr-reset-section .btn{width:100%;justify-self:stretch}
+ .thukhr-reset-summary{padding:12px}
+ .thukhr-reset-download{min-height:48px}
+}
