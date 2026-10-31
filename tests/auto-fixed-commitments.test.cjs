@@ -139,7 +139,7 @@ test('saving a new opted-in fixed commitment immediately settles an already reco
  const editorCode=app.slice(app.indexOf('function fixedCommitmentEdit('),app.indexOf('function monthlyFieldsManage(){'));
  const env={
   E,S,ctx, get state(){return ctx.state}, wfMonth:month,today:()=>day,ccy:()=>({dec:0}),
-  monthlyFields:s=>s.settings.wfFields||[],monthlyAllFields:s=>s.settings.wfFields||[],
+  monthlyFields:(s=ctx.state)=>s.settings.wfFields||[],monthlyAllFields:(s=ctx.state)=>s.settings.wfFields||[],
   wfPlan:()=>ctx.state.settings.twoStageWorkflow?.plans?.[month]||{},
   wfData:s=>s.settings.twoStageWorkflow||{plans:{},completed:{}},
   wfIncomeMode:()=> 'salary-only',
