@@ -121,7 +121,7 @@ const navs=[['workflow','calendar','خطة الدخل'],['living','wallet','ال
 let settingsTab='account';
 const arabicMonth=period=>new Intl.DateTimeFormat('ar-IQ',{month:'long',year:'numeric'}).format(new Date(period+'-01T12:00:00'));
 const THUKHR_THEME_KEY='thukhr-appearance-v1';
-const THUKHR_THEMES=[['classic','الأساسي','عاجي وذهبي'],['night','الليلي','فحمي وذهبي'],['warm','الدافئ','عائلي وهادئ'],['modern','العصري','بنفسجي وذهبي']];
+const THUKHR_THEMES=[['classic','الأساسي','أبيض وأزرق بترولي'],['night','الليلي','كحلي عميق وفيروزي'],['warm','الدافئ','عاجي وفيروزي هادئ'],['modern','العصري','أزرق بترولي ولمسة ليمونية']];
 function thukhrTheme(){
  try{const v=localStorage.getItem(THUKHR_THEME_KEY);return THUKHR_THEMES.some(a=>a[0]===v)?v:'classic'}
  catch{return 'classic'}
@@ -133,17 +133,14 @@ function setThukhrTheme(v){
 }
 function thukhrThemePicker(){
  const t=thukhrTheme();
- return `<div class="thukhr-theme-picker" role="group" aria-label="اختر مظهر ذُخر">
+ return `<div class="thukhr-theme-picker" role="group" aria-label="اختر مظهر فِرزة">
  ${THUKHR_THEMES.map(([id,label,desc])=>`<button type="button" class="thukhr-theme-choice" data-action="thukhr-appearance" data-id="${id}" data-value="${id}" aria-pressed="${id===t}">
  <span class="thukhr-theme-swatch" aria-hidden="true"></span><span><strong>${label}</strong><small>${desc}</small></span></button>`).join('')}
  </div><small>يُحفظ اختيارك على هذا الجهاز، ولا يغيّر أي حركة أو مبلغ مالي.</small>`;
 }
 function thukhrFamilyWelcome(){
- return `<section class="thukhr-intro" aria-label="رسالة ذُخر">
- <div class="thukhr-welcome"><div class="thukhr-mini-logo"><img src="./icon.svg" alt=""></div>
- <div><h2>ذُخر — مالك اليوم، أمانك غداً</h2><p>خطتك المالية من أجل حياة أكثر أماناً لك ولعائلتك.</p></div></div>
- <img class="thukhr-family-photo" data-thukhr-family-photo alt="" loading="lazy">
- </section>`;
+ return `<section class="firza-welcome" aria-label="ترحيب فِرزة"><div class="firza-welcome-symbol" aria-hidden="true"><img src="./icon.svg" alt=""></div>
+ <div class="firza-welcome-copy"><strong>فلوسك مرتّبة، وحياتك أوضح.</strong><span>فِرزة — كل مبلغ بمكانه</span></div></section>`;
 }
 function thukhrFamilyGoals(){
  return `<section class="thukhr-family-banner" aria-label="أهداف العائلة">
@@ -159,14 +156,14 @@ function applySettings(){
  document.body.classList.toggle('dark',dark);
  document.documentElement.style.colorScheme=dark?'dark':'light';
  const meta=document.querySelector('meta[name="theme-color"]');
- const colors={classic:'#faf7f0',night:'#090d13',warm:'#f5ead9',modern:'#120b22'};
+ const colors={classic:'#f8fafc',night:'#0b2033',warm:'#f5f7f2',modern:'#0a253b'};
  if(meta)meta.setAttribute('content',colors[theme]);
  const toggle=document.querySelector('[data-action="theme"]');
  if(toggle){toggle.dataset.icon=dark?'sun':'moon';toggle.innerHTML=icon(toggle.dataset.icon);
   toggle.setAttribute('aria-label',dark?'المظهر الأساسي الفاتح':'المظهر الليلي');
   toggle.setAttribute('title',dark?'التحويل إلى المظهر الأساسي':'التحويل إلى المظهر الليلي');}
  $('profileName').textContent=state.settings.name||'مساحتك الشخصية';
- $('avatar').textContent=(state.settings.name||'ذُخر')[0];
+ $('avatar').textContent=(state.settings.name||'فِرزة')[0];
 }
 function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),3600)}
 function currentStats(){return E.stats(state)}
@@ -204,7 +201,7 @@ function ledgerMobileRows(txs){
 function ledgerDetail(id){
  const t=state.transactions.find(x=>x.id===id);if(!t)throw Error('الحركة غير موجودة.');
  const [label,detail]=txLabel(t);
- modal('تفاصيل الحركة','المعلومات المسجلة في دفتر ذُخر',
+ modal('تفاصيل الحركة','المعلومات المسجلة في دفتر فِرزة',
  `<div class="thukhr-detail-grid">
  <div><span>نوع الحركة</span><strong>${safe(label)}</strong></div>
  <div><span>المبلغ</span><strong>${money(t.amount)}</strong></div>
@@ -221,7 +218,7 @@ function openLinkReceipt(id,p){const source=S.sources(state).find(x=>x.id===id);
  const mode=wfIncomeMode(f.incomePeriod,s);Object.assign(t,linked);
  s.settings.wfIncomeModes={...(s.settings.wfIncomeModes||{}),[f.incomePeriod]:mode};return s},'تم ربط الدخل السابق دون تغيير الأرصدة'):null,'ربط الحركة')}
 
-function overviewIdentity(){return `<span class="neo-title-mark" role="img" aria-label="شعار الذُخر الذهبي المتحرك"><svg viewBox="0 0 160 145" xmlns="http://www.w3.org/2000/svg" focusable="false">   <defs>    <linearGradient id="mizan-scale-gold" x1="0" x2="1" y1="0" y2="1">     <stop offset="0" stop-color="#ab7935"/>     <stop offset=".35" stop-color="#ffe8ad"/>     <stop offset=".68" stop-color="#dbb36b"/>     <stop offset="1" stop-color="#9b6c2e"/>    </linearGradient>   </defs>   <ellipse cx="80" cy="136" rx="34" ry="4" fill="#f3c874" opacity=".20"/>   <path d="M80 43V124" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="10" stroke-linecap="round"/>   <path d="M52 130H108" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="8" stroke-linecap="round"/>   <g class="mizan-scales" fill="none" stroke="url(#mizan-scale-gold)" stroke-linecap="round" stroke-linejoin="round">    <path d="M38 58Q80 48 122 58" stroke-width="9"/>    <path d="M38 58L17 103M38 58L59 103M122 58L101 103M122 58L143 103" stroke-width="3"/>    <path d="M10 105Q38 134 66 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>    <path d="M94 105Q122 134 150 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>   </g>   <circle class="mizan-gold-point" cx="80" cy="30" r="12" fill="url(#mizan-scale-gold)"/>  </svg></span>`}
+function overviewIdentity(){return `<span class="neo-title-mark" role="img" aria-label="شعار الفِرزة الذهبي المتحرك"><svg viewBox="0 0 160 145" xmlns="http://www.w3.org/2000/svg" focusable="false">   <defs>    <linearGradient id="mizan-scale-gold" x1="0" x2="1" y1="0" y2="1">     <stop offset="0" stop-color="#ab7935"/>     <stop offset=".35" stop-color="#ffe8ad"/>     <stop offset=".68" stop-color="#dbb36b"/>     <stop offset="1" stop-color="#9b6c2e"/>    </linearGradient>   </defs>   <ellipse cx="80" cy="136" rx="34" ry="4" fill="#f3c874" opacity=".20"/>   <path d="M80 43V124" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="10" stroke-linecap="round"/>   <path d="M52 130H108" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="8" stroke-linecap="round"/>   <g class="mizan-scales" fill="none" stroke="url(#mizan-scale-gold)" stroke-linecap="round" stroke-linejoin="round">    <path d="M38 58Q80 48 122 58" stroke-width="9"/>    <path d="M38 58L17 103M38 58L59 103M122 58L101 103M122 58L143 103" stroke-width="3"/>    <path d="M10 105Q38 134 66 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>    <path d="M94 105Q122 134 150 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>   </g>   <circle class="mizan-gold-point" cx="80" cy="30" r="12" fill="url(#mizan-scale-gold)"/>  </svg></span>`}
 function neoOverviewBudget(){
  const s=currentStats(),spendWallets=state.wallets.filter(w=>w.kind==='spend');
  const spendIds=new Set(spendWallets.map(w=>w.id));
@@ -563,7 +560,7 @@ function smartOpen(){
 
 function smartIncome(d){
  const label=d.stage==='salary'?'الراتب':'الحوافز';
- const fields=d.existing?`<div class="notice">الاستلام موجود بالفعل: <b>${money(d.income)}</b> بتاريخ ${safe(d.date)}. لن يسجله ذُخر ثانيةً.</div>`:
+ const fields=d.existing?`<div class="notice">الاستلام موجود بالفعل: <b>${money(d.income)}</b> بتاريخ ${safe(d.date)}. لن يسجله فِرزة ثانيةً.</div>`:
  `<div class="form-grid">${moneyField('المبلغ المستلم فعلياً','income',inputMoney(d.income||''),'required')}
  ${select('طريقة الاستلام','method',methodOptions,d.method)}
  ${field('تاريخ الاستلام','date','date',d.date,`required min="${state.cycle.start}" max="${today()}"`)}</div>`;
@@ -629,7 +626,7 @@ function smartAllocate(d){
  <h3>الالتزامات الشهرية</h3><div class="smart-grid">${planRows||'<p class="wf-help">لا توجد بنود حالياً؛ لا تُنشأ حجوزات.</p>'}</div>
  <h3>حالة الاستقطاعات</h3><p class="wf-help">اقتراح الشهر السابق لا يعني السداد. راجع حالة كل بند قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
  ${select('دفعت فعلياً من','payMethod',methodOptions,d.payMethod)}
- <h3>ميزانية المعيشة</h3><p class="wf-help">حدد السقوف الثابتة التي تحتاجها، حتى لو تجاوزت المتاح. سيحفظها ذُخر دون إنشاء رصيد وهمي؛ ويمكن تمويل النقص لاحقاً عبر «أخرى» في المعيشة.</p>
+ <h3>ميزانية المعيشة</h3><p class="wf-help">حدد السقوف الثابتة التي تحتاجها، حتى لو تجاوزت المتاح. سيحفظها فِرزة دون إنشاء رصيد وهمي؛ ويمكن تمويل النقص لاحقاً عبر «أخرى» في المعيشة.</p>
  <div class="smart-grid">${budget||'<p class="wf-help">لا توجد أقسام معيشة.</p>'}</div>`,
  f=>{
   if(!locked)for(const o of visible)d.plan[o.key]=amount(f['plan-'+o.key],true);
@@ -657,7 +654,7 @@ function fundLivingTargets(n,targets,month,notePrefix='ميزانية المعي
   if(!row.additional)continue;
   if(!next.wallets.some(w=>w.id===row.id)){
    const w=livingCategories(next).find(x=>x.id===row.id);
-   if(!w)throw Error('قسم المعيشة غير موجود: '+row.label);
+   if(!w)throw Error('قسم المصروف غير موجود: '+row.label);
    next.wallets.push({id:w.id,name:w.label,kind:w.kind,color:w.color,weight:0});
   }
   next=event(next,{type:'allocate',walletId:row.id,amount:row.additional,date:today(),
@@ -858,7 +855,7 @@ function workflowPage(){
  ${state.demo?'':btn('wf-config','تحديد مبالغ الشهر','wallet','secondary')}
  ${wfStageSummary('incentives')}
  ${wfStageSummary('salary')}</details>
- <div class="wf-living-shortcut"><span>توزيع الميزانية متاح داخل الدورة الذكية؛ ولتسجيل صرف يومي افتح المعيشة.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
+ <div class="wf-living-shortcut"><span>توزيع الميزانية متاح داخل الدورة الذكية؛ ولتسجيل صرف يومي افتح المعيشة.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى المصروف</button></div>
  ${Object.values(stats.wallets).some(v=>v>0)?'<div class="notice">إذا كانت عندك مبالغ موزعة سابقاً على محافظ قديمة، فهي لا تُحجز مرة ثانية. تكدر ترجع جزء منها إلى المتاح بعد موافقتك. <button type="button" class="btn small secondary" data-action="wf-release">إرجاع مبلغ من محفظة قديمة</button></div>':''}
  ${settled.length?`<details class="smart-cycle-advanced"><summary>التزامات بانتظار الدفع (${settled.length})</summary><section class="wf-stage"><h2>الالتزامات المؤجلة</h2><p class="wf-help">الحجز غير السداد. اضغط «سداد» فقط عند خروج المبلغ من البطاقة أو النقد فعلياً.</p>${settled.map(o=>`<div class="wf-step"><span>${safe(o.label)} · محجوز ${money(stats.reserved[o.id])}</span><button class="btn small secondary" data-action="wf-pay" data-id="${o.id}">سداد</button></div>`).join('')}</section></details>`:''}
  <div class="notice">الأرقام تنحفظ على جهازك داخل نفس السجل المالي السابق. سجل الحركات والنسخ الاحتياطية باقية. الدخل لا يُسجَّل إلا عند استلامه، والالتزامات لا تتحول إلى حجز أو سداد إلا بقرار منك.</div>`;
@@ -1006,7 +1003,7 @@ function livingCategoryEdit(id=''){
 function livingCategoryHide(id){
  const selected=livingCategories().find(c=>c.id===id);
  if(!selected)throw Error('القسم غير موجود ضمن الأقسام الظاهرة.');
- confirmModal('إخفاء قسم المعيشة؟','سيختفي قسم «'+selected.label+'» من المعيشة والصرف الجديد، لكن رصيده وحركاته السابقة تبقى محفوظة ويمكن إظهاره لاحقاً.',
+ confirmModal('إخفاء قسم المصروف؟','سيختفي قسم «'+selected.label+'» من المعيشة والصرف الجديد، لكن رصيده وحركاته السابقة تبقى محفوظة ويمكن إظهاره لاحقاً.',
  ()=>{
   act(n=>{
    const c=livingCategories(n).find(c=>c.id===id);
@@ -1130,17 +1127,17 @@ function livingPage(){
    first=livingPeriodSummary('incentives'),second=livingPeriodSummary('salary');
  const sections=`<div class="wf-living-phases">
    <article class="wf-phase" ${wfIncomeMode()==='salary-only'?'hidden style="display:none!important"':''}>
-    <div><span class="wf-kicker">القسم الأول</span><h2>المعيشة من الحوافز</h2></div>
+    <div><span class="wf-kicker">القسم الأول</span><h2>مصروفات الحوافز</h2></div>
     <span class="chip ${incentive?'':'amber'}">${incentive?'تم تسجيل الاستلام':'لم تسجل الحوافز'}</span>
     <div class="wf-phase-amounts"><span>مخصص أثناء الحوافز <b>${money(first.allocated)}</b></span><span>مصروف قبل الراتب <b>${money(first.spent)}</b></span></div>
    </article>
    <article class="wf-phase">
-    <div><span class="wf-kicker">${wfIncomeMode()==='salary-only'?'الدخل الشهري':'القسم الثاني'}</span><h2>المعيشة من الراتب</h2></div>
+    <div><span class="wf-kicker">${wfIncomeMode()==='salary-only'?'الدخل الشهري':'القسم الثاني'}</span><h2>مصروفات الراتب</h2></div>
     <span class="chip ${salary?'':'amber'}">${salary?'تم تسجيل الاستلام':'بانتظار الراتب'}</span>
     <div class="wf-phase-amounts"><span>مخصص بعد الراتب <b>${money(second.allocated)}</b></span><span>مصروف بعد الراتب <b>${money(second.spent)}</b></span></div>
    </article>
  </div>`;
- return head('مصاريف المعيشة',wfIncomeMode()==='salary-only'?'ميزانية شهرية من الراتب فقط؛ المصروف السابق محسوب تلقائياً.':'من الحوافز أولاً، ثم الراتب. ميزانية واحدة لكل شهر؛ المصروف السابق محسوب تلقائياً.')+thukhrFamilyGoals()+
+ return head('المصروف',wfIncomeMode()==='salary-only'?'ميزانية شهرية من الراتب فقط؛ المصروف السابق محسوب تلقائياً.':'من الحوافز أولاً، ثم الراتب. ميزانية واحدة لكل شهر؛ المصروف السابق محسوب تلقائياً.')+thukhrFamilyGoals()+
   `<div class="wf-living-page-summary">
      <div><span>المتاح للمعيشة</span><strong>${money(stats.unallocated)}</strong></div>
      <p>الأموال الواردة باسم «أخرى» تزيد هذا المتبقي عند استلامها فعلياً. التخصيص لا يخصم من البطاقة؛ السداد أو الشراء الفعلي فقط هو الذي ينقص الرصيد النقدي.</p>
@@ -1326,7 +1323,7 @@ function wfLivingPanel(){
  }).join('');
  return `<section id="wf-living" class="wf-stage wf-living">
   <div class="wf-stage-top"><div><span class="wf-kicker">ميزانية شهر ${wfMonth}</span>
-   <h2>أقسام مصاريف المعيشة</h2></div><span class="chip">${livingCategories().length} قسم</span></div>
+   <h2>أقسام المصروف</h2></div><span class="chip">${livingCategories().length} قسم</span></div>
   <div class="wf-living-overview">
    <div><span>إجمالي ميزانية المعيشة لهذا الشهر</span><strong>${money(livingBudgetSummary().total)}</strong></div>
    <div><span>المتاح للتوزيع</span><strong>${money(stats.unallocated)}</strong></div>
@@ -1336,7 +1333,7 @@ function wfLivingPanel(){
   ${!wfDone('salary')?'<div class="notice warn">الراتب أو بعض حجوزاته لم يُعتمد بعد. احتفظ بما يلزم للالتزامات القادمة.</div>':''}
   <div class="wf-living-grid">${cards||`<div class="wf-category-empty"><strong>لا توجد أقسام معيشة حالياً</strong><p>اضغط «تحديد الأقسام» ثم «إضافة قسم جديد» حتى تبدأ بطريقتك.</p>${btn('wf-category-add','إضافة أول قسم','plus')}</div>`}</div>
   <div class="wf-living-actions">
-   ${livingCategories().length?btn('wf-living-allocate','تحديد ميزانية المعيشة للشهر','wallet'):''}
+   ${livingCategories().length?btn('wf-living-allocate','تحديد ميزانية المصروف للشهر','wallet'):''}
    ${Object.keys(livingTargets()).length&&livingNeeds(livingTargets()).additional>0?btn('wf-living-fund','استكمال التمويل','check','secondary'):''}
    ${btn('wf-category-manage','تحديد أقسام المعيشة','settings','secondary')}
    ${btn('wf-release','إرجاع مبلغ إلى المتاح','wallet','secondary')}
@@ -1422,7 +1419,7 @@ function wfLivingReport(){
  const label=t=>t.walletId?state.wallets.find(w=>w.id===t.walletId)?.name||'':
   t.obligationId?state.obligations.find(o=>o.id===t.obligationId)?.name||'':'';
  const data={
-  period:wfMonth,from:start,to:end,issuedAt:new Date().toLocaleString('ar-IQ'),currency:unit(),brand:'ذُخر',
+  period:wfMonth,from:start,to:end,issuedAt:new Date().toLocaleString('ar-IQ'),currency:unit(),brand:'فِرزة',
   stats:{opening:fmt(opening.total),income:fmt(sum('income')),expenses:fmt(sum('expense')),
    paid:fmt(sum('pay')),withheld:fmt(sum('withheld')),total:fmt(closing.total),
    available:fmt(closing.unallocated),reserved:fmt(Object.values(closing.reserved).reduce((n,v)=>n+v,0))},
@@ -1469,7 +1466,7 @@ function wfLivingDirect(initialId='',quick=false){
    ${quick?'<input type="hidden" name="date" value="'+today()+'">':dateField()}
    <div class="full">${field(quick?'الوصف (اختياري)':'على ماذا صرفت؟','note','text','',quick?'maxlength="120" placeholder="مثلاً: قهوة أو مشتريات"':'required maxlength="120" placeholder="مثلاً شراء خضروات للمنزل"')}</div>
    <div class="field full"><label><input type="checkbox" name="duplicateApproved" value="yes"> أؤكد أن العملية مستقلة إذا سبق تسجيل مبلغ ووصف مطابقين اليوم</label></div></div>
-   <div class="notice">المتاح غير المحجوز: <b>${money(stats.unallocated)}</b>. إذا كانت المحفظة لا تكفي، يمول ذُخر فقط مقدار النقص من المتبقي عند تأكيد الصرف، دون حجز إضافي أو خصم مزدوج.</div>`,
+   <div class="notice">المتاح غير المحجوز: <b>${money(stats.unallocated)}</b>. إذا كانت المحفظة لا تكفي، يمول فِرزة فقط مقدار النقص من المتبقي عند تأكيد الصرف، دون حجز إضافي أو خصم مزدوج.</div>`,
   f=>{
    const wallet=livingCategories().find(w=>w.id===f.walletId);
    if(!wallet|| (state.wallets.find(w=>w.id===wallet.id)?.kind||wallet.kind)!=='spend')throw Error('الطوارئ محمية من المصروف اليومي؛ افتح خزنة الطوارئ.');
@@ -1770,7 +1767,7 @@ function ledgerPage(){return head('سجل الحركات','كل حركة محف�
  <small id="toFilterReadable">التاريخ اختياري</small></label></div><div id="ledgerResults" class="thukhr-ledger-table">${ledgerRows([...state.transactions].reverse())}</div><div id="ledgerMobileResults" class="thukhr-ledger-mobile">${ledgerMobileRows([...state.transactions].reverse())}</div></section><div class="notice">عند حذف عملية، تُفحص الحركات التي تليها. إذا كان الحذف يجعل أي حساب أو محفظة سالبة، يُرفض لحماية دقة السجل.</div>`}
 function reportsPage(){const s=currentStats(),sum=summary(),sp=state.wallets.map(w=>({name:w.name,value:cycleTx().filter(t=>t.type==='expense'&&t.walletId===w.id).reduce((a,t)=>a+t.amount,0),color:w.color})),max=Math.max(1,...sp.map(x=>x.value)),reserved=Object.values(s.reserved).reduce((a,n)=>a+n,0),walletTotal=Object.values(s.wallets).reduce((a,n)=>a+n,0);return head('التقارير والتحليل','افهم سلوك الصرف وراجع توازن أموالك.',btn('wf-living-pdf','تنزيل PDF','download','secondary'))+`<div class="stat-grid">${stat(state.migration?'الدخل والرصيد الافتتاحي':'دخل هذه الدورة',sum.income,'income',state.migration?'يشمل افتتاح النسخة السابقة':'دخل مستلم فقط')}${stat('صرف المحافظ',sum.expenses,'wallet','مشترياتك الفعلية','blue')}${stat('الالتزامات المدفوعة',sum.paid,'check','سداد من المحجوز','gold')}${stat('الادخار والطوارئ',state.wallets.filter(w=>w.kind!=='spend').reduce((a,w)=>a+s.wallets[w.id],0),'saving','الرصيد الحالي المحمي','purple')}</div><div class="two-col"><section class="panel">${section('أين تذهب مصروفاتك؟','مصروفات المحافظ خلال الدورة الحالية')}<div class="report-bars">${sp.map(x=>`<div class="report-col" style="height:${Math.max(2,x.value/max*90)}%;background:${safe(x.color)}"><b class="num">${fmt(x.value)}</b><span>${safe(x.name)}</span></div>`).join('')}</div></section><section class="panel">${section('معادلة التوازن','مكان المال يساوي مجموع الأغراض المخصصة له.')}<div class="keyval"><span>البطاقة + النقد</span><b>${money(s.total)}</b></div><div class="keyval"><span>المحافظ والادخار</span><b>${money(walletTotal)}</b></div><div class="keyval"><span>الالتزامات المحجوزة</span><b>${money(reserved)}</b></div><div class="keyval"><span>غير موزّع</span><b>${money(s.unallocated)}</b></div><div class="notice">${icon('check')} الحساب متوازن · الفرق ${fmt(s.total-walletTotal-reserved-s.unallocated)} ${unit()}</div></section></div><section class="panel">${section('مطابقة الرصيد الفعلي','المطابقة تكشف الفرق ولا تنشئ تسوية صامتة.')}<form id="reconcileForm" class="form-grid"><div class="field"><label for="reconMethod">الحساب</label><select id="reconMethod" name="method"><option value="card">البطاقة</option><option value="cash">النقد</option></select></div><div class="field"><label for="reconActual">الرصيد الفعلي الآن (${unit()})</label><input id="reconActual" name="actual" type="text" data-money inputmode="${ccy().dec?'decimal':'numeric'}" autocomplete="off" oninput="window.mizanFormatMoneyInput(this)" required></div><div class="full">${btn('submit-recon','مطابقة الرصيد','check')}</div></form><div id="reconResult"></div><p class="help-text">طابق فقط الأموال التي أدخلتها في ميزان، إذا كان حسابك يحوي أموالاً أخرى خارج الخطة.</p></section><section class="panel">${section('الدورات المؤرشفة','ملخص كل دورة عند استلام الدخل الجديد.')}${state.history.length?state.history.slice().reverse().map(h=>`<div class="keyval"><span>${date(h.start||h.cycle?.start||today(),true)}</span><b>${money(h.total??h.summary?.total??h.closingTotal??h.closing?.total??0)}</b></div>`).join(''):empty('ستجد دوراتك السابقة هنا','ابدأ دورة جديدة ليُحفظ ملخص الدورة الحالية.')}${state.legacyHistory?.length?'<div class="notice">أرشيف النسخة السابقة: '+state.legacyHistory.length+' دورات محفوظة في النسخة الاحتياطية، دون إضافتها إلى الرصيد الحالي.</div>':''}<div class="settings-actions">${btn('backup','تنزيل السجل الكامل','download','secondary')}</div></section>`}
 function settingsPage(){const html= head('الإعدادات','الحساب والمظهر ومواعيد الدخل والنسخ الاحتياطية.')+`<div class="two-col"><section class="panel">${section('مساحتك الشخصية','خصّص تجربتك حسب احتياجك.')}<form id="settingsForm" class="form-grid"><div class="field full"><label for="userName">الاسم المفضل</label><input name="name" id="userName" maxlength="40" value="${safe(state.settings.name)}" placeholder="كيف تحب أن نناديك؟"></div><div class="field"><label for="currency">العملة الأساسية</label><select id="currency" name="currency" ${state.transactions.length?'disabled':''}>${Object.entries(currencies).map(([k,c])=>`<option value="${k}" ${k===state.settings.currency?'selected':''}>${c.label} (${k})</option>`).join('')}</select><small>لعملة جديدة، ابدأ خطة مستقلة. لا تُحوَّل الأرصدة بتغيير الاسم.</small></div><div class="field"><label for="digits">عرض الأرقام</label><select id="digits" name="digits"><option value="en" ${state.settings.digits==='en'?'selected':''}>123,456</option><option value="ar" ${state.settings.digits==='ar'?'selected':''}>١٢٣٬٤٥٦</option></select></div><div class="full"><button class="btn" type="submit">حفظ التفضيلات</button></div></form></section><section class="panel">${section('صورة العائلة','اختيارية، ولا تغادر جهازك أو تُرفع إلى GitHub.')}
- <p class="thukhr-privacy">يمكنك اختيار صورتك العائلية لتظهر في ترحيب ذُخر وقسم الأهداف العائلية. تُحفظ في مساحة المتصفح نفسها فقط. حذف بيانات الموقع يمحوها.</p>
+ <p class="thukhr-privacy">يمكنك اختيار صورتك العائلية لتظهر في ترحيب فِرزة وقسم الأهداف العائلية. تُحفظ في مساحة المتصفح نفسها فقط. حذف بيانات الموقع يمحوها.</p>
  <div class="thukhr-family-settings">
  <img class="thukhr-photo-preview" data-thukhr-family-photo alt="معاينة الصورة العائلية">
  <label class="btn soft" for="thukhrFamilyFile">اختيار صورة من الجهاز</label>
@@ -1787,7 +1784,7 @@ function settingsPage(){const html= head('الإعدادات','الحساب وا
  const tabs=`<div class="thukhr-settings-tabs" role="group" aria-label="أقسام الإعدادات">
   ${choices.map(([k,label])=>`<button type="button" class="${settingsTab===k?'is-active':''}" data-action="settings-tab" data-id="${k}" aria-pressed="${settingsTab===k}">${label}</button>`).join('')}</div>`;
  const appearance=`<section class="panel thukhr-appearance-panel" data-settings-group="appearance" ${settingsTab==='appearance'?'':'hidden'}>
-  ${section('مظهر ذُخر','اختر بين الأنماط الأربعة، دون تغيير البيانات أو الأرصدة.')}
+  ${section('مظهر فِرزة','اختر بين الأنماط الأربعة، دون تغيير البيانات أو الأرصدة.')}
   ${thukhrThemePicker()}
   <p class="help-text">يُحفظ اختيار المظهر على هذا الجهاز فقط. الألوان المالية والأرصدة لا تتغير.</p></section>`;
  return tagged.replace('<div class="two-col">',tabs+'<div class="two-col">')+appearance+(settingsTab==='account'?profilesPanel():'')+(settingsTab==='backup'?localSnapshotsPanel():'');
@@ -2003,7 +2000,7 @@ async function backup(){
  }catch(e){showError('تعذر إنشاء نسخة محققة: '+e.message)}
 }
 function exportCsv(){const rows=[['التاريخ','العملية','التفاصيل','المبلغ','العملة','الحساب','الملاحظة','مصدر الدخل','شهر الاستحقاق'],...state.transactions.map(t=>[t.date,...txLabel(t).slice(0,2),inputMoney(t.amount),state.settings.currency,t.method||'داخلي',t.note||'',t.sourceName||'',t.incomePeriod||''])];const clean=v=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};download(`mizan-ledger-${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(clean).join(',')).join('\r\n'),'text/csv')}
-function help(){modal('كيف يعمل ذُخر؟','من أول استلام إلى آخر يوم في الدورة.',`<div class="help-text"><p><b>مواعيدك:</b> الحوافز بين 10 و12، والراتب بين 22 و24 من كل شهر. عدّل المواعيد من إعدادات الدخل. الدفعتان ضمن الخطة الحالية؛ لا يضاف المتوقع قبل تأكيد استلامه.</p><br><p><b>1. استلم:</b> سجّل الدخل الذي وصل فعلياً إلى البطاقة أو النقد.</p><br><p><b>2. أضف ثم وافق:</b> تسجيل الالتزام لا يحجز أموالاً. حدّد الحجز لاحقاً من زر «حجز مبلغ» ووافق عليه صراحةً. الحجز ليس دفعاً.</p><br><p><b>3. وزّع:</b> امنح ما تبقّى محافظ للصرف واحتياطي للطوارئ والادخار.</p><br><p><b>4. سجّل:</b> المصروف يخفض الحساب والمحفظة. سداد الالتزام يخفض الحساب وحجز الالتزام. السحب النقدي والتحويل لا يغيّران إجمالي المال.</p><br><p><b>5. راجع:</b> تابع السقف اليومي وطابق الرصيد من التقارير. احفظ نسخة احتياطية دورياً.</p><br><p>تُحفظ أموالك في هذا المتصفح فقط. لا توجد مزامنة بين الأجهزة أو اتصال مصرفي. المبلغ المقترح للصرف تنظيم حسابي حسب بياناتك، وليس توقعاً لدخل لم يُستلم.</p></div><div class="form-actions">${btn('close','فهمت','check')}</div>`)}
+function help(){modal('كيف يعمل فِرزة؟','من أول استلام إلى آخر يوم في الدورة.',`<div class="help-text"><p><b>مواعيدك:</b> الحوافز بين 10 و12، والراتب بين 22 و24 من كل شهر. عدّل المواعيد من إعدادات الدخل. الدفعتان ضمن الخطة الحالية؛ لا يضاف المتوقع قبل تأكيد استلامه.</p><br><p><b>1. استلم:</b> سجّل الدخل الذي وصل فعلياً إلى البطاقة أو النقد.</p><br><p><b>2. أضف ثم وافق:</b> تسجيل الالتزام لا يحجز أموالاً. حدّد الحجز لاحقاً من زر «حجز مبلغ» ووافق عليه صراحةً. الحجز ليس دفعاً.</p><br><p><b>3. وزّع:</b> امنح ما تبقّى محافظ للصرف واحتياطي للطوارئ والادخار.</p><br><p><b>4. سجّل:</b> المصروف يخفض الحساب والمحفظة. سداد الالتزام يخفض الحساب وحجز الالتزام. السحب النقدي والتحويل لا يغيّران إجمالي المال.</p><br><p><b>5. راجع:</b> تابع السقف اليومي وطابق الرصيد من التقارير. احفظ نسخة احتياطية دورياً.</p><br><p>تُحفظ أموالك في هذا المتصفح فقط. لا توجد مزامنة بين الأجهزة أو اتصال مصرفي. المبلغ المقترح للصرف تنظيم حسابي حسب بياناتك، وليس توقعاً لدخل لم يُستلم.</p></div><div class="form-actions">${btn('close','فهمت','check')}</div>`)}
 function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;for(const id of ['fromFilter','toFilter']){const element=$(id),readable=$(id+'Readable');
   if(readable)readable.textContent=element.value?date(element.value,true):'التاريخ اختياري';}
  const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs);$('ledgerMobileResults').innerHTML=ledgerMobileRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'&&$('settingsForm')){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports'&&$('reconcileForm'))$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
