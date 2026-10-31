@@ -7,7 +7,7 @@
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : this, function (S) {
   'use strict';
 
-  const TYPES = new Set(['income', 'allocate', 'reserve', 'expense', 'pay', 'account', 'transfer', 'release', 'unreserve']);
+  const TYPES = new Set(['income', 'allocate', 'reserve', 'expense', 'pay', 'account', 'transfer', 'release', 'unreserve', 'withheld']);
   const METHODS = new Set(['card', 'cash']);
   const clone = value => JSON.parse(JSON.stringify(value));
   const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
@@ -140,12 +140,12 @@ function isEmergencyMovement(e,kinds){
   }
   function replay(state) {
     checkStructure(state);
-    const s = { card: 0, cash: 0, total: 0, unallocated: 0, wallets: {}, reserved: {}, paid: {}, income: 0, expenses: 0, obligationPaid: 0 };
+    const s = { card: 0, cash: 0, total: 0, unallocated: 0, wallets: {}, reserved: {}, paid: {}, withheld: {}, withheldTotal: 0, income: 0, expenses: 0, obligationPaid: 0 };
     const obligations = new Map(state.obligations.map(o => [o.id, o]));
     const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
     const legacy=state.settings.emergencyProtection?new Set(state.settings.emergencyProtection.legacyIds):null;
     for (const w of state.wallets) s.wallets[w.id] = 0;
-    for (const o of state.obligations) { s.reserved[o.id] = 0; s.paid[o.id] = 0; }
+    for (const o of state.obligations) { s.reserved[o.id] = 0; s.paid[o.id] = 0; s.withheld[o.id] = 0; }
     const transactionIds = new Set();
     const receiptKeys = new Set();
     const transactions = state.transactions.map((event, order) => ({ event, order }));
@@ -167,6 +167,8 @@ function isEmergencyMovement(e,kinds){
         receiptKeys.add(key);
       }
       if (e.note !== undefined) text(e.note, 500, 'الملاحظة');
+      if(e.type==='withheld' && (e.withheldConfirmed!==true || typeof e.note!=='string' || e.note.trim().length<8))
+        fail('الاستقطاع قبل الإيداع يتطلب إقراراً بالدخل الصافي وسبباً واضحاً.');
       if(isEmergencyMovement(e,kinds) && !(legacy===null||legacy.has(e.id)))checkEmergencyApproval(e);
     }
     for (const h of state.history) {
@@ -201,6 +203,14 @@ function isEmergencyMovement(e,kinds){
           if (amount > obligations.get(e.obligationId).amount - s.reserved[e.obligationId] - s.paid[e.obligationId]) fail('الحجز يتجاوز المبلغ المتبقي من الالتزام.');
           s.unallocated = add(s.unallocated, -amount);
           s.reserved[e.obligationId] = add(s.reserved[e.obligationId], amount);
+          break;
+        case 'withheld':
+          obligation();
+          if(amount>obligations.get(e.obligationId).amount-s.reserved[e.obligationId]-s.paid[e.obligationId])
+            fail('الاستقطاع قبل الإيداع يتجاوز المتبقي غير المحجوز من الالتزام.');
+          s.paid[e.obligationId]=add(s.paid[e.obligationId],amount);
+          s.withheld[e.obligationId]=add(s.withheld[e.obligationId],amount);
+          s.withheldTotal=add(s.withheldTotal,amount);
           break;
         case 'unreserve':
           obligation();
@@ -240,6 +250,23 @@ function isEmergencyMovement(e,kinds){
     return s;
   }
   function stats(state) { return replay(state); }
+  function statsAsOf(state,through) {
+    if(!validDate(through))fail('تاريخ التقرير غير صالح.');
+    const snapshot=clone(state);
+    snapshot.transactions=snapshot.transactions.filter(t=>t.date<=through);
+    snapshot.history=[];
+    return replay(snapshot);
+  }
+  function closeMonth(state,period,reason) {
+    validate(state);
+    if(!/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(period))fail('شهر الإغلاق غير صالح.');
+    if(period>=today().slice(0,7))fail('لا يمكن إغلاق شهر جارٍ أو مستقبلي.');
+    if(typeof reason!=='string'||reason.trim().length<8||reason.length>240)fail('أدخل سبب الإغلاق بوضوح.');
+    if(state.settings.closedMonths?.[period])fail('هذا الشهر مغلق مسبقاً.');
+    const next=clone(state);
+    next.settings.closedMonths={...(next.settings.closedMonths||{}),[period]:{closedAt:today(),reason:reason.trim()}};
+    validate(next);return next;
+  }
   function validate(state) { replay(state); return true; }
   function commit(state, event) {
     checkStructure(state);
@@ -247,6 +274,7 @@ function isEmergencyMovement(e,kinds){
     date(event.date);
     S.guardReceipt(state, event);
     if (event.date < state.cycle.start) fail('لا يمكن إضافة حركة إلى دورة مؤرشفة؛ اختر تاريخاً ضمن الدورة الحالية.');
+    if(state.settings.closedMonths?.[event.date.slice(0,7)])fail('الشهر مغلق مالياً؛ لا يمكن إجراء حركة ضمنه.');
     const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
     if(isEmergencyMovement(event,kinds))checkEmergencyApproval(event);
     const next = clone(state);
@@ -263,6 +291,7 @@ function isEmergencyMovement(e,kinds){
     const next = clone(state);
     const index = next.transactions.findIndex(t => t.id === eventId);
     if (index < 0) fail('الحركة المطلوب حذفها غير موجودة.');
+    if(next.settings.closedMonths?.[next.transactions[index].date.slice(0,7)])fail('لا يمكن حذف حركة من شهر مغلق.');
     if(isEmergencyMovement(next.transactions[index],new Map(next.wallets.map(w=>[w.id,w.kind]))))
       fail('عملية الطوارئ محمية. استخدم التصحيح الموثق من خزنة الطوارئ.');
     next.transactions.splice(index, 1);
@@ -340,5 +369,5 @@ function correctEmergency(state,eventId,reason){
     validate(next);
     return next;
   }
-  return Object.freeze({ initial, stats, validate, commit, remove, correctEmergency, distribute, startCycle, today, uid, validDate });
+  return Object.freeze({ initial, stats, statsAsOf, closeMonth, validate, commit, remove, correctEmergency, distribute, startCycle, today, uid, validDate });
 });
