@@ -150,3 +150,12 @@ body[data-thukhr-theme] [data-settings-group][hidden],body[data-thukhr-theme] #t
  body[data-thukhr-theme] .filters>.thukhr-date-filter{min-width:0}
  body[data-thukhr-theme] .filters>.thukhr-date-filter input{font-size:12px}
 }
+
+/* Financial verification / per-obligation settlement / profile switching. */
+.thukhr-settlement-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,1fr);gap:12px;align-items:center;border-bottom:1px solid var(--ui-line);padding:13px 0}
+.thukhr-settlement-row>div:first-child{display:grid;gap:5px}
+.thukhr-settlement-row>div:first-child strong{font-size:13px}
+.thukhr-settlement-row .field{margin:0}
+.thukhr-finance-loans .keyval,.thukhr-finance-center .keyval{align-items:start}
+.thukhr-finance-center .keyval b small{display:block;font-weight:400;line-height:1.8}
+@media(max-width:760px){.thukhr-settlement-row{grid-template-columns:1fr}.thukhr-settlement-row>.field{width:100%}}

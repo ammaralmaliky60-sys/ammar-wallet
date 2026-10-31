@@ -1,7 +1,9 @@
 /* THUKHR: private family-picture support. No upload, telemetry, sync or network. */
 (function(){
  'use strict';
- const DB='thukhr-private-media-v1',STORE='pictures',KEY='family-photo';
+ const DB='thukhr-private-media-v1',STORE='pictures';
+ const active=(()=>{try{return localStorage.getItem('thukhr-active-profile-v1')}catch{return null}})();
+ const KEY=active&&/^p[a-z0-9]{4,25}$/i.test(active)?'family-photo-'+active:'family-photo';
  let cached=false,photoBlob=null,previewUrl='';
  function openDb(){
   return new Promise((resolve,reject)=>{
