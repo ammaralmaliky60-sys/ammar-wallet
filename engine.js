@@ -46,7 +46,7 @@
   function initial() {
     return {
       version: 2,
-      settings: { name: '', currency: 'IQD', theme: 'dark', digits: 'en', incomeSources: S.defaults() },
+      settings: { name: '', currency: 'IQD', theme: 'dark', digits: 'en', incomeSources: S.defaults(), wfFields: [], wfHiddenFields: [] },
       cycle: { id: uid(), start: today(), days: 30 },
       wallets: [
         { id: 'home', name: 'المنزل', kind: 'spend', color: '#25866b', weight: 125 },
