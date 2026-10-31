@@ -144,8 +144,13 @@ function renderPage(data,rows,firstPage,pageNo,totalPages,walletRows=null){
   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
   return bytes;
 }
-function buildPDF(jpegs){
-  const encoder=new TextEncoder(),parts=[],offsets=[],numberOfObjects=2+jpegs.length*3;
+function buildPDF(jpegs,textPages=[]){
+  const encoder=new TextEncoder(),parts=[],offsets=[];
+  const fontId=3+jpegs.length*3,numberOfObjects=fontId;
+  const toHex=text=>{
+    let hex='FEFF';for(let i=0;i<text.length;i++)hex+=text.charCodeAt(i).toString(16).padStart(4,'0');
+    return hex.toUpperCase();
+  };
   let size=0;
   function put(data){const bytes=typeof data==='string'?encoder.encode(data):data;parts.push(bytes);size+=bytes.length;}
   function object(id,content){offsets[id]=size;put(id+' 0 obj\n');put(content);put('\nendobj\n');}
@@ -154,13 +159,16 @@ function buildPDF(jpegs){
   object(2,'<< /Type /Pages /Kids ['+jpegs.map((_,i)=>(3+3*i)+' 0 R').join(' ')+'] /Count '+jpegs.length+' >>');
   jpegs.forEach((jpg,i)=>{
     const page=3+i*3,content=page+1,image=page+2;
-    object(page,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+PDF_W+' '+PDF_H+'] /Resources << /XObject << /Im0 '+image+' 0 R >> >> /Contents '+content+' 0 R >>');
-    const stream='q\n'+PDF_W+' 0 0 '+PDF_H+' 0 0 cm\n/Im0 Do\nQ\n';
+    object(page,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+PDF_W+' '+PDF_H+'] /Resources << /XObject << /Im0 '+image+' 0 R >> /Font << /F1 '+fontId+' 0 R >> >> /Contents '+content+' 0 R >>');
+    const searchable=String(textPages[i]||'');
+    const invisible=searchable?'/Span << /ActualText <'+toHex(searchable)+' > >> BDC\nBT /F1 1 Tf 3 Tr 0 0 Td (x) Tj ET\nEMC\n':'';
+    const stream='q\n'+PDF_W+' 0 0 '+PDF_H+' 0 0 cm\n/Im0 Do\nQ\n'+invisible;
     object(content,'<< /Length '+encoder.encode(stream).length+' >>\nstream\n'+stream+'endstream');
     offsets[image]=size;put(image+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+PAGE_W+' /Height '+PAGE_H+
       ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');
     put(jpg);put('\nendstream\nendobj\n');
   });
+  object(fontId,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
   const xref=size;
   put('xref\n0 '+(numberOfObjects+1)+'\n0000000000 65535 f \n');
   for(let i=1;i<=numberOfObjects;i++)put(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
@@ -189,7 +197,19 @@ async function download(report){
   const jpegs=[];
   for(let i=0;i<pages.length;i++)
     jpegs.push(renderPage(report,pages[i].rows,i===0,i+1,pages.length,pages[i].walletRows||null));
-  const blob=buildPDF(jpegs);
+  const pdfText=pages.map((page,i)=>[
+   'ذُخر: التقرير المالي للشهر '+fmt(report.period),
+   'من '+fmt(report.from)+' إلى '+fmt(report.to||report.issuedAt),
+   ...(i===0?[
+     'الدخل '+fmt(report.stats.income),'المصاريف '+fmt(report.stats.expenses),
+     'السداد '+fmt(report.stats.paid),'رصيد الافتتاح '+fmt(report.stats.opening),
+     'رصيد الختام '+fmt(report.stats.total),'المتاح '+fmt(report.stats.available)
+   ]:[]),
+   ...(page.walletRows||i===0?report.wallets.slice(0,12):[]).map(w=>
+     [fmt(w.name),fmt(w.budget),fmt(w.spent),fmt(w.balance)].join(' | ')),
+   ...page.rows.map(e=>[fmt(e.date),fmt(e.type),fmt(e.category),fmt(e.note),fmt(e.amount)].join(' | '))
+  ].join('\n'));
+  const blob=buildPDF(jpegs,pdfText);
   if(blob.size<3000)throw Error('لم يكتمل توليد ملف PDF.');
   const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,13);
   const filename=(report.brand==='ميزان'?'Mizan':'Thukhr')+'_Statement_'+fmt(report.period).replace(/[^0-9-]/g,'')+'_'+stamp+'.pdf';
