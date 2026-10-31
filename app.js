@@ -547,7 +547,7 @@ function smartOpen(){
 function smartIncome(d){
  const label=d.stage==='salary'?'الراتب':'الحوافز';
  const fields=d.existing?`<div class="notice">الاستلام موجود بالفعل: <b>${money(d.income)}</b> بتاريخ ${safe(d.date)}. لن يسجله ذُخر ثانيةً.</div>`:
- `<div class="form-grid">${moneyField('المبلغ المستلم فعلياً','income','','required')}
+ `<div class="form-grid">${moneyField('المبلغ المستلم فعلياً','income',inputMoney(d.income||''),'required')}
  ${select('طريقة الاستلام','method',methodOptions,d.method)}
  ${field('تاريخ الاستلام','date','date',d.date,`required min="${state.cycle.start}" max="${today()}"`)}</div>`;
  modal('الدورة الذكية · 1 من 3','تأكيد استلام '+label+' للشهر الحالي',
@@ -596,6 +596,8 @@ function smartAllocate(d){
   }
   smartReview(d);
  },'التالي · عرض النتيجة');
+ $('modalForm').insertAdjacentHTML('beforeend','<button type="button" class="btn secondary smart-back" id="smartBack">السابق · الدخل</button>');
+ $('smartBack').onclick=()=>smartIncome(d);
 }
 
 function smartBuild(original,d){
@@ -666,7 +668,7 @@ function smartReview(d){
  `<div class="smart-steps"><b>1 · الدخل</b><b>2 · التسوية والميزانية</b><b>3 · المراجعة</b></div>
  <div class="smart-review">
  ${line('الرصيد الحالي',r.before.total)}
- ${line(d.existing?'دخل مسجل سابقاً (بدون إضافة)':'دخل جديد',t.income)}
+ ${line(d.existing?'دخل مسجل سابقاً (لن يضاف مرة ثانية)':'دخل جديد',d.existing?d.income:t.income)}
  ${line('استقطاعات قبل الإيداع (توثيق فقط)',t.withheld)}
  ${line('سداد فعلي',t.paid)}${line('حجوزات جديدة',t.reserved)}
  ${line('توزيع المعيشة',t.living)}
@@ -677,6 +679,8 @@ function smartReview(d){
  <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> أوافق على الدخل والاستقطاعات وتوزيع المعيشة كما تظهر أعلاه.</label></div>`,
  f=>{if(f.confirm!=='yes')throw Error('تأكيد المراجعة إلزامي.');
   act(n=>smartBuild(n,d).next,'تم اعتماد الدورة المالية كاملة بحفظ واحد');},'اعتماد الدورة بالكامل');
+ $('modalForm').insertAdjacentHTML('beforeend','<button type="button" class="btn secondary smart-back" id="smartBack">السابق · التسوية</button>');
+ $('smartBack').onclick=()=>smartAllocate(d);
 }
 
 function workflowPage(){
