@@ -1937,6 +1937,149 @@ function dashboardFinancialSummary(st=state,month=today().slice(0,7)){
 function firzaMonthSelector(month=wfMonth){
  return `<div class="fz-month-select"><label for="wfMonth">شهر المتابعة</label><input type="month" id="wfMonth" value="${safe(month)}" max="${today().slice(0,7)}"><small>${safe(arabicMonth(month))}</small></div>`;
 }
+
+const FIRZA_VIEW_KEY='firza-view-mode-v1';
+function firzaViewMode(){
+ try{return localStorage.getItem(FIRZA_VIEW_KEY)==='advanced'?'advanced':'simple'}
+ catch{return 'simple'}
+}
+function setFirzaViewMode(mode){
+ if(!['simple','advanced'].includes(mode))throw Error('وضع العرض غير معروف.');
+ try{localStorage.setItem(FIRZA_VIEW_KEY,mode)}
+ catch{toast('تعذّر حفظ تفضيل الواجهة؛ سيعود الوضع البسيط عند إعادة الفتح.')}
+ location.hash='dashboard';render();
+}
+const SIMPLE_NAVS=[['dashboard','grid','الرئيسية'],['fixed','calendar','الثوابت'],['living','wallet','المصروف'],['reports','chart','التقارير']];
+function simpleFinancialNumbers(st=state,month=today().slice(0,7)){
+ const stats=E.stats(st),projection=monthlyCommitmentProjection(st,month),plan=livingBudgetSummary(month,st);
+ const paid=st.transactions.filter(t=>t.type==='pay'&&t.date?.slice(0,7)===month)
+   .reduce((sum,t)=>sum+t.amount,0);
+ const expenses=st.transactions.filter(t=>t.type==='expense'&&t.date?.slice(0,7)===month)
+   .reduce((sum,t)=>sum+t.amount,0);
+ const income=st.transactions.filter(t=>t.type==='income'&&(t.incomePeriod||t.date?.slice(0,7))===month)
+   .reduce((sum,t)=>sum+t.amount,0);
+ const ready=Math.max(0,stats.unallocated-projection.uncovered);
+ return {stats,projection,plan,paid,expenses,income,ready,
+  shortage:Math.max(0,projection.uncovered-stats.unallocated)};
+}
+function simpleDashboardPage(){
+ const info=simpleFinancialNumbers(),m=today().slice(0,7),mode=wfIncomeMode(m);
+ const receipt=source=>S.receipts(state,source,m);
+ const cash=info.stats;
+ const salary=receipt('salary'),incentive=mode==='salary-only'?[]:receipt('incentives');
+ const totalIncome=(xs)=>xs.reduce((sum,x)=>sum+x.amount,0);
+ const lines=[
+ ['الثوابت لهذا الشهر',info.projection.plannedTotal,'#fixed'],
+ ['ميزانية المصروف المحددة',info.plan.total,'#living'],
+ ['المصروف المسجّل',info.expenses,'#living']
+ ];
+ return head('فِرزة · الرئيسية','استلم دخلك، أضف ثوابتك، وسجّل مصروفك. الباقي يحسبه التطبيق.',
+  '<button class="btn secondary" type="button" data-action="settings">'+icon('settings')+'الإعدادات</button>','fz-simple-heading')+
+  '<div class="fz-lite">'+
+  '<section class="fz-lite-hero"><span>المتاح بعد الالتزامات غير المغطاة</span>'+
+    '<strong>'+money(info.ready)+'</strong>'+
+    '<p>المبلغ الحر غير المخصص بعد طرح الالتزامات غير المغطاة، وليس مجموع أموال المحفظة. إذا كان عندك عجز، يظهر أدناه.</p>'+
+    '<div class="fz-lite-hero-split"><span>الرصيد الفعلي <b>'+money(cash.total)+'</b></span>'+
+    '<span>المتاح غير الموزع <b>'+money(cash.unallocated)+'</b></span></div></section>'+
+  (info.shortage?'<div class="notice warn">توجد التزامات غير مغطاة تتجاوز المتاح بمقدار <b>'+money(info.shortage)+'</b>. لا يضيف النظام رصيداً وهمياً.</div>':'')+
+  '<section class="fz-lite-income"><div class="fz-lite-section-header"><h2>الدخل</h2><span>'+safe(arabicMonth(m))+'</span></div><div class="fz-lite-two">'+
+    '<article class="fz-lite-income-card"><span>الراتب</span><strong>'+money(totalIncome(salary))+'</strong>'+
+    '<small>'+(salary.length?'تم تسجيل الاستلام':'لم يُستلم بعد')+'</small>'+
+    (!salary.length&&!state.demo?'<button class="btn" data-action="simple-salary-income">استلمت الراتب</button>':'<a href="#salary" class="fz-lite-text-link">تفاصيل الراتب</a>')+'</article>'+
+    '<article class="fz-lite-income-card"><span>الحافز</span><strong>'+(mode==='salary-only'?'غير مشمول':money(totalIncome(incentive)))+'</strong>'+
+    '<small>'+(mode==='salary-only'?'خطة راتب فقط':incentive.length?'تم تسجيل الاستلام':'اختياري')+'</small>'+
+    (mode!=='salary-only'&&!incentive.length&&!state.demo?'<button class="btn secondary" data-action="simple-incentive-income">استلمت الحافز</button>':
+     mode==='salary-only'?'<button class="btn secondary" data-action="wf-income-mode">تفعيل الحافز</button>':'<a href="#incentives" class="fz-lite-text-link">تفاصيل الحافز</a>')+'</article>'+
+  '</div></section>'+
+  '<section class="fz-lite-quick"><button class="btn" data-action="wf-living-quick">'+icon('plus')+' صرف سريع · عدة بنود</button>'+
+    '<button class="btn secondary" data-action="simple-extra-income">'+icon('income')+' إضافة دخل آخر</button></section>'+
+  '<section class="fz-lite-summary"><div class="fz-lite-section-header"><h2>ملخص الشهر</h2><a href="#reports">التقرير ←</a></div>'+
+    lines.map(([label,value,href])=>'<a class="fz-lite-summary-row" href="'+href+'"><span>'+label+'</span><b>'+money(value)+'</b></a>').join('')+
+    '<div class="fz-lite-summary-row"><span>الثوابت التي ما زالت دون تغطية</span><b>'+money(info.projection.uncovered)+'</b></div>'+
+    '<div class="fz-lite-note">المصروفات والثوابت المدفوعة فعلياً تنعكس في الرصيد الحالي. لا يُطرح المبلغ المدفوع مرة ثانية.</div></section>'+
+  '<section class="fz-lite-shortcuts"><a href="#fixed">'+icon('calendar')+' إدارة الثوابت</a><a href="#living">'+icon('wallet')+' ميزانية المصروف</a><a href="#reports">'+icon('chart')+' تقرير الشهر</a></section>'+
+  '</div>';
+}
+function simpleFixedPage(){
+ const month=today().slice(0,7),p=monthlyCommitmentProjection(state,month),fields=monthlyAllFields();
+ const rows=p.entries.map(item=>{
+  const f=fields.find(f=>wfObId(month,f.key)===item.id);
+  return '<article class="fz-lite-ob-row"><div><strong>'+safe(item.label)+'</strong>'+
+   '<small>'+(f?monthlyFieldStageLabel(f):'استحقاق مسجل')+
+    (f?' · '+(f.autoDeduct===true?'سداد تلقائي':'سداد يدوي'):'')+'</small>'+
+   '<small>أصل المبلغ '+money(item.amount)+' · المغطى '+money(item.covered)+'</small></div>'+
+   '<div class="fz-lite-ob-side"><b>'+money(item.uncovered)+'</b><small>غير مغطى</small>'+
+   (f&&!state.demo?'<button class="btn small secondary" data-action="fixed-edit" data-id="'+safe(f.key)+'">تعديل</button>':'')+
+   '</div></article>';
+ }).join('');
+ const editable=month===today().slice(0,7)&&!state.settings.closedMonths?.[month]&&!state.demo;
+ return head('الثوابت','اسم الالتزام، المبلغ، ومن وين ينخصم. تختارها مرة والباقي تلقائي.',
+  (editable?'<button class="btn" data-action="fixed-entry">'+icon('plus')+' إضافة التزام</button>':''))+
+  '<div class="fz-lite"><section class="fz-lite-fixed-overview"><span>إجمالي الثوابت الشهرية</span>'+
+  '<strong>'+money(p.plannedTotal)+'</strong>'+
+  '<div class="fz-lite-fixed-metrics"><span>المغطى <b>'+money(p.plannedTotal-p.uncovered)+'</b></span>'+
+  '<span>المتبقي <b>'+money(p.uncovered)+'</b></span></div>'+
+  '</section><section class="fz-lite-list">'+(rows||'<div class="fz-lite-empty">'+icon('calendar')+
+    '<strong>بعدك ما أضفت ثوابت</strong><p>اضغط «إضافة التزام» وحدد اسمه ومبلغه ومصدر الخصم.</p></div>')+'</section>'+
+  '<p class="fz-lite-note">الخصم الآلي يسجّل سداداً داخل فِرزة عند تسجيل استلام الدفعة، إذا كان الحساب يكفي. لا يحوّل الأموال مصرفياً، ولا تُخصم مبالغ الاستقطاعات السابقة للإيداع مرتين.</p></div>';
+}
+function simpleLivingPage(){
+ const month=today().slice(0,7),info=simpleFinancialNumbers(),lines=livingNeeds(livingTargets(month),state,month);
+ const rows=livingCategories().filter(w=>w.kind==='spend').map(w=>{
+  const planned=Number(livingTargets(month)[w.id]||0);
+  const spent=state.transactions.filter(t=>t.type==='expense'&&t.walletId===w.id&&t.date?.slice(0,7)===month)
+    .reduce((sum,t)=>sum+t.amount,0);
+  const leftover=Math.max(0,planned-spent),pct=planned?Math.min(100,Math.round(spent/planned*100)):0;
+  return '<article class="fz-lite-living-row"><div class="fz-lite-living-head"><strong>'+safe(w.label)+'</strong>'+
+   '<span>'+money(spent)+' من '+money(planned)+'</span></div>'+
+   '<div class="fz-lite-progress"><i style="width:'+pct+'%"></i></div>'+
+   '<div class="fz-lite-living-foot">المتبقي من السقف '+money(leftover)+'</div></article>';
+ }).join('');
+ return head('المصروف','حدّد سقف كل قسم، ثم سجل مشترياتك اليومية بسهولة.',
+  '<button class="btn" data-action="wf-living-quick">'+icon('plus')+' صرف سريع</button>')+
+  '<div class="fz-lite"><section class="fz-lite-fixed-overview"><span>الميزانية الشهرية المحددة</span>'+
+  '<strong>'+money(info.plan.total)+'</strong>'+
+  '<div class="fz-lite-fixed-metrics"><span>المصروف المسجّل <b>'+money(info.expenses)+'</b></span>'+
+  '<span>المتاح غير الموزع <b>'+money(info.stats.unallocated)+'</b></span></div></section>'+
+  '<section class="fz-lite-quick"><button class="btn" data-action="simple-budget-edit">'+icon('settings')+' تحديد الميزانية</button>'+
+  '<button class="btn secondary" data-action="wf-category-manage">إدارة الأقسام</button></section>'+
+  '<section class="fz-lite-list">'+(rows||'<p class="fz-lite-empty">ماكو أقسام صرف؛ أضف أول قسم من إدارة الأقسام.</p>')+'</section>'+
+  '<p class="fz-lite-note">الميزانية سقف للتخطيط، وليست مالاً يضاف للحساب. الصرف الفعلي فقط ينقص الرصيد، وتبقى الطوارئ محمية.</p></div>';
+}
+function simpleReportPage(){
+ const month=wfMonth;
+ const period=reportingPeriod(month),rows=state.transactions.filter(t=>t.date>=period.start&&t.date<=period.end),
+   opening=E.statsAt(state,period.previous),closing=E.statsAt(state,period.end);
+ const sum=type=>rows.filter(t=>t.type===type).reduce((s,t)=>s+t.amount,0);
+ return head('التقرير الشهري','كشف واضح للدخل والمصروف والثوابت دون تفاصيل محاسبية معقدة.',
+  '<button class="btn" data-action="wf-living-pdf">'+icon('download')+' تنزيل PDF</button>')+
+  '<div class="fz-lite"><section class="fz-lite-report-head">'+firzaMonthSelector(month)+
+  '<h2>'+safe(arabicMonth(month))+'</h2><p>الحركات حتى نهاية الشهر المختار.</p></section>'+
+  '<section class="fz-lite-report-grid">'+[
+    ['بداية الشهر',opening.total],['الدخل المستلم',sum('income')],
+    ['المصروف',sum('expense')],['الثوابت المسددة',sum('pay')],
+    ['نهاية الشهر',closing.total]
+  ].map(([label,v])=>'<article><span>'+label+'</span><strong>'+money(v)+'</strong></article>').join('')+
+  '</section><div class="fz-lite-note">الاستقطاعات من المصدر قبل وصول الصافي توثيق فقط، ولا تخصم مرة ثانية من رصيد الحساب. يمكنك مراجعة الحركات الكاملة في الوضع المتقدم.</div></div>';
+}
+function simpleBudgetEdit(){
+ if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
+ const month=today().slice(0,7);
+ if(state.settings.closedMonths?.[month])throw Error('الشهر مغلق.');
+ const available=livingCategories(),targets=livingTargets(month);
+ if(!available.length)throw Error('أضف قسماً للمصروف أولاً.');
+ modal('ميزانية المصروف','حدّد سقفاً شهرياً لكل قسم. لا يحجز النظام المبلغ ولا يخصمه عند حفظ الميزانية.',
+  '<div class="form-grid">'+available.map(w=>moneyField(w.label,'budget-'+w.id,
+  inputMoney(targets[w.id]||0),'required')).join('')+'</div>'+
+  '<p class="fz-lite-note">يمكنك تعديل السقوف في أي وقت قبل إغلاق الشهر. لا تسجّل هذه الخطوة مصروفاً.</p>',
+  f=>act(st=>{
+   if(st.settings.closedMonths?.[month])throw Error('الشهر مغلق.');
+   const vals=Object.fromEntries(available.map(w=>[w.id,amount(f['budget-'+w.id],true)]));
+   st.settings.livingTargets={...(st.settings.livingTargets||{}),[month]:vals};
+   return st;
+  },'تم حفظ ميزانية الشهر دون سحب أو تخصيص جديد.'),'حفظ الميزانية');
+}
+
 function dashboardPage(){
  const m=dashboardFinancialSummary(),s=m.stats,p=m.projection;
  const moneyState=p.grossAfterAll<0?'fz-negative':'fz-positive';
