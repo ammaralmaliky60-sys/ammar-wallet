@@ -6,7 +6,7 @@ const source=app.slice(app.indexOf('let resetProof=null,resetAttempt=0;'),app.in
 if(!source.includes('function openFinancialResetFinal('))throw Error('Reset flow not found.');
 const clone=o=>JSON.parse(JSON.stringify(o));
 function context(){
- const st=E.initial();st.demo=false;st.settings.name='حساب تجريبي';
+ const st=E.initial();st.demo=false;st.cycle.start='2026-10-01';st.settings.name='حساب تجريبي';
  st.settings.livingTargets={'2026-10':{home:125000,kids:60000}};
  st.settings.twoStageWorkflow={plans:{'2026-10':{loan:218000}},completed:{}};
  st.obligations.push({id:'old',name:'سلفة',amount:218000,due:'2026-10-30',recurring:false});
