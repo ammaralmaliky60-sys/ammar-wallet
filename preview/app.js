@@ -355,7 +355,7 @@ function wfAmount(plan,stage){
    const half=Math.floor(amountFull/2),remaining=amountFull-half;
    rows.push({key:o.key,amount:stage==='incentives'?half:remaining,
      label:(stage==='incentives'?'نصف ':'النصف المتبقي من ')+o.label+(hidden?' (مخفي)':''),
-     fullAmount:amountFull,reserveOnly:false,hidden});
+     fullAmount:amountFull,reserveOnly:!!o.reserveOnly,hidden});
   }else if(which===stage){
    rows.push({key:o.key,amount:amountFull,label:o.label+(hidden?' (مخفي)':''),
      fullAmount:amountFull,reserveOnly:!!o.reserveOnly,hidden});
@@ -391,7 +391,7 @@ function workflowPage(){
  const wfIds=plan?monthlyAllFields().map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
   settled=wfIds.filter(o=>(stats.reserved[o.id]||0)>0);
  return head('ميزان | دورة الحوافز والراتب','خطة شهرية من دفعتين، على ترتيب استلامك الحقيقي. لا يتم الحجز أو السداد تلقائياً.',
-   state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):(btn('wf-config','تحديد مبالغ الشهر','settings','secondary')+btn('wf-fields-manage','إدارة البنود','settings','secondary')))+
+   state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):( (monthlyFields().length?btn('wf-config','تحديد مبالغ الشهر','wallet','secondary'):'')+btn('wf-fields-manage',monthlyFields().length?'إدارة البنود':'إضافة بنود الشهر','settings',monthlyFields().length?'secondary':'') ))+
  `<section class="wf-intro">
   <div class="wf-month"><label for="wfMonth">شهر الدفعتين</label><input id="wfMonth" type="month" value="${wfMonth}" max="${today().slice(0,7)}"></div>
   <div class="wf-snapshot">
