@@ -1274,12 +1274,14 @@ function wfLivingDirect(initialId='',quick=false){
  const stats=currentStats(),usable=livingCategories().filter(w=>(state.wallets.find(x=>x.id===w.id)?.kind||w.kind)==='spend').reduce((sum,w)=>sum+(stats.wallets[w.id]||0),0)+stats.unallocated;
  if(usable<=0)throw Error('لا يوجد رصيد قابل للصرف. راجع حجوزاتك أو سجّل استلام مبلغ أولاً.');
  const options=livingCategories().filter(w=>(state.wallets.find(x=>x.id===w.id)?.kind||w.kind)==='spend').map(w=>[w.id,w.label]);
+ const lastExpense=state.transactions.filter(t=>t.type==='expense'&&['cash','card'].includes(t.method)).slice(-1)[0];
+ const suggestedMethod=lastExpense?.method||'card';
  if(!options.length)throw Error('أضف قسماً للصرف اليومي؛ خزنة الطوارئ لا تظهر في الصرف السريع.');
  modal(quick?'صرف سريع':'إضافة مصروف',quick?'المبلغ والقسم وطريقة الدفع فقط، وتاريخ الصرف يُضبط تلقائياً على اليوم.':'لا تحتاج تحديد ميزانية الشهر أولاً. يُخصم المصروف من المتبقي غير المحجوز، ويُحتسب ضمن ميزانية الشهر لاحقاً.',
   `<div class="form-grid ${quick?"thukhr-quick-form":""}">
    ${select('نوع المصروف','walletId',options,options.some(x=>x[0]===initialId)?initialId:options[0][0])}
    ${amountField()}
-   ${select('طريقة الدفع','method',methodOptions)}
+   ${select('طريقة الدفع','method',methodOptions,suggestedMethod)}
    ${quick?'<input type="hidden" name="date" value="'+today()+'">':dateField()}
    <div class="full">${field(quick?'الوصف (اختياري)':'على ماذا صرفت؟','note','text','',quick?'maxlength="120" placeholder="مثلاً: قهوة أو مشتريات"':'required maxlength="120" placeholder="مثلاً شراء خضروات للمنزل"')}</div>
    <div class="field full"><label><input type="checkbox" name="duplicateApproved" value="yes"> أؤكد أن العملية مستقلة إذا سبق تسجيل مبلغ ووصف مطابقين اليوم</label></div></div>
