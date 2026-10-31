@@ -493,8 +493,6 @@ function wfIncomeModePicker(){
 function wfReceive(stage){
  if(state.demo)throw Error('أنهِ الخطة التوضيحية أولاً بزر «بدء خطتي الفعلية».');
  if(stage==='incentives'&&wfIncomeMode()==='salary-only')throw Error('هذه الخطة تعتمد الراتب فقط.');
- if(stage==='salary'&&wfIncomeMode()==='both'&&!S.receipts(state,'incentives',wfMonth).length)
-  throw Error('إذا ما تستلم حوافز، اختر «راتب فقط» من نوع الدخل؛ بخطة الدفعتين سجّل الحوافز أولاً.');
  if(S.receipts(state,stage,wfMonth).length)throw Error('هذا الدخل مسجّل لهذا الشهر. لا تُضفه مرة أخرى.');
  openIncome(stage,wfMonth);
 }
@@ -775,7 +773,7 @@ function autoFixedSettlement(original,stage,month,method,date){
     ?Math.floor(Number(wfData(next).plans[month][f.key]||0)/2):Number(wfData(next).plans[month][f.key]||0);
   return paid>=target;
  });
- if(allAuto&&allCovered&&processed.length){
+ if(allAuto&&allCovered){
   const wf=wfData(next);
   next.settings.twoStageWorkflow={...wf,completed:{...wf.completed,
    [month]:{...wf.completed?.[month],[stage]:{mode:'automatic',at:date,
@@ -809,6 +807,7 @@ function smartBuild(original,d){
   n.settings.wfIncomeModes={...(n.settings.wfIncomeModes||{}),[d.month]:d.mode};
  }
  const auto=autoFixedSettlement(n,d.stage,d.month,d.payMethod,d.date);
+ if(auto.skipped.length)throw Error('تعذر سداد التزامات مفعّل لها الخصم الآلي: '+auto.skipped.map(x=>x.label).join('، ')+'. أضف المبلغ الناقص أو غيّر إعداد السداد من الثوابت.');
  n=auto.next;totals.paid+=auto.paid;
  const rows=wfAmount(d.plan,d.stage).filter(o=>o.amount>0&&!monthlyAllFields().some(f=>f.key===o.key&&f.autoDeduct===true));
  for(const o of rows){
@@ -994,8 +993,12 @@ function wfApply(stage){
  if(state.settings.closedMonths?.[wfMonth])throw Error('الشهر مغلق مالياً.');
  if(stage==='incentives'&&wfIncomeMode()==='salary-only')throw Error('لا توجد مرحلة حوافز في هذه الخطة.');
  if(!S.receipts(state,stage,wfMonth).length)throw Error('يجب تأكيد الاستلام أولاً.');
- if(stage==='salary'&&wfIncomeMode()==='both'&&!wfDone('incentives'))
-  throw Error('أكمل مرحلة الحوافز أولاً.');
+ const pendingAuto=monthlyAllFields().filter(f=>f.autoDeduct===true&&autoFixedPlanShare(f,stage,wfMonth,state)>0).filter(f=>{
+  const amount=Number(wfPlan()?.[f.key]||0),id=wfObId(wfMonth,f.key),stat=E.stats(state);
+  const limit=wfIncomeMode()==='both'&&f.stage==='split'&&stage==='incentives'?Math.floor(amount/2):amount;
+  return (stat.paid[id]||0)+(stat.withheld?.[id]||0)<limit;
+ });
+ if(pendingAuto.length)throw Error('يوجد خصم آلي لم يكتمل: '+pendingAuto.map(f=>f.label).join('، ')+'. عالج الرصيد أو عطّل الخصم التلقائي قبل اعتماد بقية التسوية.');
  const ops=wfAmount(plan,stage).filter(x=>x.amount>0&&!monthlyAllFields().some(f=>f.key===x.key&&f.autoDeduct===true));
  const rows=ops.map(o=>`<div class="wf-step thukhr-settlement-row">
   <div><strong>${safe(o.label)}</strong><b>${money(o.amount)}</b></div>
