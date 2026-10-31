@@ -133,3 +133,31 @@ test('account routing can select the receipt card or a separate available cash a
  assert.equal(E.stats(r.next).card,75000);
  assert.equal(E.stats(r.next).cash,0);
 });
+
+test('saving a new opted-in fixed commitment immediately settles an already recorded salary',()=>{
+ const st=income(base(),720000),previous=JSON.stringify(st),ctx={state:st,submit:null};
+ const editorCode=app.slice(app.indexOf('function fixedCommitmentEdit('),app.indexOf('function monthlyFieldsManage(){'));
+ const env={
+  E,S,ctx, get state(){return ctx.state}, wfMonth:month,today:()=>day,ccy:()=>({dec:0}),
+  monthlyFields:s=>s.settings.wfFields||[],monthlyAllFields:s=>s.settings.wfFields||[],
+  wfPlan:()=>ctx.state.settings.twoStageWorkflow?.plans?.[month]||{},
+  wfData:s=>s.settings.twoStageWorkflow||{plans:{},completed:{}},
+  wfIncomeMode:()=> 'salary-only',
+  wfFreezeIncomeMode:s=>s,
+  monthlyFieldStageLabel:()=> 'من الراتب',
+  amount:val=>{const n=Number(val);if(!Number.isSafeInteger(n)||n<=0)throw Error('invalid');return n;},
+  inputMoney:v=>String(v),moneyField:()=>'<input>',field:()=>'<input>',select:()=>'<select>',
+  safe:String,uid:(()=>{let n=0;return ()=> 'id'+(++n)})(),
+  modal:(title,description,markup,callback)=>{ctx.submit=callback;},
+  act:(fn)=>{ctx.state=fn(JSON.parse(JSON.stringify(ctx.state)));E.validate(ctx.state);},
+  autoFixedSettlement:api.autoFixedSettlement
+ };
+ const edit=new Function('env','with(env){'+editorCode+';return fixedCommitmentEdit}')(env);
+ edit();
+ assert.ok(ctx.submit,'Editor did not expose save operation');
+ ctx.submit({fixedName:'قسط جديد',fixedAmount:'218000',fixedStage:'salary',fixedMethod:'receipt',autoDeduct:'yes'});
+ assert.equal(E.stats(ctx.state).total,502000);
+ assert.equal(E.stats(ctx.state).paid[Object.keys(E.stats(ctx.state).paid)[0]],218000);
+ assert.equal(ctx.state.transactions.filter(t=>t.type==='pay').length,1);
+ assert.equal(JSON.stringify(st),previous);
+});
