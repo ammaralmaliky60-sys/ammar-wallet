@@ -1338,7 +1338,29 @@ function openWallet(id){const w=state.wallets.find(w=>w.id===id);modal(w?'إعد
  throw Error('لا يمكن تغيير نوع محفظة مرتبطة بحركات سابقة. أنشئ محفظة جديدة لحماية السجل.');
  if(w)s.wallets[s.wallets.findIndex(x=>x.id===w.id)]=v;else s.wallets.push(v);return s},'تم حفظ المحفظة'))}
 function openAllocate(){const available=currentStats().unallocated;modal('توزيع المتاح على محافظك','التزاماتك أولاً، ثم خطتك المرنة.',`<div class="field"><label for="preset">طريقة التوزيع</label><select id="preset"><option value="weights">بحسب أوزان محافظي</option><option value="original">نسب الخطة الأصلية (125 / 120 / 60 / 30)</option><option value="custom">مبالغ مخصصة</option></select></div><div class="notice">المتاح ${money(available)} · يمكنك توزيع جزء منه وإبقاء الباقي دون تخصيص.</div>${state.wallets.map(w=>`<div class="allocation-row"><span>${safe(w.name)}<small>${w.kind==='spend'?'صرف يومي':'احتياطي / ادخار'}</small></span><div class="field"><input aria-label="مخصص ${safe(w.name)}" type="text" data-money inputmode="${ccy().dec?'decimal':'numeric'}" autocomplete="off" oninput="window.mizanFormatMoneyInput(this)" name="a-${safe(w.id)}" required></div></div>`).join('')}<div class="keyval"><span>مجموع التوزيع</span><b id="allocationTotal"></b></div>`,(f,form)=>act(s=>{let next=s,total=0;for(const w of state.wallets){const n=amount(f['a-'+w.id],true);total+=n;if(n)next=event(next,{type:'allocate',walletId:w.id,amount:n})}if(!total)throw Error('أدخل مبلغاً واحداً على الأقل.');return next},'تم توزيع المبلغ على المحافظ'),'اعتماد التوزيع');const form=$('modalForm'),preset=$('preset');function fill(){let weights=state.wallets.map(w=>({id:w.id,weight:preset.value==='original'?({home:125,personal:120,kids:60,emergency:30}[w.id]||0):w.weight}));if(preset.value!=='custom'){try{const allocation=E.distribute(available,weights);for(const w of state.wallets)form.elements['a-'+w.id].value=formatMoneyTyping(inputMoney(allocation[w.id]))}catch(e){showError(e.message)}}update()}function update(){try{let total=0;for(const w of state.wallets)total+=parseMoney(form.elements['a-'+w.id].value||'0',ccy().dec,true);if(!Number.isSafeInteger(total))throw Error();$('allocationTotal').innerHTML=money(total);$('allocationTotal').className=total>available?'expense-color':'income-color'}catch{$('allocationTotal').textContent='أدخل مبالغ صحيحة';$('allocationTotal').className='expense-color'}}preset.onchange=fill;form.addEventListener('input',update);fill()}
-function openCycle(){modal('استلام دخل دورة جديدة','الأرصدة الحالية تبقى، ويُضاف الدخل الجديد مرة واحدة.',`<div class="form-grid">${field('يوم الاستلام الجديد','start','date',today(),`required min="${addDays(state.cycle.start,1)}" max="${today()}"`)}${field('مدة الدورة بالأيام','days','number',state.cycle.days,'required min="1" max="366" step="1"')}${amountField()}${select('مكان الاستلام','method',methodOptions)}<div class="full">${select('فائض محافظ الصرف','policy',[['same','إبقاؤه في محافظه'],['reserve','نقله إلى محفظة الطوارئ']])}</div></div><div class="wizard-summary"><div class="keyval"><span>الرصيد الذي سيُرحّل</span><b>${money(currentStats().total)}</b></div><p class="help-text">تُحفظ خلاصة الدورة. الالتزامات غير المدفوعة تحتفظ بحجزها، وتجديد الاستحقاقات المتكررة يتم من قسم الالتزامات عند حلول موعدها.</p></div>`,f=>act(s=>E.startCycle(s,{start:f.start,days:Number(f.days),income:amount(f.amount),method:f.method,policy:f.policy}),'بدأت الدورة الجديدة مع ترحيل الأرصدة'),'تأكيد الاستلام والترحيل')}
+function openCycle(){
+ const suggested=wfIncomeMode()==='salary-only'?'salary':'incentives';
+ modal('بدء دورة جديدة','دخل جديد فقط، مع ترحيل الرصيد القديم دون إعادة إضافته.',
+  `<div class="form-grid">
+   ${field('تاريخ الاستلام','start','date',today(),`required min="${addDays(state.cycle.start,1)}" max="${today()}"`)}
+   ${field('مدة الدورة','days','number',state.cycle.days,'required min="1" max="366"')}
+   ${amountField()}
+   ${select('مكان الاستلام','method',methodOptions)}
+   ${select('المصدر','sourceId',[['','دخل آخر'],...S.sources(state).filter(s=>wfIncomeMode()!=='salary-only'||s.id!=='incentives').map(s=>[s.id,s.name])],suggested)}
+   ${field('شهر الاستحقاق','incomePeriod','month',wfMonth,`required max="${today().slice(0,7)}"`)}
+   ${select('فائض المحافظ','policy',[['same','إبقاؤه'],['reserve','نقله للطوارئ']])}
+   </div><div class="notice">الدخل المعتمد هنا يرتبط بمصدره ويُرفض تكراره للشهر نفسه.</div>
+   <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أؤكد أن هذا دخل جديد لم يسبق تسجيله</label></div>`,
+  f=>{
+   if(f.approve!=='yes')throw Error('تأكيد الدخل الجديد مطلوب.');
+   act(s=>{
+    if(f.sourceId&&S.receipts(s,f.sourceId,f.incomePeriod).length)throw Error('الدخل مسجل سابقاً؛ لا تكرره.');
+    return E.startCycle(s,{start:f.start,days:Number(f.days),income:amount(f.amount),
+     method:f.method,policy:f.policy,sourceId:f.sourceId,incomePeriod:f.incomePeriod});
+   },'تم بدء الدورة مع ربط الدخل');
+  },'تأكيد الاستلام والترحيل');
+}
+
 function setupStart(){if(!state.demo&&state.transactions.length){confirmModal('إنشاء خطة جديدة؟','سيُستبدل السجل الحالي. نزّل نسخة احتياطية قبل المتابعة.',()=>{wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()},'متابعة وإنشاء خطة');return}wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()}
 function wizardBack(form){if(form){const f=Object.fromEntries(new FormData(form));if(wizardStep===1){wizard.obligations=wizardRows(form)}else Object.assign(wizard,f)}wizardStep=Math.max(0,wizardStep-1);renderWizard()}
 function wizardRows(form){return [...form.querySelectorAll('.setup-ob')].map(row=>({name:row.querySelector('[data-name]').value.trim(),amount:row.querySelector('[data-amount]').value,due:row.querySelector('[data-due]').value})).filter(o=>o.name||o.amount)}
