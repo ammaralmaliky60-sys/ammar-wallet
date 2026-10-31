@@ -7,7 +7,7 @@
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : this, function (S) {
   'use strict';
 
-  const TYPES = new Set(['income', 'allocate', 'reserve', 'expense', 'pay', 'account', 'transfer', 'release', 'unreserve']);
+  const TYPES = new Set(['income', 'allocate', 'reserve', 'expense', 'pay', 'account', 'transfer', 'release', 'unreserve', 'withheld']);
   const METHODS = new Set(['card', 'cash']);
   const clone = value => JSON.parse(JSON.stringify(value));
   const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
@@ -137,15 +137,22 @@ function isEmergencyMovement(e,kinds){
       if (new Set(h.transactionIds).size !== h.transactionIds.length) fail('معرّفات حركات الأرشيف مكررة.');
     }
     if (state.reconciliations.some(r => !record(r))) fail('بيانات المطابقة غير صالحة.');
+    if(state.settings.closedMonths!==undefined){
+      if(!record(state.settings.closedMonths))fail('سجل إغلاق الأشهر غير صالح.');
+      for(const [month,c] of Object.entries(state.settings.closedMonths)){
+        if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||!record(c)||!validDate(c.closedAt))
+          fail('إغلاق الشهر غير صالح.');
+      }
+    }
   }
   function replay(state) {
     checkStructure(state);
-    const s = { card: 0, cash: 0, total: 0, unallocated: 0, wallets: {}, reserved: {}, paid: {}, income: 0, expenses: 0, obligationPaid: 0 };
+    const s = { card: 0, cash: 0, total: 0, unallocated: 0, wallets: {}, reserved: {}, paid: {}, withheld: {}, income: 0, expenses: 0, obligationPaid: 0, obligationWithheld: 0 };
     const obligations = new Map(state.obligations.map(o => [o.id, o]));
     const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
     const legacy=state.settings.emergencyProtection?new Set(state.settings.emergencyProtection.legacyIds):null;
     for (const w of state.wallets) s.wallets[w.id] = 0;
-    for (const o of state.obligations) { s.reserved[o.id] = 0; s.paid[o.id] = 0; }
+    for (const o of state.obligations) { s.reserved[o.id] = 0; s.paid[o.id] = 0; s.withheld[o.id] = 0; }
     const transactionIds = new Set();
     const receiptKeys = new Set();
     const transactions = state.transactions.map((event, order) => ({ event, order }));
@@ -198,7 +205,7 @@ function isEmergencyMovement(e,kinds){
           break;
         case 'reserve':
           obligation();
-          if (amount > obligations.get(e.obligationId).amount - s.reserved[e.obligationId] - s.paid[e.obligationId]) fail('الحجز يتجاوز المبلغ المتبقي من الالتزام.');
+          if (amount > obligations.get(e.obligationId).amount - s.reserved[e.obligationId] - s.paid[e.obligationId] - s.withheld[e.obligationId]) fail('الحجز يتجاوز المبلغ المتبقي من الالتزام.');
           s.unallocated = add(s.unallocated, -amount);
           s.reserved[e.obligationId] = add(s.reserved[e.obligationId], amount);
           break;
@@ -212,6 +219,15 @@ function isEmergencyMovement(e,kinds){
           s.wallets[e.walletId] = add(s.wallets[e.walletId], -amount);
           s[e.method] = add(s[e.method], -amount);
           s.expenses = add(s.expenses, amount);
+          break;
+        case 'withheld':
+          obligation();
+          if(amount>obligations.get(e.obligationId).amount-s.reserved[e.obligationId]-s.paid[e.obligationId]-s.withheld[e.obligationId])
+            fail('الاستقطاع السابق للإيداع يتجاوز مبلغ الالتزام المتبقي.');
+          if(e.method!==undefined)fail('الاستقطاع من المصدر لا يخصم البطاقة أو النقد.');
+          if(typeof e.note!=='string'||e.note.trim().length<5)fail('وثّق سبب الاستقطاع من المصدر.');
+          s.withheld[e.obligationId] = add(s.withheld[e.obligationId],amount);
+          s.obligationWithheld = add(s.obligationWithheld,amount);
           break;
         case 'pay':
           obligation(); method();
@@ -240,6 +256,13 @@ function isEmergencyMovement(e,kinds){
     return s;
   }
   function stats(state) { return replay(state); }
+  function statsAt(state, asOf) {
+    if(!validDate(asOf)||asOf>today())fail('تاريخ رصيد الإغلاق غير صالح.');
+    const partial=clone(state);
+    partial.transactions=partial.transactions.filter(t=>t.date<=asOf);
+    partial.history=[];
+    return replay(partial);
+  }
   function validate(state) { replay(state); return true; }
   function commit(state, event) {
     checkStructure(state);
@@ -247,6 +270,18 @@ function isEmergencyMovement(e,kinds){
     date(event.date);
     S.guardReceipt(state, event);
     if (event.date < state.cycle.start) fail('لا يمكن إضافة حركة إلى دورة مؤرشفة؛ اختر تاريخاً ضمن الدورة الحالية.');
+    if(state.settings.closedMonths?.[event.date.slice(0,7)])
+      fail('هذا الشهر مغلق مالياً. لا يمكن تسجيل حركة مؤرخة فيه إلا عبر دورة تصحيح مستقلة.');
+    if(event.type==='income'&&event.sourceId){
+      const prior=state.transactions.find(t=>t.type==='income'&&!t.sourceId&&t.date.slice(0,7)===event.incomePeriod&&
+       t.amount===event.amount&&(
+        t.note==='الدخل المستلم للدورة الجديدة'||
+        t.note==='الدخل المستلم'||
+        (event.sourceId==='salary'&&/راتب/.test(t.note||''))||
+        (event.sourceId==='incentives'&&/حوافز/.test(t.note||''))
+       ));
+      if(prior)fail('يوجد دخل سابق بنفس المبلغ والفترة يحتمل أنه نفس الاستلام. اربط الحركة السابقة بالمصدر بدلاً من تسجيل دخل جديد.');
+    }
     const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
     if(isEmergencyMovement(event,kinds))checkEmergencyApproval(event);
     const next = clone(state);
@@ -263,6 +298,8 @@ function isEmergencyMovement(e,kinds){
     const next = clone(state);
     const index = next.transactions.findIndex(t => t.id === eventId);
     if (index < 0) fail('الحركة المطلوب حذفها غير موجودة.');
+    if(state.settings.closedMonths?.[next.transactions[index].date.slice(0,7)])
+      fail('هذه الحركة ضمن شهر مغلق ولا يمكن حذفها بصمت.');
     if(isEmergencyMovement(next.transactions[index],new Map(next.wallets.map(w=>[w.id,w.kind]))))
       fail('عملية الطوارئ محمية. استخدم التصحيح الموثق من خزنة الطوارئ.');
     next.transactions.splice(index, 1);
@@ -313,7 +350,7 @@ function correctEmergency(state,eventId,reason){
   }
   function startCycle(state, options) {
     validate(state);
-    const { start, days, income, method = 'card', policy = 'same' } = options || {};
+    const { start, days, income, method = 'card', policy = 'same', sourceId='', incomePeriod='' } = options || {};
     date(start);
     if (start <= state.cycle.start) fail('تاريخ الدورة الجديدة يجب أن يلي بداية الدورة الحالية.');
     if (!Number.isInteger(days) || days < 1 || days > 366) fail('مدة الدورة يجب أن تكون بين يوم واحد و366 يوماً.');
@@ -336,9 +373,16 @@ function correctEmergency(state,eventId,reason){
       if (spending.length && !reserveWallet) fail('أضف محفظة طوارئ لاستقبال الفائض المرحّل.');
       for (const w of spending) next = commit(next, { type: 'transfer', date: start, amount: closing.wallets[w.id], from: w.id, to: reserveWallet.id, note: 'ترحيل فائض الدورة السابقة إلى الطوارئ' });
     }
-    if (income > 0) next = commit(next, { type: 'income', date: start, amount: income, method, note: 'الدخل المستلم للدورة الجديدة' });
+    if(income>0){
+      const source=sourceId?S.sources(next).find(o=>o.id===sourceId):null;
+      if(sourceId&&!source)fail('مصدر دخل الدورة غير موجود.');
+      if(source&&!/^\d{4}-(0[1-9]|1[0-2])$/.test(incomePeriod))fail('شهر دخل الدورة غير صالح.');
+      next=commit(next,{type:'income',date:start,amount:income,method,
+        note:source?source.name:'دخل آخر للدورة الجديدة',
+        ...(source?{sourceId:source.id,sourceName:source.name,incomePeriod}:{})});
+    }
     validate(next);
     return next;
   }
-  return Object.freeze({ initial, stats, validate, commit, remove, correctEmergency, distribute, startCycle, today, uid, validDate });
+  return Object.freeze({ initial, stats, statsAt, validate, commit, remove, correctEmergency, distribute, startCycle, today, uid, validDate });
 });
