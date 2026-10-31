@@ -387,6 +387,7 @@ function wfFreezeIncomeMode(st,month){
  return st;
 }
 function wfIncomeModePicker(){
+ if(state.settings.closedMonths?.[wfMonth])throw Error('هذا الشهر مغلق مالياً.');
  if(state.demo)throw Error('ابدأ خطتك الفعلية أولاً.');
  modal('نوع الدخل الشهري','حدد طريقة الاستلام لهذا الشهر والأشهر القادمة، دون تغيير السجلات السابقة.',
   `<div class="form-grid">${select('نوع الاستلام','incomeMode',[['both','راتب وحوافز'],['salary-only','راتب فقط (بدون حوافز)']],wfIncomeMode())}</div>
@@ -431,6 +432,8 @@ function wfActivate(){
  },'أوافق وأبدأ بدون رصيد');
 }
 function wfConfig(){
+ if(state.settings.closedMonths?.[wfMonth])throw Error('هذا الشهر مغلق مالياً، لا يمكن تغيير مبالغ خطته.');
+ if(wfMonth<today().slice(0,7))throw Error('لا يمكن إعادة تمويل شهر سابق من متاح الشهر الحالي.');
  if(state.demo)throw Error('ابدأ خطتك الفعلية أولاً.');
  if(wfDone('incentives')||wfDone('salary'))throw Error('لا يمكن تعديل مبالغ شهر تم تنفيذ إحدى دفعاته. البنود قابلة للإدارة للمستقبل دون تغيير الحركات الماضية.');
  const selected=monthlyFields();if(!selected.length)throw Error('قائمة البنود فارغة. اضغط «إدارة البنود» لإضافة أول بند.');
@@ -911,6 +914,8 @@ function wfLivingPanel(){
  </section>`;
 }
 function wfLivingAllocate(){
+ if(state.settings.closedMonths?.[wfMonth])throw Error('الشهر مغلق مالياً.');
+ if(wfMonth<today().slice(0,7))throw Error('لا يجوز تمويل ميزانية شهر سابق من الرصيد الحالي.');
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
  if(!livingCategories().length)throw Error('أضف قسماً للمعيشة أولاً قبل تحديد الميزانية.');
  const preset=livingTargets(),available=currentStats().unallocated;
@@ -1243,8 +1248,12 @@ function showError(msg){const el=$('modalError');if(el&&$('modal').open){el.text
 function requireReal(){if(state.demo){modal('الخطة التوضيحية','جرّب الحركات هنا أو ابدأ بأرقامك.','<p class="help-text">يمكنك تعديل المثال بحرية. عند إنشاء خطتك تُستبدل أرقام المثال فقط بعد التأكيد.</p><div class="settings-actions">'+btn('setup','ابدأ خطتك','plus')+btn('close','متابعة التجربة','arrow','secondary')+'</div>');return false}return true}
 function openIncome(sourceId='',requestedPeriod=''){const source=S.sources(state).find(x=>x.id===sourceId),periodValue=requestedPeriod||today().slice(0,7);modal(source?'تأكيد استلام '+source.name:'تسجيل دخل مستلم','يدخل المبلغ الفعلي في خطتك الحالية دون تصفير الأرصدة.',`<div class="form-grid">${select('مصدر الدخل','sourceId',[['','دخل إضافي / رصيد افتتاحي'],...S.sources(state).filter(x=>wfIncomeMode(periodValue)!=='salary-only'||x.id!=='incentives').map(x=>[x.id,x.name])],source?.id||'')}${field('استحقاق أي شهر؟','incomePeriod','month',periodValue,`max="${today().slice(0,7)}"`)}${amountField()}${select('مكان الاستلام','method',methodOptions)}${dateField()}${field('الوصف','note','text',source?.name||'','required maxlength="100" placeholder="راتب، حوافز، عمل حر…"')}</div><div class="notice">الموعد المتوقع لا يزيد الرصيد. بعد تأكيد الاستلام، احجز الالتزامات ثم وزّع المتاح. يُسجّل كل مصدر مرة للشهر؛ الدفعات الإضافية تُسجّل كدخل إضافي.</div>`,f=>act(s=>{const selected=S.sources(s).find(x=>x.id===f.sourceId);
  if(selected?.id==='incentives'&&wfIncomeMode(f.incomePeriod,s)==='salary-only')throw Error('هذا الشهر راتب فقط؛ غيّر نوع الدخل أولاً.');
+ const newAmount=amount(f.amount);
+ const similar=s.transactions.find(t=>t.type==='income'&&!t.sourceId&&t.amount===newAmount&&t.date.slice(0,7)===f.incomePeriod);
+ if(selected&&similar)throw Error('دخل سابق بنفس المبلغ والشهر غير مرتبط. استخدم «ربط دخل مسجّل سابقاً» بدلاً من إضافة مبلغ مكرر.');
+ if(s.settings.closedMonths?.[f.date.slice(0,7)])throw Error('الشهر مغلق مالياً.');
  const mode=selected?wfIncomeMode(f.incomePeriod,s):null;
- const next=event(s,{type:'income',amount:amount(f.amount),method:f.method,date:f.date,note:f.note.trim(),...(selected?{sourceId:selected.id,sourceName:selected.name,incomePeriod:f.incomePeriod}:{})});
+ const next=event(s,{type:'income',amount:newAmount,method:f.method,date:f.date,note:f.note.trim(),...(selected?{sourceId:selected.id,sourceName:selected.name,incomePeriod:f.incomePeriod}:{})});
  if(selected)next.settings.wfIncomeModes={...(next.settings.wfIncomeModes||{}),[f.incomePeriod]:mode};
  return next},'تم تأكيد الاستلام وإضافته للخطة الحالية'),'تأكيد الاستلام');const form=$('modalForm');const update=()=>{const selected=S.sources(state).find(x=>x.id===form.elements.sourceId.value);form.elements.incomePeriod.disabled=!selected;form.elements.incomePeriod.required=!!selected;if(selected)form.elements.note.value=selected.name};form.elements.sourceId.addEventListener('change',update);update();}
 
@@ -1326,7 +1335,34 @@ function openWallet(id){const w=state.wallets.find(w=>w.id===id);modal(w?'إعد
  throw Error('لا يمكن تغيير نوع محفظة مرتبطة بحركات سابقة. أنشئ محفظة جديدة لحماية السجل.');
  if(w)s.wallets[s.wallets.findIndex(x=>x.id===w.id)]=v;else s.wallets.push(v);return s},'تم حفظ المحفظة'))}
 function openAllocate(){const available=currentStats().unallocated;modal('توزيع المتاح على محافظك','التزاماتك أولاً، ثم خطتك المرنة.',`<div class="field"><label for="preset">طريقة التوزيع</label><select id="preset"><option value="weights">بحسب أوزان محافظي</option><option value="original">نسب الخطة الأصلية (125 / 120 / 60 / 30)</option><option value="custom">مبالغ مخصصة</option></select></div><div class="notice">المتاح ${money(available)} · يمكنك توزيع جزء منه وإبقاء الباقي دون تخصيص.</div>${state.wallets.map(w=>`<div class="allocation-row"><span>${safe(w.name)}<small>${w.kind==='spend'?'صرف يومي':'احتياطي / ادخار'}</small></span><div class="field"><input aria-label="مخصص ${safe(w.name)}" type="text" data-money inputmode="${ccy().dec?'decimal':'numeric'}" autocomplete="off" oninput="window.mizanFormatMoneyInput(this)" name="a-${safe(w.id)}" required></div></div>`).join('')}<div class="keyval"><span>مجموع التوزيع</span><b id="allocationTotal"></b></div>`,(f,form)=>act(s=>{let next=s,total=0;for(const w of state.wallets){const n=amount(f['a-'+w.id],true);total+=n;if(n)next=event(next,{type:'allocate',walletId:w.id,amount:n})}if(!total)throw Error('أدخل مبلغاً واحداً على الأقل.');return next},'تم توزيع المبلغ على المحافظ'),'اعتماد التوزيع');const form=$('modalForm'),preset=$('preset');function fill(){let weights=state.wallets.map(w=>({id:w.id,weight:preset.value==='original'?({home:125,personal:120,kids:60,emergency:30}[w.id]||0):w.weight}));if(preset.value!=='custom'){try{const allocation=E.distribute(available,weights);for(const w of state.wallets)form.elements['a-'+w.id].value=formatMoneyTyping(inputMoney(allocation[w.id]))}catch(e){showError(e.message)}}update()}function update(){try{let total=0;for(const w of state.wallets)total+=parseMoney(form.elements['a-'+w.id].value||'0',ccy().dec,true);if(!Number.isSafeInteger(total))throw Error();$('allocationTotal').innerHTML=money(total);$('allocationTotal').className=total>available?'expense-color':'income-color'}catch{$('allocationTotal').textContent='أدخل مبالغ صحيحة';$('allocationTotal').className='expense-color'}}preset.onchange=fill;form.addEventListener('input',update);fill()}
-function openCycle(){modal('استلام دخل دورة جديدة','الأرصدة الحالية تبقى، ويُضاف الدخل الجديد مرة واحدة.',`<div class="form-grid">${field('يوم الاستلام الجديد','start','date',today(),`required min="${addDays(state.cycle.start,1)}" max="${today()}"`)}${field('مدة الدورة بالأيام','days','number',state.cycle.days,'required min="1" max="366" step="1"')}${amountField()}${select('مكان الاستلام','method',methodOptions)}<div class="full">${select('فائض محافظ الصرف','policy',[['same','إبقاؤه في محافظه'],['reserve','نقله إلى محفظة الطوارئ']])}</div></div><div class="wizard-summary"><div class="keyval"><span>الرصيد الذي سيُرحّل</span><b>${money(currentStats().total)}</b></div><p class="help-text">تُحفظ خلاصة الدورة. الالتزامات غير المدفوعة تحتفظ بحجزها، وتجديد الاستحقاقات المتكررة يتم من قسم الالتزامات عند حلول موعدها.</p></div>`,f=>act(s=>E.startCycle(s,{start:f.start,days:Number(f.days),income:amount(f.amount),method:f.method,policy:f.policy}),'بدأت الدورة الجديدة مع ترحيل الأرصدة'),'تأكيد الاستلام والترحيل')}
+function openCycle(){
+ const opts=[['','دخل آخر / بلا ربط بمصدر'],...S.sources(state).filter(s=>wfIncomeMode(today().slice(0,7))!=='salary-only'||s.id!=='incentives').map(s=>[s.id,s.name])];
+ const hasExisting=state.transactions.some(t=>t.type==='income'&&t.date.slice(0,7)===today().slice(0,7));
+ modal('بدء دورة دخل جديدة','اختر مصدر الدخل وشهر استحقاقه حتى لا يُسجَّل الراتب نفسه مرتين.',
+ `<div class="form-grid">
+ ${field('تاريخ بداية الدورة','start','date',today(),`required min="${addDays(state.cycle.start,1)}" max="${today()}"`)}
+ ${field('مدة الدورة بالأيام','days','number',state.cycle.days,'required min="1" max="366" step="1"')}
+ ${select('مصدر المبلغ المستلم','sourceId',opts,'salary')}
+ ${field('شهر الاستحقاق','incomePeriod','month',today().slice(0,7),`required max="${today().slice(0,7)}"`)}
+ ${amountField()}
+ ${select('مكان الاستلام','method',methodOptions)}
+ <div class="full">${select('فائض محافظ الصرف','policy',[['same','إبقاؤه في محافظه'],['reserve','نقله إلى محفظة الطوارئ']])}</div>
+ </div>
+ <div class="notice">${hasExisting?'تنبيه: لديك دخل مسجل خلال هذا الشهر.':'سيُربط هذا الدخل بالمصدر الشهري المختار.'}
+ إذا سبق تسجيل المبلغ، استخدم «ربط دخل سابق» من خطة الدخل بدلاً من إضافته مجدداً.</div>
+ <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أؤكد أن هذا دخل جديد وصل فعلياً ولم أسجله سابقاً</label></div>`,
+ f=>{
+  if(f.approve!=='yes')throw Error('يجب تأكيد عدم تكرار الدخل.');
+  const value=amount(f.amount),source=S.sources(state).find(x=>x.id===f.sourceId);
+  if(source&&S.receipts(state,source.id,f.incomePeriod).length)throw Error('هذا المصدر مسجل بالفعل لشهر الاستحقاق.');
+  const similar=state.transactions.find(t=>t.type==='income'&&t.amount===value&&t.date.slice(0,7)===f.incomePeriod);
+  if(similar)throw Error('يوجد دخل سابق بنفس المبلغ والشهر. راجع الحركة وربطها بدلاً من تكرار الراتب.');
+  act(s=>E.startCycle(s,{start:f.start,days:Number(f.days),income:value,method:f.method,
+    policy:f.policy,sourceId:source?.id||'',incomePeriod:source?f.incomePeriod:''}),
+   'تم بدء الدورة وربط الدخل بمصدره مرة واحدة');
+ },'تأكيد الدخل وبدء الدورة');
+}
+
 function setupStart(){if(!state.demo&&state.transactions.length){confirmModal('إنشاء خطة جديدة؟','سيُستبدل السجل الحالي. نزّل نسخة احتياطية قبل المتابعة.',()=>{wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()},'متابعة وإنشاء خطة');return}wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()}
 function wizardBack(form){if(form){const f=Object.fromEntries(new FormData(form));if(wizardStep===1){wizard.obligations=wizardRows(form)}else Object.assign(wizard,f)}wizardStep=Math.max(0,wizardStep-1);renderWizard()}
 function wizardRows(form){return [...form.querySelectorAll('.setup-ob')].map(row=>({name:row.querySelector('[data-name]').value.trim(),amount:row.querySelector('[data-amount]').value,due:row.querySelector('[data-due]').value})).filter(o=>o.name||o.amount)}
