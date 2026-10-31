@@ -210,3 +210,40 @@ body[data-thukhr-theme] [data-settings-group][hidden],body[data-thukhr-theme] #t
 .smart-row .thukhr-status-choice{flex:0 1 260px;min-width:180px}
 .thukhr-settlement-row .thukhr-status-choice{width:100%}
 @media(max-width:760px){.smart-row .thukhr-status-choice{width:100%;min-width:0;flex:auto}}
+
+
+/* Settlement result: distinguish free balance from cash and assigned envelopes. */
+body[data-thukhr-theme] .wf-settlement-result{
+ margin:8px 0 12px;padding:16px 18px;border-radius:16px;
+ border:1px solid rgba(242,202,132,.62);
+ background:linear-gradient(135deg,rgba(255,214,140,.15),rgba(255,255,255,.055));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+body[data-thukhr-theme] .wf-settlement-result-head{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+}
+body[data-thukhr-theme] .wf-settlement-result-head>span:first-child{
+ font-size:15px;font-weight:800;color:#fce9c4;line-height:1.7;
+}
+body[data-thukhr-theme] .wf-settlement-result-state{
+ font-size:11px;font-weight:600;line-height:1.7;color:#f7e5c6;
+ border:1px solid rgba(255,230,189,.25);border-radius:999px;padding:3px 9px;
+}
+body[data-thukhr-theme] .wf-settlement-result-state.is-pending{
+ color:#f7d0b4;border-color:rgba(255,175,128,.35);
+}
+body[data-thukhr-theme] .wf-settlement-result-value{
+ display:block;margin:9px 0 2px;color:#ffdb93;line-height:1.45;
+ font-size:clamp(26px,5.8vw,36px);font-weight:800;font-variant-numeric:tabular-nums;
+ overflow-wrap:anywhere;
+}
+body[data-thukhr-theme] .wf-settlement-result-value .num{color:inherit;font-size:inherit;font-weight:inherit;}
+body[data-thukhr-theme] .wf-settlement-result-value small{font-size:13px;color:#f6ddaf;font-weight:650;}
+body[data-thukhr-theme] .wf-settlement-result>p{
+ margin:6px 0 0;color:#e8dccb;font-size:12px;line-height:1.9;
+}
+@media(max-width:760px){
+ body[data-thukhr-theme] .wf-settlement-result{padding:13px 14px;}
+ body[data-thukhr-theme] .wf-settlement-result-head>span:first-child{font-size:13px;}
+ body[data-thukhr-theme] .wf-settlement-result-value{font-size:28px;}
+}
