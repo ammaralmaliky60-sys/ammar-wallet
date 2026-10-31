@@ -148,3 +148,12 @@
  .fz-dashboard .fz-stream-card{min-height:0;break-inside:avoid}
  .fz-dashboard-hero{color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* Menu usability with the extra independent finance destinations. */
+@media(min-width:761px){
+ body[data-thukhr-theme] .sidebar{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+ body[data-thukhr-theme] .sidebar .brand{margin-bottom:19px}
+ body[data-thukhr-theme] .sidebar .nav-link{min-height:41px;padding:9px 12px}
+ body[data-thukhr-theme] .sidebar-bottom{margin-top:15px}
+}
+body[data-thukhr-theme] .thukhr-more-sheet{max-height:min(68dvh,540px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
