@@ -808,7 +808,7 @@ function workflowPage(){
    <strong class="wf-settlement-result-value">${money(settlement.remaining)}</strong>
    <p>المبلغ الحر بعد الحجوزات والتخصيصات المسجلة؛ لا يشمل المخصص للمعيشة والطوارئ. ${settlement.completed?'لا تُخصم الاستقطاعات الموثقة قبل الإيداع مرتين.':'قد يتغير عند اعتماد التسويات المتبقية.'}</p>
   </div>
-  <div class="wf-commitment-projection ${projection.remainingAfter<0?'is-deficit':''}" aria-label="توقع الرصيد بعد الالتزامات الشهرية">
+  <div class="wf-commitment-projection ${projection.remainingAfter<0?'is-deficit':''}" aria-label="توقع الرصيد بعد الالتزامات الشهرية" ${wfMonth===today().slice(0,7)?'':'hidden'}>
    <div class="wf-commitment-projection-head">
     <span>المتبقي المتوقع بعد جميع الالتزامات الشهرية</span>
     <small>${projection.remainingAfter<0?'عجز متوقع':'تقدير وفق البنود المسجلة'}</small>
@@ -826,6 +826,7 @@ function workflowPage(){
      <b>غير مغطى ${money(o.uncovered)}</b></div>`).join('')}</div></details>`:''}
    <small class="wf-commitment-projection-disclaimer">يشمل خطة الشهر والالتزامات غير المؤرشفة المسجلة باستحقاق هذا الشهر فقط؛ لا يفترض ورود دخل مستقبلي، ولا يغير الأرصدة أو الحجوزات.</small>
   </div>
+  ${wfMonth===today().slice(0,7)?'':'<div class="notice">توقع السداد يظهر للشهر الجاري فقط؛ لا يجوز استخدام الرصيد الحالي لتقدير المتبقي في شهر سابق. راجع التقرير المالي المؤرخ لذلك الشهر.</div>'}
   <div class="wf-snapshot">
    <div><span>رصيد الحساب الحالي</span><strong>${money(settlement.total)}</strong></div>
    <div><span>مخصص للأقسام</span><strong>${money(settlement.allocated)}</strong></div>
