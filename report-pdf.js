@@ -172,7 +172,8 @@ async function download(report){
     ]);
   }
   const rows=report.entries;
-  const firstCount=6,nextCount=17;
+  // The first A4 page also contains a wallet table whose row count is user-configurable.
+  const firstCount=Math.min(6,Math.max(0,Math.floor((1635-797-report.wallets.length*58)/76))),nextCount=17;
   const sets=[rows.slice(0,firstCount)];
   for(let i=firstCount;i<rows.length;i+=nextCount)sets.push(rows.slice(i,i+nextCount));
   if(sets.length>100)throw Error('الكشف كبير جداً؛ قسّم الفترة إلى أشهر أصغر.');
