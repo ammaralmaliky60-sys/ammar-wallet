@@ -140,3 +140,13 @@ body[data-thukhr-theme] [data-settings-group][hidden],body[data-thukhr-theme] #t
 @media(min-width:761px){.thukhr-ledger-table{display:block}.thukhr-ledger-mobile{display:none}}
 @media print{.neo-mobile-dock,.thukhr-more-sheet,.thukhr-settings-tabs,.thukhr-transaction-detail{display:none!important}}
 @media(prefers-reduced-motion:reduce){.thukhr-living-chevron,.thukhr-settings-tabs>button{transition:none}}
+
+/* Explicit date labels prevent ambiguous browser-native month/day/year placeholders. */
+.thukhr-date-filter{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12px;font-weight:600;color:var(--ui-text)}
+.thukhr-date-filter>input{width:100%;min-width:0;min-height:43px;color:var(--ui-text);font-size:13px}
+.thukhr-date-filter>span{font-size:12px;font-weight:600;color:var(--ui-text)}
+.thukhr-date-filter>small{font-size:11px;line-height:1.4;color:var(--ui-dim);font-weight:400}
+@media(max-width:760px){
+ body[data-thukhr-theme] .filters>.thukhr-date-filter{min-width:0}
+ body[data-thukhr-theme] .filters>.thukhr-date-filter input{font-size:12px}
+}
