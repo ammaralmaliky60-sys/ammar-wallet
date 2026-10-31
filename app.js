@@ -116,7 +116,7 @@ try {
     state=visual;
     localStorage.setItem(skinKey,'1');
   }
-}catch(e){state.settings.theme='dark'}
+}catch(e){/* Visual preferences cannot alter financial state when storage fails. */}
 const navs=[['workflow','calendar','خطة الدخل'],['living','wallet','المعيشة'],['emergency','shield','الطوارئ'],['reports','chart','التقارير'],['ledger','ledger','سجل الحركات'],['settings','settings','الإعدادات']];
 let settingsTab='account';
 const arabicMonth=period=>new Intl.DateTimeFormat('ar-IQ',{month:'long',year:'numeric'}).format(new Date(period+'-01T12:00:00'));
