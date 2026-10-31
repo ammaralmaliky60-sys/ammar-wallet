@@ -7,7 +7,7 @@
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : this, function (S) {
   'use strict';
 
-  const TYPES = new Set(['income', 'allocate', 'reserve', 'expense', 'pay', 'account', 'transfer', 'release', 'unreserve']);
+  const TYPES = new Set(['income', 'allocate', 'reserve', 'expense', 'pay', 'account', 'transfer', 'release', 'unreserve', 'withheld']);
   const METHODS = new Set(['card', 'cash']);
   const clone = value => JSON.parse(JSON.stringify(value));
   const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
@@ -137,10 +137,19 @@ function isEmergencyMovement(e,kinds){
       if (new Set(h.transactionIds).size !== h.transactionIds.length) fail('معرّفات حركات الأرشيف مكررة.');
     }
     if (state.reconciliations.some(r => !record(r))) fail('بيانات المطابقة غير صالحة.');
+    const closes=state.settings.monthClosures;
+    if(closes!==undefined){
+      if(!record(closes))fail('سجل إغلاق الأشهر غير صالح.');
+      for(const [period,item] of Object.entries(closes)){
+        if(!/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(period)||!record(item)||
+           !validDate(item.closedAt)||!Number.isSafeInteger(item.total)||item.total<0)
+          fail('بيانات إغلاق الشهر غير صالحة.');
+      }
+    }
   }
   function replay(state) {
     checkStructure(state);
-    const s = { card: 0, cash: 0, total: 0, unallocated: 0, wallets: {}, reserved: {}, paid: {}, income: 0, expenses: 0, obligationPaid: 0 };
+    const s = { card: 0, cash: 0, total: 0, unallocated: 0, wallets: {}, reserved: {}, paid: {}, income: 0, expenses: 0, obligationPaid: 0, withheld: 0 };
     const obligations = new Map(state.obligations.map(o => [o.id, o]));
     const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
     const legacy=state.settings.emergencyProtection?new Set(state.settings.emergencyProtection.legacyIds):null;
@@ -220,6 +229,16 @@ function isEmergencyMovement(e,kinds){
           s.paid[e.obligationId] = add(s.paid[e.obligationId], amount);
           s.obligationPaid = add(s.obligationPaid, amount);
           break;
+        case 'withheld':
+          obligation();
+          if (amount > obligations.get(e.obligationId).amount - s.reserved[e.obligationId] - s.paid[e.obligationId])
+            fail('الاستقطاع قبل الإيداع يتجاوز المتبقي من الالتزام.');
+          if(typeof e.note!=='string'||e.note.trim().length<4)
+            fail('وثّق سبب الاستقطاع السابق للإيداع.');
+          s.paid[e.obligationId] = add(s.paid[e.obligationId], amount);
+          s.obligationPaid = add(s.obligationPaid, amount);
+          s.withheld = add(s.withheld, amount);
+          break;
         case 'account':
           if (!METHODS.has(e.from) || !METHODS.has(e.to) || e.from === e.to) fail('اختر حسابين مختلفين لنقل المال.');
           s[e.from] = add(s[e.from], -amount);
@@ -240,6 +259,30 @@ function isEmergencyMovement(e,kinds){
     return s;
   }
   function stats(state) { return replay(state); }
+  function statsAsOf(state,until){
+    date(until);
+    const historical=clone(state);
+    historical.transactions=historical.transactions.filter(t=>t.date<=until);
+    historical.history=[];
+    return replay(historical);
+  }
+  function periodReport(state,period){
+    if(typeof period!=='string'||!/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(period))
+      fail('صيغة شهر التقرير غير صالحة.');
+    const first=period+'-01';
+    if(first>today())fail('شهر التقرير يقع في المستقبل.');
+    const d=new Date(first+'T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+1);d.setUTCDate(0);
+    const last=d.toISOString().slice(0,10);
+    const end=last<today()?last:today();
+    const before=new Date(first+'T12:00:00Z');before.setUTCDate(before.getUTCDate()-1);
+    const prev=before.toISOString().slice(0,10);
+    const opening=statsAsOf(state,prev),closing=statsAsOf(state,end);
+    const entries=state.transactions.filter(t=>t.date>=first&&t.date<=end);
+    const sum=type=>entries.filter(e=>e.type===type).reduce((n,e)=>n+e.amount,0);
+    return {period,start:first,end,opening,closing,entries,
+      income:sum('income'),expenses:sum('expense'),paid:sum('pay'),
+      withheld:sum('withheld'),reserves:sum('reserve')};
+  }
   function validate(state) { replay(state); return true; }
   function commit(state, event) {
     checkStructure(state);
@@ -247,6 +290,8 @@ function isEmergencyMovement(e,kinds){
     date(event.date);
     S.guardReceipt(state, event);
     if (event.date < state.cycle.start) fail('لا يمكن إضافة حركة إلى دورة مؤرشفة؛ اختر تاريخاً ضمن الدورة الحالية.');
+    if(state.settings.monthClosures?.[event.date.slice(0,7)])
+      fail('هذا الشهر مغلق مالياً؛ لا يمكن إضافة حركة دون فتحه بإجراء تدقيق مستقل.');
     const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
     if(isEmergencyMovement(event,kinds))checkEmergencyApproval(event);
     const next = clone(state);
@@ -263,6 +308,8 @@ function isEmergencyMovement(e,kinds){
     const next = clone(state);
     const index = next.transactions.findIndex(t => t.id === eventId);
     if (index < 0) fail('الحركة المطلوب حذفها غير موجودة.');
+    if(state.settings.monthClosures?.[next.transactions[index].date.slice(0,7)])
+      fail('هذا الشهر مغلق مالياً؛ لا يمكن حذف حركة منه.');
     if(isEmergencyMovement(next.transactions[index],new Map(next.wallets.map(w=>[w.id,w.kind]))))
       fail('عملية الطوارئ محمية. استخدم التصحيح الموثق من خزنة الطوارئ.');
     next.transactions.splice(index, 1);
@@ -340,5 +387,5 @@ function correctEmergency(state,eventId,reason){
     validate(next);
     return next;
   }
-  return Object.freeze({ initial, stats, validate, commit, remove, correctEmergency, distribute, startCycle, today, uid, validDate });
+  return Object.freeze({ initial, stats, statsAsOf, periodReport, validate, commit, remove, correctEmergency, distribute, startCycle, today, uid, validDate });
 });
