@@ -27,7 +27,7 @@ function fixture(state,mode='salary-only'){
    return {...o,key:o.key,amount:part,fullAmount:full};
   }).filter(o=>o.amount>0),
   event:(st,t)=>E.commit(st,{id:E.uid(),date:day,...t})};
- const api=new Function('env','with(env){'+source+';return {smartBuild,smartStage,smartPrior,fundLivingTargets,workflowSettlementSnapshot}}')(env);
+ const api=new Function('env','with(env){'+source+';return {smartBuild,smartStage,smartPrior,fundLivingTargets,workflowSettlementSnapshot,monthlyCommitmentProjection}}')(env);
  return api;
 }
 const draft=(st,opts={})=>({base:JSON.stringify(st),month,mode:'salary-only',stage:'salary',existing:false,
@@ -158,4 +158,64 @@ test('the settlement result is prominent and the savings allocations are separat
  assert.match(app,/المتبقي بعد التسوية والتخصيص/);
  assert.match(app,/مخصص للأقسام/);
  assert.match(app,/محجوز للالتزامات/);
+});
+
+test('unsettled monthly plan reduces projected remainder without changing journal',()=>{
+ let st=base();
+ st.settings.twoStageWorkflow={plans:{[month]:{bankLoan:218000,housing:350000,split:0}},completed:{}};
+ st=E.commit(st,{type:'income',id:E.uid(),date:day,method:'card',amount:720000});
+ const raw=JSON.stringify(st),p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.count,2);assert.equal(p.uncovered,568000);assert.equal(p.remainingAfter,152000);
+ assert.equal(E.stats(st).unallocated,720000);
+ assert.equal(JSON.stringify(st),raw);
+});
+test('paid withheld and reserved amounts do not double reduce predicted balance',()=>{
+ let st=base();
+ st.settings.twoStageWorkflow={plans:{[month]:{bankLoan:200000,housing:300000,split:0}},completed:{}};
+ st=E.commit(st,{type:'income',id:E.uid(),date:day,method:'card',amount:900000});
+ st.obligations.push({id:'wf_bankLoan_2026_10',name:'قسط مستقطع',amount:200000,due:day,recurring:false});
+ st.obligations.push({id:'wf_housing_2026_10',name:'البيت',amount:300000,due:day,recurring:false});
+ st=E.commit(st,{type:'withheld',id:E.uid(),date:day,obligationId:'wf_bankLoan_2026_10',amount:200000,note:'استقطاع موثق قبل الإيداع'});
+ st=E.commit(st,{type:'reserve',id:E.uid(),date:day,obligationId:'wf_housing_2026_10',amount:200000});
+ let p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.count,2);assert.equal(p.uncovered,100000);assert.equal(p.remainingAfter,600000);
+ assert.equal(E.stats(st).unallocated,700000);
+ st=E.commit(st,{type:'pay',id:E.uid(),date:day,obligationId:'wf_housing_2026_10',amount:200000,method:'card'});
+ p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.uncovered,100000);assert.equal(p.remainingAfter,600000);
+});
+test('partial split settlement is counted once using full monthly obligation amount',()=>{
+ let st=base();st.settings.twoStageWorkflow={plans:{[month]:{split:9001}},completed:{}};
+ st=E.commit(st,{type:'income',id:E.uid(),date:day,method:'card',amount:30000});
+ st.obligations.push({id:'wf_split_2026_10',name:'سلفة مقسمة',amount:9001,due:day,recurring:false});
+ st=E.commit(st,{type:'withheld',id:E.uid(),date:day,obligationId:'wf_split_2026_10',amount:4500,note:'نصف القسط مستقطع من الحوافز'});
+ const p=fixture(st,'both').monthlyCommitmentProjection(st,month);
+ assert.equal(p.count,1);assert.equal(p.uncovered,4501);
+ assert.equal(p.remainingAfter,25499);
+});
+test('month-based standalone obligations are included and earlier months excluded',()=>{
+ let st=base();st=E.commit(st,{type:'income',id:E.uid(),date:day,method:'card',amount:200000});
+ st.obligations.push({id:'current',name:'اشتراك',amount:30000,due:day,recurring:false});
+ st.obligations.push({id:'old',name:'شهر سابق',amount:50000,due:'2026-09-15',recurring:false});
+ st.obligations.push({id:'archived',name:'ملغي',amount:40000,due:day,recurring:false,archived:true});
+ const p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.hasPlan,false);assert.equal(p.count,1);assert.equal(p.uncovered,30000);assert.equal(p.remainingAfter,170000);
+});
+test('projection can signal uncovered monthly deficit without negative journal cash',()=>{
+ let st=base();st.settings.twoStageWorkflow={plans:{[month]:{bankLoan:200000}},completed:{}};
+ st=E.commit(st,{type:'income',id:E.uid(),date:day,method:'card',amount:125000});
+ const p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.remainingAfter,-75000);assert.equal(p.uncovered,200000);
+ assert.equal(E.stats(st).total,125000);
+});
+test('empty month shows no fictitious commitments',()=>{
+ let st=base();st=E.commit(st,{type:'income',id:E.uid(),date:day,method:'card',amount:95000});
+ const p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.count,0);assert.equal(p.uncovered,0);assert.equal(p.remainingAfter,95000);
+});
+test('projection appears on both workflow and final review with drilldown',()=>{
+ assert.match(app,/class="wf-commitment-projection/);
+ assert.match(app,/تفاصيل احتساب/);
+ assert.match(app,/المتبقي المتوقع بعد جميع الالتزامات الشهرية/);
+ assert.match(app,/التزامات شهرية لم تُغطَّ بعد/);
 });
