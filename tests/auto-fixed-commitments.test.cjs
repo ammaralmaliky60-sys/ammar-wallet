@@ -142,6 +142,7 @@ test('saving a new opted-in fixed commitment immediately settles an already reco
   monthlyFields:(s=ctx.state)=>s.settings.wfFields||[],monthlyAllFields:(s=ctx.state)=>s.settings.wfFields||[],
   wfPlan:()=>ctx.state.settings.twoStageWorkflow?.plans?.[month]||{},
   wfData:s=>s.settings.twoStageWorkflow||{plans:{},completed:{}},
+  wfObId:(m,k)=>'wf_'+k+'_'+m.replace('-','_'),
   wfIncomeMode:()=> 'salary-only',
   wfFreezeIncomeMode:s=>s,
   monthlyFieldStageLabel:()=> 'من الراتب',
