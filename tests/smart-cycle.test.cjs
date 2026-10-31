@@ -18,6 +18,7 @@ function fixture(state,mode='salary-only'){
   wfObId:(m,k)=>'wf_'+k+'_'+m.replace('-','_'),monthlyAllFields:()=>fields,monthlyFields:()=>fields,
   livingCategories:()=>[{id:'home',label:'المنزل',kind:'spend',color:'#abcdef'}],
   livingTargets:(m,st)=>st.settings.livingTargets?.[m]||{},
+  livingBudgetSummary:(m,st)=>({total:Object.values(st.settings.livingTargets?.[m]||{}).reduce((sum,v)=>sum+v,0),rows:[]}),
   livingNeeds:(targets,st)=>{const stats=E.stats(st),spent=st.transactions.filter(t=>t.type==='expense'&&t.walletId==='home'&&t.date.slice(0,7)===month).reduce((n,t)=>n+t.amount,0);
    const needed=Math.max(0,(targets.home||0)-spent-(stats.wallets.home||0));return {rows:[{id:'home',label:'المنزل',additional:needed}],additional:needed}},
   wfAmount:(plan,step)=>fields.map(o=>{const full=plan[o.key]||0;let part=0;
@@ -215,13 +216,13 @@ test('empty month shows no fictitious commitments',()=>{
 });
 test('planning result and ledger free balance are separately presented',()=>{
  assert.match(app,/class="wf-commitment-projection/);
- assert.match(app,/المتبقي بعد طرح جميع الالتزامات الشهرية/);
+ assert.match(app,/المتبقي التخطيطي بعد الثوابت وميزانية المعيشة/);
  assert.match(app,/رصيد الحساب الكلي/);
- assert.match(app,/ناقص مجموع الالتزامات/);
+ assert.match(app,/مجموع المطلوب للشهر/);
  assert.match(app,/المتبقي الحر فعلياً بعد الحجز والتخصيص/);
  assert.match(app,/تفاصيل الالتزامات الشهرية/);
  assert.match(app,/wfMonth===today\(\)\.slice\(0,7\)/);
- assert.match(app,/المتبقي التخطيطي بعد كامل الالتزامات/);
+ assert.match(app,/المتبقي التخطيطي بعد الثوابت والمعيشة/);
 });
 test('nominal monthly total less six listed obligations returns 213000 IQD, separately from free cash',()=>{
  let st=base();
