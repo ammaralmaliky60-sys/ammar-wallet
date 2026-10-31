@@ -589,11 +589,12 @@ function smartIncome(d){
  },'التالي · الالتزامات');
 }
 
+const DEFAULT_OBLIGATION_STATUS='pay';
 function obligationStatusOptions(stage='salary'){
  return [
+  ['pay','دفعته فعلياً'],
   ['reserve','راح أدفعه لاحقاً'],
-  ['withheld',stage==='incentives'?'انخصم من حوافزي':'انخصم من راتبي'],
-  ['pay','دفعته فعلياً']
+  ['withheld',stage==='incentives'?'انخصم من حوافزي':'انخصم من راتبي']
  ];
 }
 function obligationStatusExplanation(mode){
@@ -601,10 +602,11 @@ function obligationStatusExplanation(mode){
  if(mode==='pay')return 'تم الدفع بعد الاستلام: ينقص رصيد البطاقة أو النقد حسب حساب الدفع المحدد.';
  return 'بعده ما اندفع: نحجزه من المتاح للصرف، ويبقى رصيد البطاقة والنقد دون تغيير.';
 }
-function obligationStatusSelect(name,value,stage){
+function obligationStatusSelect(name,value=DEFAULT_OBLIGATION_STATUS,stage='salary'){
+ const selected=['pay','reserve','withheld'].includes(value)?value:DEFAULT_OBLIGATION_STATUS;
  return `<div class="thukhr-status-choice">
-  ${select('حالة الالتزام',name,obligationStatusOptions(stage),value)}
-  <p class="thukhr-status-explain" data-mode="${safe(value)}" role="status" aria-live="polite">${safe(obligationStatusExplanation(value))}</p>
+  ${select('حالة الالتزام',name,obligationStatusOptions(stage),selected)}
+  <p class="thukhr-status-explain" data-mode="${safe(selected)}" role="status" aria-live="polite">${safe(obligationStatusExplanation(selected))}</p>
  </div>`;
 }
 function wireObligationStatusExplanations(){
@@ -628,12 +630,12 @@ function smartAllocate(d){
  const earlier=Object.entries(wfData().completed||{}).filter(([m])=>m<d.month).sort((a,b)=>b[0].localeCompare(a[0]));
  const previous=earlier.find(([,st])=>st?.[d.stage]?.decisions)?.[1]?.[d.stage]?.decisions||{};
  const settlement=potential.map(o=>`<div class="smart-row"><div><b>${safe(o.label)}</b><small>المبلغ يُحسب من خطة الشهر عند المراجعة النهائية</small></div>
- ${obligationStatusSelect('mode-'+o.key,d.choices[o.key]||previous[o.key]||'reserve',d.stage)}</div>`).join('');
+ ${obligationStatusSelect('mode-'+o.key,d.choices[o.key]||DEFAULT_OBLIGATION_STATUS,d.stage)}</div>`).join('');
  const budget=livingCategories().map(w=>moneyField(w.label,'living-'+w.id,inputMoney(d.targets[w.id]||0),'required')).join('');
  modal('الدورة الذكية · 2 من 3','يمكن تغيير المقترحات؛ كل مبلغ يبقى تحت مراجعتك.',
  `<div class="smart-steps"><b>1 · الدخل</b><b>2 · التسوية والميزانية</b><span>3 · المراجعة</span></div>
  <h3>الالتزامات الشهرية</h3><div class="smart-grid">${planRows||'<p class="wf-help">لا توجد بنود حالياً؛ لا تُنشأ حجوزات.</p>'}</div>
- <h3>حالة الاستقطاعات</h3><p class="wf-help">اقتراح الشهر السابق لا يعني السداد. راجع حالة كل بند قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
+ <h3>حالة الالتزام</h3><p class="wf-help">«دفعته فعلياً» هي الحالة الافتراضية الثابتة عند فتح النموذج، ولا تعني أن الدفع حدث مسبقاً. إذا لم تدفع البند فغيّر حالته إلى الحجز أو الاستقطاع قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
  ${select('دفعت فعلياً من','payMethod',methodOptions,d.payMethod)}
  <h3>ميزانية المعيشة</h3><p class="wf-help">حدد السقوف الثابتة التي تحتاجها، حتى لو تجاوزت المتاح. سيحفظها فِرزة دون إنشاء رصيد وهمي؛ ويمكن تمويل النقص لاحقاً عبر «أخرى» في المعيشة.</p>
  <div class="smart-grid">${budget||'<p class="wf-help">لا توجد أقسام معيشة.</p>'}</div>`,
@@ -643,7 +645,7 @@ function smartAllocate(d){
   for(const w of livingCategories())d.targets[w.id]=amount(f['living-'+w.id],true);
   const valid=new Set(['reserve','pay','withheld']);
   for(const o of wfAmount(d.plan,d.stage).filter(o=>o.amount>0)){
-   const mode=f['mode-'+o.key]||d.choices[o.key]||previous[o.key]||'reserve';
+   const mode=f['mode-'+o.key]||d.choices[o.key]||DEFAULT_OBLIGATION_STATUS;
    if(!valid.has(mode))throw Error('اختر حالة كل استقطاع.');
    d.choices[o.key]=mode;
   }
@@ -751,7 +753,7 @@ function smartReview(d){
  ${line('الحر بعد تغطية غير المغطى فقط',projection.remainingAfter)}
  </div>
  <p class="wf-help">${r.funding.shortfall?'ستُحفظ سقوف المعيشة كاملة دون تخصيصها الآن. بعد استلام مصدر آخر من صفحة المصروف، اضغط «استكمال التمويل».':'خطة المصروف قابلة للتمويل الآن. لا يُخصم التخصيص من البطاقة أو النقد.'} عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
- <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> أوافق على الدخل والاستقطاعات وتوزيع المعيشة كما تظهر أعلاه.</label></div>`,
+ <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> راجعت المدفوعات الفعلية والحجوزات والاستقطاعات وأوافق على تسجيلها كما تظهر أعلاه.</label></div>`,
  f=>{if(f.confirm!=='yes')throw Error('تأكيد المراجعة إلزامي.');
   act(n=>smartBuild(n,d).next,'تم اعتماد الدورة المالية كاملة بحفظ واحد');},'اعتماد الدورة بالكامل');
  $('modalForm').insertAdjacentHTML('beforeend','<button type="button" class="btn secondary smart-back" id="smartBack">السابق · التسوية</button>');
@@ -882,14 +884,14 @@ function wfApply(stage){
  const ops=wfAmount(plan,stage).filter(x=>x.amount>0);
  const rows=ops.map(o=>`<div class="wf-step thukhr-settlement-row">
   <div><strong>${safe(o.label)}</strong><b>${money(o.amount)}</b></div>
-  ${obligationStatusSelect('settle-'+o.key,'reserve',stage)}
+  ${obligationStatusSelect('settle-'+o.key,DEFAULT_OBLIGATION_STATUS,stage)}
   </div>`).join('');
  modal('تسوية استقطاعات '+(stage==='salary'?'الراتب':'الحوافز'),
-  'حدّد حالة كل بند على حدة. لا يُخصم الاستقطاع السابق للإيداع من الرصيد الصافي.',
+  'الحالة الافتراضية «دفعته فعلياً». صحّح حالة أي بند غير مدفوع قبل اعتماد التسوية؛ الاستقطاع السابق للإيداع لا يُخصم مرتين.',
   `<div class="wf-steps">${rows||'<div class="notice">لا توجد استقطاعات لهذه الدفعة.</div>'}</div>
   ${select('دفعت فعلياً من','method',methodOptions)}
-  <div class="notice">المستقطع من المصدر يُوثّق كتسوية غير نقدية؛ المدفوع فعلياً يخفض البطاقة أو النقد؛ والمحجوز يقلل المتاح فقط.</div>
-  <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أراجع حالات كل بند وأوافق على تنفيذها مرة واحدة</label></div>`,
+  <div class="notice warn">تنبيه: «دفعته فعلياً» محددة افتراضياً، لكنها لا تثبت السداد. عند الاعتماد سيُخصم كل بند على هذه الحالة من البطاقة أو النقد. غيّر البنود غير المدفوعة قبل الموافقة.</div>
+  <div class="field"><label><input type="checkbox" name="approve" value="yes" required> راجعت البنود، وما أبقيته على «دفعته فعلياً» مدفوع بالفعل، وأوافق على تسجيل التسوية مرة واحدة</label></div>`,
   f=>{
    if(f.approve!=='yes')throw Error('الموافقة إلزامية.');
    const choices=ops.map(o=>({o,mode:f['settle-'+o.key]}));
