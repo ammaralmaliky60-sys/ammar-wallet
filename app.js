@@ -738,7 +738,8 @@ function smartReview(d){
  ${line('المحجوز بعد الاعتماد',Object.values(r.after.reserved).reduce((sum,v)=>sum+v,0))}
  ${line('المتبقي بعد التسوية والتخصيص',r.after.unallocated)}
  ${line('التزامات شهرية لم تُغطَّ بعد',projection.uncovered)}
- ${line('المتبقي المتوقع بعد جميع الالتزامات',projection.remainingAfter)}
+ ${line('المتبقي التخطيطي بعد كامل الالتزامات',projection.grossAfterAll)}
+ ${line('الحر بعد تغطية غير المغطى فقط',projection.remainingAfter)}
  </div>
  <p class="wf-help">${r.funding.shortfall?'ستُحفظ سقوف المعيشة كاملة دون تخصيصها الآن. بعد استلام مصدر آخر من صفحة المعيشة، اضغط «استكمال التمويل».':'خطة المعيشة قابلة للتمويل الآن. لا يُخصم التخصيص من البطاقة أو النقد.'} عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
  <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> أوافق على الدخل والاستقطاعات وتوزيع المعيشة كما تظهر أعلاه.</label></div>`,
@@ -785,8 +786,11 @@ function monthlyCommitmentProjection(st=state,month=wfMonth){
   add(o.id,o.name,o.amount);
  }
  const uncovered=entries.reduce((sum,o)=>sum+o.uncovered,0);
+ const plannedTotal=entries.reduce((sum,o)=>sum+o.amount,0);
+ // A nominal planning comparison, never a spendable cash balance:
+ // amounts already paid or withheld may already be reflected in stats.total.
  return {remainingAfter:stats.unallocated-uncovered,uncovered,
-  plannedTotal:entries.reduce((sum,o)=>sum+o.amount,0),
+  plannedTotal,grossAfterAll:stats.total-plannedTotal,
   count:entries.length,hasPlan:plan!==null,entries};
 }
 function workflowPage(){
@@ -800,33 +804,35 @@ function workflowPage(){
   <div class="wf-month"><label for="wfMonth">شهر الخطة</label><input id="wfMonth" type="month" value="${wfMonth}" max="${today().slice(0,7)}"><span class="thukhr-readable-month">${arabicMonth(wfMonth)}</span></div>
   <div class="wf-income-mode-controls"><span>نوع الدخل: <b>${salaryOnly?'راتب فقط':'راتب وحوافز'}</b></span>
    ${state.demo?'':btn('wf-income-mode','تغيير نوع الدخل','settings','secondary')}</div>
-  <div class="wf-settlement-result" aria-label="المتبقي بعد التسوية المالية">
+  ${wfMonth===today().slice(0,7)?`<div class="wf-settlement-result ${projection.grossAfterAll<0?'wf-gross-deficit':''}" aria-label="المتبقي التخطيطي بعد الالتزامات الشهرية">
    <div class="wf-settlement-result-head">
-    <span>المتبقي بعد التسوية والتخصيص</span>
-    <span class="wf-settlement-result-state ${settlement.completed?'is-complete':'is-pending'}">${settlement.completed?'التسوية معتمدة':'حتى الآن · التسوية غير مكتملة'}</span>
+    <span>المتبقي بعد طرح جميع الالتزامات الشهرية</span>
+    <span class="wf-settlement-result-state ${projection.grossAfterAll<0?'is-pending':'is-complete'}">${projection.grossAfterAll<0?'عجز تخطيطي':'حساب تخطيطي'}</span>
    </div>
-   <strong class="wf-settlement-result-value">${money(settlement.remaining)}</strong>
-   <p>المبلغ الحر بعد الحجوزات والتخصيصات المسجلة؛ لا يشمل المخصص للمعيشة والطوارئ. ${settlement.completed?'لا تُخصم الاستقطاعات الموثقة قبل الإيداع مرتين.':'قد يتغير عند اعتماد التسويات المتبقية.'}</p>
-  </div>
-  <div class="wf-commitment-projection ${projection.remainingAfter<0?'is-deficit':''}" aria-label="توقع الرصيد بعد الالتزامات الشهرية" ${wfMonth===today().slice(0,7)?'':'hidden'}>
-   <div class="wf-commitment-projection-head">
-    <span>المتبقي المتوقع بعد جميع الالتزامات الشهرية</span>
-    <small>${projection.remainingAfter<0?'عجز متوقع':'تقدير وفق البنود المسجلة'}</small>
+   <strong class="wf-settlement-result-value">${money(projection.grossAfterAll)}</strong>
+   <div class="wf-gross-equation">
+    <span>رصيد الحساب الكلي <b>${money(settlement.total)}</b></span>
+    <span>ناقص مجموع الالتزامات <b>− ${money(projection.plannedTotal)}</b></span>
    </div>
-   <strong class="wf-commitment-projection-value">${money(projection.remainingAfter)}</strong>
-   <div class="wf-commitment-projection-metrics">
-    <span>المتبقي الحر حالياً <b>${money(settlement.remaining)}</b></span>
-    <span>التزامات لم تُغطَّ بعد <b>${money(projection.uncovered)}</b></span>
-   </div>
-   <p>${projection.count?'يُطرح فقط الجزء غير المحجوز وغير المدفوع وغير المستقطع من التزامات هذا الشهر، مع منع احتساب البند مرتين.':'لم تُسجَّل التزامات للشهر المختار بعد؛ النتيجة لا تشمل أي التزامات لم تدخلها.'}
-   ${projection.remainingAfter<0?' توجد فجوة تمويلية متوقعة، وليست عملية سحب أو ديناً جديداً.':''}</p>
-   ${projection.count?`<details class="wf-commitment-projection-details"><summary>تفاصيل احتساب ${projection.count} التزام</summary>
+   <p>هذا ناتج طرح كامل الالتزامات المسجلة من رصيد الحساب الحالي، حسب طلبك. للمقارنة والتخطيط فقط، وليس رصيداً مصرفياً أو مبلغاً متاحاً للصرف؛ قد تتضمن الالتزامات مبالغ سُددت أو استُقطعت مسبقاً.</p>
+   ${projection.count?`<details class="wf-commitment-projection-details">
+    <summary>تفاصيل الالتزامات الشهرية (${projection.count})</summary>
     <div class="wf-commitment-projection-list">${projection.entries.map(o=>`<div class="wf-commitment-projection-item">
-     <span>${safe(o.label)}</span><small>المبلغ ${money(o.amount)} · المغطى ${money(o.covered)}</small>
-     <b>غير مغطى ${money(o.uncovered)}</b></div>`).join('')}</div></details>`:''}
-   <small class="wf-commitment-projection-disclaimer">يشمل خطة الشهر والالتزامات غير المؤرشفة المسجلة باستحقاق هذا الشهر فقط؛ لا يفترض ورود دخل مستقبلي، ولا يغير الأرصدة أو الحجوزات.</small>
+     <span>${safe(o.label)}</span>
+     <small>قيمة الالتزام ${money(o.amount)} · مسوّى أو محجوز ${money(o.covered)}</small>
+     <b>غير مغطى ${money(o.uncovered)}</b>
+    </div>`).join('')}</div>
+   </details>`:'<small class="wf-commitment-projection-disclaimer">لا توجد التزامات مدخلة لهذا الشهر؛ لا يمكن احتساب التزامات غير مسجلة.</small>'}
+  </div>`:'<div class="notice">مقارنة الرصيد الحالي مع التزامات شهر سابق غير متاحة؛ راجع كشف الشهر المؤرّخ بدلاً من ذلك.</div>'}
+  <div class="wf-commitment-projection" aria-label="الرصيد الحر الفعلي في السجل">
+   <div class="wf-commitment-projection-head">
+    <span>المتبقي الحر فعلياً بعد الحجز والتخصيص</span>
+    <small>${settlement.completed?'التسوية معتمدة':'التسوية غير مكتملة'}</small>
+   </div>
+   <strong class="wf-commitment-projection-value">${money(settlement.remaining)}</strong>
+   <p>هذا المبلغ غير الموزع في دفتر الحركات، ويختلف عن نتيجة الطرح التخطيطي أعلاه. لا يُعاد خصم المبالغ المدفوعة أو المستقطعة أو المحجوزة منه.</p>
+   ${wfMonth===today().slice(0,7)&&projection.uncovered>0?`<div class="wf-commitment-projection-metrics"><span>التزامات لم تُغطَّ بعد <b>${money(projection.uncovered)}</b></span><span>الحر بعد تغطيتها نظرياً <b>${money(projection.remainingAfter)}</b></span></div>`:''}
   </div>
-  ${wfMonth===today().slice(0,7)?'':'<div class="notice">توقع السداد يظهر للشهر الجاري فقط؛ لا يجوز استخدام الرصيد الحالي لتقدير المتبقي في شهر سابق. راجع التقرير المالي المؤرخ لذلك الشهر.</div>'}
   <div class="wf-snapshot">
    <div><span>رصيد الحساب الحالي</span><strong>${money(settlement.total)}</strong></div>
    <div><span>مخصص للأقسام</span><strong>${money(settlement.allocated)}</strong></div>
