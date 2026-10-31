@@ -11,7 +11,7 @@ const wizard=(changes={})=>Object.assign({name:'مستخدم',currency:'IQD',sta
  incomeMode:'salary-only',income:'0',method:'card',sourceId:'salary',incomePeriod:mon,plan:'later',obligations:[]},changes);
 const build=(old,setup)=>{
  let count=0;
- const env={E,S,currencies:{IQD:{dec:0}},uid:()=> 'unique'+(++count),
+ const env={E,S,autoFixedSettlement:(st)=>({next:st}),currencies:{IQD:{dec:0}},uid:()=> 'unique'+(++count),
   parseMoney:(raw,dec,zero=false)=>{const n=Number(raw);if(!Number.isSafeInteger(n)||n<0||(!zero&&!n))throw Error('أدخل مبلغاً موجباً');return n},
   event:(s,t)=>E.commit(s,{id:E.uid(),...t})};
  return new Function('env','with(env){'+wizardCode+';return wizardFreshPlan}')(env)(old,setup);
@@ -40,7 +40,7 @@ test('onboarding with no user commitments and zero income has no old obligations
  assert.equal(E.stats(next).total,0);
  assert.equal(JSON.stringify(old),copy);
 });
-test('monthly onboarding saves exactly user-entered commitments as plans, without new cash movements',()=>{
+test('onboarding stores only user-entered commitment plans without extra activity in isolated fixture',()=>{
  const next=build(initial(),wizard({income:'720000',obligations:[
   {name:'الإيجار',amount:'350000',stage:'salary'},
   {name:'القسط',amount:'218000',stage:'salary'}]}));
