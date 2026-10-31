@@ -134,7 +134,7 @@ test('monthly living budget is never added as a new obligation or a financial mo
 test('multi-item UI and monthly budget totals remain visible in app',()=>{
  for(const text of ['function quickExpenseEditor(', 'function quickExpenseBuild(', 'مراجعة مجموع الصرف',
   'إضافة بند آخر','تفاصيل ميزانية المعيشة','مجموع المطلوب للشهر',
-  'إجمالي ميزانية المعيشة لهذا الشهر'])assert.ok(app.includes(text));
+  'إجمالي ميزانية المصروف لهذا الشهر'])assert.ok(app.includes(text));
 });
 
 test('385000 living plan combines with 1450000 fixed commitments for the requested month',()=>{
