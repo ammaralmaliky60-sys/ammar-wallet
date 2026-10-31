@@ -17,8 +17,10 @@ test('date filters have explicit visible labels and human-readable Arabic dates'
  assert.match(app,/toFilterReadable/);
  assert.match(css,/thukhr-date-filter/);
 });
-test('five primary mobile navigation choices',()=>{
- assert.equal((html.match(/data-neo-page=/g)||[]).length+2,5);
+test('four simple navigation sections and original advanced more menu coexist',()=>{
+ assert.equal((html.match(/data-neo-page=/g)||[]).length,4);
+ assert.match(html,/fz-lite-dock-fixed/);
+ assert.match(html,/id="thukhrMoreButton"/);
  assert.match(html,/id="thukhrMoreMenu"/);
  assert.match(html,/href="#emergency"/);
  assert.match(html,/href="#ledger"/);
