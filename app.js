@@ -741,7 +741,7 @@ function smartReview(d){
  ${line('المتبقي التخطيطي بعد الثوابت والمعيشة',projection.grossAfterAll)}
  ${line('الحر بعد تغطية غير المغطى فقط',projection.remainingAfter)}
  </div>
- <p class="wf-help">${r.funding.shortfall?'ستُحفظ سقوف المعيشة كاملة دون تخصيصها الآن. بعد استلام مصدر آخر من صفحة المعيشة، اضغط «استكمال التمويل».':'خطة المعيشة قابلة للتمويل الآن. لا يُخصم التخصيص من البطاقة أو النقد.'} عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
+ <p class="wf-help">${r.funding.shortfall?'ستُحفظ سقوف المعيشة كاملة دون تخصيصها الآن. بعد استلام مصدر آخر من صفحة المصروف، اضغط «استكمال التمويل».':'خطة المصروف قابلة للتمويل الآن. لا يُخصم التخصيص من البطاقة أو النقد.'} عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
  <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> أوافق على الدخل والاستقطاعات وتوزيع المعيشة كما تظهر أعلاه.</label></div>`,
  f=>{if(f.confirm!=='yes')throw Error('تأكيد المراجعة إلزامي.');
   act(n=>smartBuild(n,d).next,'تم اعتماد الدورة المالية كاملة بحفظ واحد');},'اعتماد الدورة بالكامل');
@@ -855,7 +855,7 @@ function workflowPage(){
  ${state.demo?'':btn('wf-config','تحديد مبالغ الشهر','wallet','secondary')}
  ${wfStageSummary('incentives')}
  ${wfStageSummary('salary')}</details>
- <div class="wf-living-shortcut"><span>توزيع الميزانية متاح داخل الدورة الذكية؛ ولتسجيل صرف يومي افتح المعيشة.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى المصروف</button></div>
+ <div class="wf-living-shortcut"><span>توزيع الميزانية متاح داخل الدورة الذكية؛ ولتسجيل صرف يومي افتح المصروف.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى المصروف</button></div>
  ${Object.values(stats.wallets).some(v=>v>0)?'<div class="notice">إذا كانت عندك مبالغ موزعة سابقاً على محافظ قديمة، فهي لا تُحجز مرة ثانية. تكدر ترجع جزء منها إلى المتاح بعد موافقتك. <button type="button" class="btn small secondary" data-action="wf-release">إرجاع مبلغ من محفظة قديمة</button></div>':''}
  ${settled.length?`<details class="smart-cycle-advanced"><summary>التزامات بانتظار الدفع (${settled.length})</summary><section class="wf-stage"><h2>الالتزامات المؤجلة</h2><p class="wf-help">الحجز غير السداد. اضغط «سداد» فقط عند خروج المبلغ من البطاقة أو النقد فعلياً.</p>${settled.map(o=>`<div class="wf-step"><span>${safe(o.label)} · محجوز ${money(stats.reserved[o.id])}</span><button class="btn small secondary" data-action="wf-pay" data-id="${o.id}">سداد</button></div>`).join('')}</section></details>`:''}
  <div class="notice">الأرقام تنحفظ على جهازك داخل نفس السجل المالي السابق. سجل الحركات والنسخ الاحتياطية باقية. الدخل لا يُسجَّل إلا عند استلامه، والالتزامات لا تتحول إلى حجز أو سداد إلا بقرار منك.</div>`;
@@ -952,14 +952,14 @@ function livingCategoryManage(){
  }).join('');
  const hiddenRows=hidden.map(c=>`<div class="wf-category-row wf-category-hidden-row">
    <span class="wf-category-color" style="background:${c.color}"></span>
-   <div class="wf-category-info"><strong>${safe(c.label)}</strong><small>مخفي من المعيشة · بياناته ورصيده محفوظان</small></div>
+   <div class="wf-category-info"><strong>${safe(c.label)}</strong><small>مخفي من المصروف · بياناته ورصيده محفوظان</small></div>
    <button type="button" class="btn small secondary" data-action="wf-category-restore" data-id="${safe(c.id)}">إظهار</button>
    </div>`).join('');
- modal('إدارة أقسام المعيشة','تگدر تحذف حتى آخر قسم غير مستخدم، أو تخفي القسم المرتبط ببيانات وتسترجعه لاحقاً.',
+ modal('إدارة أقسام المصروف','تگدر تحذف حتى آخر قسم غير مستخدم، أو تخفي القسم المرتبط ببيانات وتسترجعه لاحقاً.',
  `<div class="wf-category-list">
   ${activeRows||'<div class="wf-category-empty"><strong>ما عندك أقسام معيشة حالياً</strong><p>أضف القسم الذي تحتاجه من الزر أدناه، ولا توجد أقسام إجبارية.</p></div>'}
  </div><button type="button" class="btn wf-category-add" data-action="wf-category-add">إضافة قسم جديد</button>
- ${categories.length?'<button type="button" class="btn small danger wf-category-clear" data-action="wf-category-clear">إفراغ أقسام المعيشة</button>':''}
+ ${categories.length?'<button type="button" class="btn small danger wf-category-clear" data-action="wf-category-clear">إفراغ أقسام المصروف</button>':''}
  ${hidden.length?`<div class="wf-category-hidden-section"><h3>أقسام مخفية (${hidden.length})</h3>
  <p class="wf-help">تبقى ضمن السجل والأرصدة السابقة. تگدر ترجع أي قسم بزر «إظهار».</p>
  <div class="wf-category-list">${hiddenRows}</div></div>`:''}
@@ -969,7 +969,7 @@ function livingCategoryEdit(id=''){
  const old=id?livingCategories().find(x=>x.id===id):null;
  if(id&&!old)throw Error('هذا القسم غير موجود.');
  if(!old&&livingCategories().length>=12)throw Error('لا يمكن إضافة أكثر من 12 قسماً.');
- modal(old?'تعديل اسم القسم':'إضافة قسم جديد','يظهر القسم فوراً في المعيشة والصرف المباشر والميزانية وPDF.',
+ modal(old?'تعديل اسم القسم':'إضافة قسم جديد','يظهر القسم فوراً في المصروف والصرف المباشر والميزانية وPDF.',
   `<div class="form-grid">${field('اسم القسم','categoryName','text',old?.label||'','required maxlength="35" placeholder="مثلاً الأدوية أو الوقود"')}
    ${old?'':select('نوع القسم','categoryKind',[['spend','مصروف يومي'],['emergency','طوارئ']],'spend')}
    </div>`,
@@ -1003,7 +1003,7 @@ function livingCategoryEdit(id=''){
 function livingCategoryHide(id){
  const selected=livingCategories().find(c=>c.id===id);
  if(!selected)throw Error('القسم غير موجود ضمن الأقسام الظاهرة.');
- confirmModal('إخفاء قسم المصروف؟','سيختفي قسم «'+selected.label+'» من المعيشة والصرف الجديد، لكن رصيده وحركاته السابقة تبقى محفوظة ويمكن إظهاره لاحقاً.',
+ confirmModal('إخفاء قسم المصروف؟','سيختفي قسم «'+selected.label+'» من صفحة المصروف والصرف الجديد، لكن رصيده وحركاته السابقة تبقى محفوظة ويمكن إظهاره لاحقاً.',
  ()=>{
   act(n=>{
    const c=livingCategories(n).find(c=>c.id===id);
@@ -1031,10 +1031,10 @@ function livingCategoryRestore(id){
 }
 function livingCategoryClear(){
  const cats=livingCategories();
- if(!cats.length)throw Error('واجهة المعيشة فارغة أصلاً. تگدر تضيف أول قسم.');
+ if(!cats.length)throw Error('واجهة المصروف فارغة أصلاً. تگدر تضيف أول قسم.');
  const used=cats.filter(c=>livingCategoryIsUsed(state,c.id)||(currentStats().wallets[c.id]||0)>0);
  const unused=cats.length-used.length;
- confirmModal('إفراغ أقسام المعيشة؟',
+ confirmModal('إفراغ أقسام المصروف؟',
   'راح تصير قائمة الأقسام فارغة: نحذف '+unused+' قسم غير مستخدم، ونخفي '+used.length+
   ' قسم مرتبط بسجل أو رصيد مع الحفاظ على بياناته. ما راح نحذف أموالك أو حركاتك.',
   ()=>{
@@ -1056,7 +1056,7 @@ function livingCategoryClear(){
      }
     }
     return n;
-   },'صارت قائمة المعيشة فارغة. أضف الأقسام التي تحتاجها.');
+   },'صارت قائمة المصروف فارغة. أضف الأقسام التي تحتاجها.');
   },'نعم، أفرغ قائمة الأقسام');
 }
 function livingCategoryDelete(id){
@@ -1325,7 +1325,7 @@ function wfLivingPanel(){
   <div class="wf-stage-top"><div><span class="wf-kicker">ميزانية شهر ${wfMonth}</span>
    <h2>أقسام المصروف</h2></div><span class="chip">${livingCategories().length} قسم</span></div>
   <div class="wf-living-overview">
-   <div><span>إجمالي ميزانية المعيشة لهذا الشهر</span><strong>${money(livingBudgetSummary().total)}</strong></div>
+   <div><span>إجمالي ميزانية المصروف لهذا الشهر</span><strong>${money(livingBudgetSummary().total)}</strong></div>
    <div><span>المتاح للتوزيع</span><strong>${money(stats.unallocated)}</strong></div>
    <div><span>الموزّع على الأقسام</span><strong>${money(livingAllCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
   </div>
@@ -1335,7 +1335,7 @@ function wfLivingPanel(){
   <div class="wf-living-actions">
    ${livingCategories().length?btn('wf-living-allocate','تحديد ميزانية المصروف للشهر','wallet'):''}
    ${Object.keys(livingTargets()).length&&livingNeeds(livingTargets()).additional>0?btn('wf-living-fund','استكمال التمويل','check','secondary'):''}
-   ${btn('wf-category-manage','تحديد أقسام المعيشة','settings','secondary')}
+   ${btn('wf-category-manage','تحديد أقسام المصروف','settings','secondary')}
    ${btn('wf-release','إرجاع مبلغ إلى المتاح','wallet','secondary')}
   </div>
   <p class="wf-help">تحدد السقف الكامل للشهر بغضّ النظر عن الرصيد. حفظ الميزانية لا يحرك الأموال؛ وعند استكمال التمويل تُحتسب المصروفات السابقة والأرصدة الحالية حتى لا يتكرر التخصيص.</p>
@@ -1357,7 +1357,7 @@ function wfLivingAllocate(){
   'ثبّت المبالغ التي تحتاجها أولاً، حتى إن كانت أعلى من المتاح. يتم تمويلها لاحقاً بخطوة مستقلة.',
   `<div class="notice">المتاح للتوزيع الآن: <b>${money(available)}</b>. حفظ السقوف لا يغيّر رصيد البطاقة أو النقد ولا ينشئ تخصيصاً. بعد إضافة مصدر آخر مستلم فعلياً، اضغط «استكمال التمويل» من المعيشة.</div>
   <div class="wf-form-grid">${fields}</div>
-  <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أؤكد حفظ خطة المعيشة دون تسجيل صرف أو دخل</label></div>`,
+  <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أؤكد حفظ خطة المصروف دون تسجيل صرف أو دخل</label></div>`,
   f=>{
    if(f.approve!=='yes')throw Error('يجب تأكيد حفظ الخطة.');
    const targets=Object.fromEntries(livingCategories().map(w=>[w.id,amount(f['living-'+w.id],true)]));
@@ -1376,7 +1376,7 @@ function wfLivingFund(){
  const targets=livingTargets();
  if(!Object.keys(targets).length)throw Error('حدد ميزانية المعيشة أولاً.');
  const needed=livingNeeds(targets),available=currentStats().unallocated,shortfall=Math.max(0,needed.additional-available);
- if(!needed.additional){toast('خطة المعيشة مكتملة التمويل بالفعل.');return;}
+ if(!needed.additional){toast('خطة المصروف مكتملة التمويل بالفعل.');return;}
  if(shortfall){
   modal('خطة محفوظة · بانتظار التمويل','لا تحتاج لتقليل سقوف المعيشة بسبب نقص الرصيد.',
    `<div class="notice warn">المطلوب لاستكمال التخصيص: <b>${money(needed.additional)}</b> · المتاح: <b>${money(available)}</b> · النقص: <b>${money(shortfall)}</b>.</div>
@@ -1555,7 +1555,7 @@ function quickExpenseEditor(draft){
  const stats=currentStats();
  modal('صرف سريع · عدة بنود','سجّل عدة مشتريات دفعة واحدة، ثم راجع المجموع قبل اعتماد أي حركة.',
  `<div class="thukhr-quick-month">
-  <span>ميزانية المعيشة المحددة للشهر <b>${money(monthly.total)}</b></span>
+  <span>ميزانية المصروف المحددة للشهر <b>${money(monthly.total)}</b></span>
   <small>سقف تخطيطي؛ ليس رصيداً إضافياً للإنفاق</small></div>
   <div id="quickItems" class="thukhr-quick-items">${draft.items.map(rowHtml).join('')}</div>
   <button type="button" id="quickAddItem" class="btn secondary thukhr-quick-add">+ إضافة بند آخر</button>
@@ -1627,7 +1627,7 @@ function wfLivingQuick(){
   items:[{walletId:spend[0].id,amount:0,note:''}],duplicateApproved:false});
 }
 function wfLivingExpense(id){
- if(!livingCategories().some(w=>w.id===id))throw Error('اختر قسماً من أقسام المعيشة.');
+ if(!livingCategories().some(w=>w.id===id))throw Error('اختر قسماً من أقسام المصروف.');
  if(state.wallets.find(w=>w.id===id)?.kind==='emergency')throw Error('الطوارئ محمية. افتح خزنة الطوارئ للصرف الموثق.');
  if(!state.wallets.some(w=>w.id===id))throw Error('المحفظة لم تُنشأ بعد؛ خصص لها مبلغاً أولاً.');
  if((currentStats().wallets[id]||0)<=0)throw Error('رصيد هذه المحفظة صفر؛ خصص مبلغاً قبل تسجيل مصروف.');
@@ -1767,7 +1767,7 @@ function ledgerPage(){return head('سجل الحركات','كل حركة محف�
  <small id="toFilterReadable">التاريخ اختياري</small></label></div><div id="ledgerResults" class="thukhr-ledger-table">${ledgerRows([...state.transactions].reverse())}</div><div id="ledgerMobileResults" class="thukhr-ledger-mobile">${ledgerMobileRows([...state.transactions].reverse())}</div></section><div class="notice">عند حذف عملية، تُفحص الحركات التي تليها. إذا كان الحذف يجعل أي حساب أو محفظة سالبة، يُرفض لحماية دقة السجل.</div>`}
 function reportsPage(){const s=currentStats(),sum=summary(),sp=state.wallets.map(w=>({name:w.name,value:cycleTx().filter(t=>t.type==='expense'&&t.walletId===w.id).reduce((a,t)=>a+t.amount,0),color:w.color})),max=Math.max(1,...sp.map(x=>x.value)),reserved=Object.values(s.reserved).reduce((a,n)=>a+n,0),walletTotal=Object.values(s.wallets).reduce((a,n)=>a+n,0);return head('التقارير والتحليل','افهم سلوك الصرف وراجع توازن أموالك.',btn('wf-living-pdf','تنزيل PDF','download','secondary'))+`<div class="stat-grid">${stat(state.migration?'الدخل والرصيد الافتتاحي':'دخل هذه الدورة',sum.income,'income',state.migration?'يشمل افتتاح النسخة السابقة':'دخل مستلم فقط')}${stat('صرف المحافظ',sum.expenses,'wallet','مشترياتك الفعلية','blue')}${stat('الالتزامات المدفوعة',sum.paid,'check','سداد من المحجوز','gold')}${stat('الادخار والطوارئ',state.wallets.filter(w=>w.kind!=='spend').reduce((a,w)=>a+s.wallets[w.id],0),'saving','الرصيد الحالي المحمي','purple')}</div><div class="two-col"><section class="panel">${section('أين تذهب مصروفاتك؟','مصروفات المحافظ خلال الدورة الحالية')}<div class="report-bars">${sp.map(x=>`<div class="report-col" style="height:${Math.max(2,x.value/max*90)}%;background:${safe(x.color)}"><b class="num">${fmt(x.value)}</b><span>${safe(x.name)}</span></div>`).join('')}</div></section><section class="panel">${section('معادلة التوازن','مكان المال يساوي مجموع الأغراض المخصصة له.')}<div class="keyval"><span>البطاقة + النقد</span><b>${money(s.total)}</b></div><div class="keyval"><span>المحافظ والادخار</span><b>${money(walletTotal)}</b></div><div class="keyval"><span>الالتزامات المحجوزة</span><b>${money(reserved)}</b></div><div class="keyval"><span>غير موزّع</span><b>${money(s.unallocated)}</b></div><div class="notice">${icon('check')} الحساب متوازن · الفرق ${fmt(s.total-walletTotal-reserved-s.unallocated)} ${unit()}</div></section></div><section class="panel">${section('مطابقة الرصيد الفعلي','المطابقة تكشف الفرق ولا تنشئ تسوية صامتة.')}<form id="reconcileForm" class="form-grid"><div class="field"><label for="reconMethod">الحساب</label><select id="reconMethod" name="method"><option value="card">البطاقة</option><option value="cash">النقد</option></select></div><div class="field"><label for="reconActual">الرصيد الفعلي الآن (${unit()})</label><input id="reconActual" name="actual" type="text" data-money inputmode="${ccy().dec?'decimal':'numeric'}" autocomplete="off" oninput="window.mizanFormatMoneyInput(this)" required></div><div class="full">${btn('submit-recon','مطابقة الرصيد','check')}</div></form><div id="reconResult"></div><p class="help-text">طابق فقط الأموال التي أدخلتها في ميزان، إذا كان حسابك يحوي أموالاً أخرى خارج الخطة.</p></section><section class="panel">${section('الدورات المؤرشفة','ملخص كل دورة عند استلام الدخل الجديد.')}${state.history.length?state.history.slice().reverse().map(h=>`<div class="keyval"><span>${date(h.start||h.cycle?.start||today(),true)}</span><b>${money(h.total??h.summary?.total??h.closingTotal??h.closing?.total??0)}</b></div>`).join(''):empty('ستجد دوراتك السابقة هنا','ابدأ دورة جديدة ليُحفظ ملخص الدورة الحالية.')}${state.legacyHistory?.length?'<div class="notice">أرشيف النسخة السابقة: '+state.legacyHistory.length+' دورات محفوظة في النسخة الاحتياطية، دون إضافتها إلى الرصيد الحالي.</div>':''}<div class="settings-actions">${btn('backup','تنزيل السجل الكامل','download','secondary')}</div></section>`}
 function settingsPage(){const html= head('الإعدادات','الحساب والمظهر ومواعيد الدخل والنسخ الاحتياطية.')+`<div class="two-col"><section class="panel">${section('مساحتك الشخصية','خصّص تجربتك حسب احتياجك.')}<form id="settingsForm" class="form-grid"><div class="field full"><label for="userName">الاسم المفضل</label><input name="name" id="userName" maxlength="40" value="${safe(state.settings.name)}" placeholder="كيف تحب أن نناديك؟"></div><div class="field"><label for="currency">العملة الأساسية</label><select id="currency" name="currency" ${state.transactions.length?'disabled':''}>${Object.entries(currencies).map(([k,c])=>`<option value="${k}" ${k===state.settings.currency?'selected':''}>${c.label} (${k})</option>`).join('')}</select><small>لعملة جديدة، ابدأ خطة مستقلة. لا تُحوَّل الأرصدة بتغيير الاسم.</small></div><div class="field"><label for="digits">عرض الأرقام</label><select id="digits" name="digits"><option value="en" ${state.settings.digits==='en'?'selected':''}>123,456</option><option value="ar" ${state.settings.digits==='ar'?'selected':''}>١٢٣٬٤٥٦</option></select></div><div class="full"><button class="btn" type="submit">حفظ التفضيلات</button></div></form></section><section class="panel">${section('صورة العائلة','اختيارية، ولا تغادر جهازك أو تُرفع إلى GitHub.')}
- <p class="thukhr-privacy">يمكنك اختيار صورتك العائلية لتظهر في ترحيب فِرزة وقسم الأهداف العائلية. تُحفظ في مساحة المتصفح نفسها فقط. حذف بيانات الموقع يمحوها.</p>
+ <p class="thukhr-privacy">يمكنك اختيار صورتك العائلية لتظهر في قسم الأهداف العائلية فقط. تُحفظ في مساحة المتصفح نفسها فقط. حذف بيانات الموقع يمحوها.</p>
  <div class="thukhr-family-settings">
  <img class="thukhr-photo-preview" data-thukhr-family-photo alt="معاينة الصورة العائلية">
  <label class="btn soft" for="thukhrFamilyFile">اختيار صورة من الجهاز</label>
@@ -1983,7 +1983,7 @@ function openFinancialReset(){
  const profile=localProfiles().find(p=>p.id===activeProfile)?.name||'المساحة الحالية';
  const stats=E.stats(state);
  const summary='عدد الحركات '+state.transactions.length+' · الرصيد '+fmt(stats.total)+' '+unit();
- modal('تهيئة بيانات ذُخر والبدء من جديد','تصفير السجل المالي الحالي فقط، وليس دورة مالية جديدة.',
+ modal('تهيئة بيانات فِرزة والبدء من جديد','تصفير السجل المالي الحالي فقط، وليس دورة مالية جديدة.',
  `<section class="thukhr-reset-summary">
    <strong>الملف المستهدف: ${safe(profile)}</strong>
    <span>${safe(summary)}</span>
