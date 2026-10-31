@@ -430,8 +430,24 @@ function wfActivate(){
   }catch(e){showError(e.message)}
  },'أوافق وأبدأ بدون رصيد');
 }
+function checkEditableMonth(month=wfMonth){
+ if(month!==today().slice(0,7))throw Error('الأشهر السابقة للعرض والتقرير فقط؛ اختر الشهر الجاري لتعديل الموازنة.');
+ if(state.settings.closedMonths?.[month])throw Error('هذا الشهر مغلق مالياً.');
+}
+function checkLikelyIncomeDuplicate(s,t){
+ if(t.type!=='income')return;
+ const month=t.incomePeriod||t.date.slice(0,7);
+ const similar=s.transactions.filter(x=>x.type==='income'&&x.amount===t.amount&&x.method===t.method&&
+  x.date.slice(0,7)===month&&Math.abs(diff(x.date,t.date))<=7);
+ if(t.sourceId&&similar.some(x=>!x.sourceId&&
+  (t.sourceId==='salary'?/راتب|الدورة الجديدة|الدخل المستلم للدورة|salary/i:/حوافز|incentive/i).test(x.note||'')))
+  throw Error('يوجد دخل قديم بنفس المبلغ؛ استخدم «ربط دخل مسجّل» بدلاً من إدخاله مرتين.');
+ if(similar.some(x=>x.sourceId===t.sourceId&&x.note===t.note&&x.date===t.date))
+  throw Error('تم تسجيل دخل مطابق لنفس التاريخ والمبلغ والمصدر.');
+}
 function wfConfig(){
  if(state.demo)throw Error('ابدأ خطتك الفعلية أولاً.');
+ checkEditableMonth();
  if(wfDone('incentives')||wfDone('salary'))throw Error('لا يمكن تعديل مبالغ شهر تم تنفيذ إحدى دفعاته. البنود قابلة للإدارة للمستقبل دون تغيير الحركات الماضية.');
  const selected=monthlyFields();if(!selected.length)throw Error('قائمة البنود فارغة. اضغط «إدارة البنود» لإضافة أول بند.');
  const current=wfPlan()||{};
@@ -765,7 +781,7 @@ function livingTargets(month=wfMonth,st=state){
  return st.settings.livingTargets?.[month]||{};
 }
 function livingNeeds(targets,st=state,month=wfMonth){
- const stats=E.stats(st);
+ const stats=month<today().slice(0,7)?E.statsAsOf(st,financialMonthWindow(month).last):E.stats(st);
  const result=livingCategories(st).map(w=>{
   const target=targets[w.id]||0;
   const spent=st.transactions.filter(t=>t.type==='expense'&&t.walletId===w.id&&t.date.slice(0,7)===month).reduce((sum,t)=>sum+t.amount,0);
@@ -913,6 +929,7 @@ function wfLivingPanel(){
 }
 function wfLivingAllocate(){
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
+ checkEditableMonth();
  if(!livingCategories().length)throw Error('أضف قسماً للمعيشة أولاً قبل تحديد الميزانية.');
  const preset=livingTargets(),available=currentStats().unallocated;
  const fields=livingCategories().map(w=>{
@@ -1236,7 +1253,10 @@ function requireReal(){if(state.demo){modal('الخطة التوضيحية','ج�
 function openIncome(sourceId='',requestedPeriod=''){const source=S.sources(state).find(x=>x.id===sourceId),periodValue=requestedPeriod||today().slice(0,7);modal(source?'تأكيد استلام '+source.name:'تسجيل دخل مستلم','يدخل المبلغ الفعلي في خطتك الحالية دون تصفير الأرصدة.',`<div class="form-grid">${select('مصدر الدخل','sourceId',[['','دخل إضافي / رصيد افتتاحي'],...S.sources(state).filter(x=>wfIncomeMode(periodValue)!=='salary-only'||x.id!=='incentives').map(x=>[x.id,x.name])],source?.id||'')}${field('استحقاق أي شهر؟','incomePeriod','month',periodValue,`max="${today().slice(0,7)}"`)}${amountField()}${select('مكان الاستلام','method',methodOptions)}${dateField()}${field('الوصف','note','text',source?.name||'','required maxlength="100" placeholder="راتب، حوافز، عمل حر…"')}</div><div class="notice">الموعد المتوقع لا يزيد الرصيد. بعد تأكيد الاستلام، احجز الالتزامات ثم وزّع المتاح. يُسجّل كل مصدر مرة للشهر؛ الدفعات الإضافية تُسجّل كدخل إضافي.</div>`,f=>act(s=>{const selected=S.sources(s).find(x=>x.id===f.sourceId);
  if(selected?.id==='incentives'&&wfIncomeMode(f.incomePeriod,s)==='salary-only')throw Error('هذا الشهر راتب فقط؛ غيّر نوع الدخل أولاً.');
  const mode=selected?wfIncomeMode(f.incomePeriod,s):null;
- const next=event(s,{type:'income',amount:amount(f.amount),method:f.method,date:f.date,note:f.note.trim(),...(selected?{sourceId:selected.id,sourceName:selected.name,incomePeriod:f.incomePeriod}:{})});
+ const entry={type:'income',amount:amount(f.amount),method:f.method,date:f.date,note:f.note.trim(),
+  ...(selected?{sourceId:selected.id,sourceName:selected.name,incomePeriod:f.incomePeriod}:{})};
+ checkLikelyIncomeDuplicate(s,entry);
+ const next=event(s,entry);
  if(selected)next.settings.wfIncomeModes={...(next.settings.wfIncomeModes||{}),[f.incomePeriod]:mode};
  return next},'تم تأكيد الاستلام وإضافته للخطة الحالية'),'تأكيد الاستلام');const form=$('modalForm');const update=()=>{const selected=S.sources(state).find(x=>x.id===form.elements.sourceId.value);form.elements.incomePeriod.disabled=!selected;form.elements.incomePeriod.required=!!selected;if(selected)form.elements.note.value=selected.name};form.elements.sourceId.addEventListener('change',update);update();}
 
