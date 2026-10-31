@@ -89,19 +89,19 @@ test('explicit cash method never silently withdraws from card',()=>{
  assert.equal(E.stats(r.next).card,100000);assert.equal(E.stats(r.next).cash,0);
 });
 test('fixed obligations automatically carry into a future month only when opted in',()=>{
- let st=configured(base(),[field('fixed','salary',350000),field('old','salary',50000,false)]);
- st=income(st,700000,'salary','card','2026-11','2026-11-01');
- const r=result(st,'salary','2026-11','card','2026-11-01');
+ let st=configured(base(),[field('fixed','salary',350000),field('old','salary',50000,false)],'2026-09');
+ st=income(st,700000);
+ const r=result(st);
  assert.equal(r.paid,350000);
- assert.equal(r.next.settings.twoStageWorkflow.plans['2026-11'].fixed,350000);
- assert.equal(r.next.settings.twoStageWorkflow.plans['2026-11'].old,undefined);
+ assert.equal(r.next.settings.twoStageWorkflow.plans[month].fixed,350000);
+ assert.equal(r.next.settings.twoStageWorkflow.plans[month].old,undefined);
  assert.equal(E.stats(r.next).total,350000);
 });
 test('opted-in fixed editor and ordinary income recording are both connected',()=>{
  assert.match(app,/function fixedCommitmentEdit\(/);
  assert.match(app,/fixed-entry/);
  assert.match(app,/fixed-edit/);
- assert.match(app,/autoDeduct:f/);
+ assert.match(app,/field\.autoDeduct=f\.autoDeduct/);
  assert.match(app,/autoFixedSettlement\(next,selected\.id,f\.incomePeriod,f\.method,f\.date\)/);
  assert.match(app,/autoFixedSettlement\(n,d\.stage,d\.month,d\.payMethod,d\.date\)/);
 });
