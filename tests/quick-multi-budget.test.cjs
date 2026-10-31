@@ -136,3 +136,17 @@ test('multi-item UI and monthly budget totals remain visible in app',()=>{
   'إضافة بند آخر','تفاصيل ميزانية المعيشة','مجموع المطلوب للشهر',
   'إجمالي ميزانية المعيشة لهذا الشهر'])assert.ok(app.includes(text));
 });
+
+test('385000 living plan combines with 1450000 fixed commitments for the requested month',()=>{
+ let st=income(base(),1663000);
+ st.settings.twoStageWorkflow={plans:{[month]:{
+  hyper:150000,housing:320000,workLoan:500000,internet:35000,generator:60000,bankLoan:385000
+ }},completed:{}};
+ st.settings.livingTargets={[month]:{home:75000,vegetables:125000,kids:60000,emergency:0,personal:125000}};
+ const p=project(st);
+ assert.equal(p.plannedTotal,1450000);
+ assert.equal(p.livingTotal,385000);
+ assert.equal(p.combinedTotal,1835000);
+ assert.equal(p.grossAfterAll,-172000);
+ assert.equal(E.stats(st).total,1663000);
+});
