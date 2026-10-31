@@ -330,7 +330,7 @@ function livingCategoryManage(){
 function livingCategoryEdit(id=''){
  const old=id?livingCategories().find(x=>x.id===id):null;
  if(id&&!old)throw Error('هذا القسم غير موجود.');
- if(!old&&livingCategories().length>=18)throw Error('لا يمكن إضافة أكثر من 18 قسماً.');
+ if(!old&&livingCategories().length>=12)throw Error('لا يمكن إضافة أكثر من 12 قسماً.');
  modal(old?'تعديل اسم القسم':'إضافة قسم جديد','يظهر القسم فوراً في المعيشة والصرف المباشر والميزانية وPDF.',
   `<div class="form-grid">${field('اسم القسم','categoryName','text',old?.label||'','required maxlength="35" placeholder="مثلاً الأدوية أو الوقود"')}
    ${old?'':select('نوع القسم','categoryKind',[['spend','مصروف يومي'],['emergency','طوارئ']],'spend')}
