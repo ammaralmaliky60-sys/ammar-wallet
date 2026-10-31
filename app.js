@@ -758,9 +758,11 @@ function autoFixedSettlement(original,stage,month,method,date){
   if(o?.archived||o&&o.amount!==full){skipped.push({label:field.label,reason:'سجل الالتزام مختلف أو مؤرشف'});continue}
   const stats=E.stats(next);
   const paidSoFar=(stats.paid[id]||0)+(stats.withheld?.[id]||0);
-  const target=wfIncomeMode(month,next)==='both'&&field.stage==='split'&&stage==='incentives'
-   ?Math.floor(full/2):full;
-  const due=Math.max(0,Math.min(part,target-paidSoFar));
+  const stageMemo='خصم تلقائي من '+(stage==='salary'?'الراتب':'الحوافز')+' · '+month+' · ';
+  const paidForStage=next.transactions.filter(t=>t.type==='pay'&&t.obligationId===id&&
+   typeof t.note==='string'&&t.note.startsWith(stageMemo)).reduce((sum,t)=>sum+t.amount,0);
+  // The same split obligation can be settled in either income arrival order.
+  const due=Math.max(0,Math.min(part-paidForStage,full-paidSoFar));
   if(!due)continue;
   const reserved=stats.reserved[id]||0;
   const extra=Math.max(0,due-reserved);
@@ -780,10 +782,12 @@ function autoFixedSettlement(original,stage,month,method,date){
  const allAuto=fields.length>0&&fields.every(f=>f.autoDeduct===true);
  const allCovered=fields.every(f=>{
   const id=wfObId(month,f.key),stat=E.stats(next);
-  const paid= (stat.paid[id]||0)+(stat.withheld?.[id]||0);
-  const target=wfIncomeMode(month,next)==='both'&&f.stage==='split'&&stage==='incentives'
-    ?Math.floor(Number(wfData(next).plans[month][f.key]||0)/2):Number(wfData(next).plans[month][f.key]||0);
-  return paid>=target;
+  const full=Number(wfData(next).plans?.[month]?.[f.key]||0);
+  if((stat.paid[id]||0)+(stat.withheld?.[id]||0)>=full)return true;
+  const stageMemo='خصم تلقائي من '+(stage==='salary'?'الراتب':'الحوافز')+' · '+month+' · ';
+  const sourcePaid=next.transactions.filter(t=>t.type==='pay'&&t.obligationId===id&&
+   typeof t.note==='string'&&t.note.startsWith(stageMemo)).reduce((sum,t)=>sum+t.amount,0);
+  return sourcePaid>=autoFixedPlanShare(f,stage,month,next);
  });
  if(allAuto&&allCovered){
   const wf=wfData(next);
