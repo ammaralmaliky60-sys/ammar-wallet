@@ -1,0 +1,39 @@
+/* ذُخر — ضوابط المالية 1.7.0 — design-only addition. */
+.wf-settlement-list{display:grid;gap:12px;margin-bottom:16px}
+.wf-settlement-row{display:grid;grid-template-columns:minmax(125px,1fr) minmax(170px,1.35fr);gap:12px;align-items:start;
+ border:1px solid var(--th-line,var(--line));padding:13px;border-radius:14px;background:var(--th-panel,var(--surface))}
+.wf-settlement-row>span{display:grid;gap:4px;line-height:1.7}
+.wf-settlement-row>span strong{font-size:13px}
+.wf-settlement-row>span small{font-size:12px;color:var(--th-muted,var(--muted))}
+.wf-settlement-row .field{margin:0;min-width:0}
+.wf-settlement-row .field label{font-size:12px;line-height:1.55}
+.wf-settlement-row select{width:100%;min-height:49px;font-size:12px}
+.thukhr-finance-control{margin-top:16px}
+.thukhr-finance-control .keyval{gap:10px;flex-wrap:wrap}
+.thukhr-finance-control .keyval span{font-size:13px;min-width:0}
+.thukhr-finance-control .keyval span small{display:block;font-size:11px;line-height:1.65;
+ color:var(--th-muted,var(--muted));overflow-wrap:anywhere}
+.thukhr-finance-control .keyval b{font-size:13px;white-space:normal;overflow-wrap:anywhere}
+.thukhr-finance-list{display:grid;gap:7px}
+.wf-report-metrics{align-items:stretch}
+.wf-report-metrics>div{min-width:0}
+.wf-report-metrics span{line-height:1.55}
+.wf-report-metrics strong{overflow-wrap:anywhere}
+.wf-report-dashboard .settings-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.wf-report-dashboard .settings-actions>.btn{flex:1 1 165px}
+[data-settings-group="account"]>.settings-actions{display:flex;flex-wrap:wrap;gap:8px}
+[data-settings-group="account"]>.settings-actions>.btn{min-width:125px}
+@media(max-width:760px){
+ .wf-settlement-row{grid-template-columns:1fr;gap:6px}
+ .wf-settlement-row .field{width:100%}
+ .wf-settlement-row>span{display:flex;justify-content:space-between;flex-wrap:wrap;gap:7px}
+ .thukhr-finance-control{padding:15px 12px}
+ .thukhr-finance-control .form-grid{grid-template-columns:1fr 1fr;gap:10px}
+ .thukhr-finance-control .form-grid>.full{grid-column:1/-1}
+ .thukhr-finance-control .keyval{align-items:flex-start}
+ .thukhr-finance-control .keyval>span{flex:1 1 60%}
+ .thukhr-finance-control .keyval>b{max-width:100%}
+}
+@media(max-width:365px){
+ .thukhr-finance-control .form-grid{grid-template-columns:1fr}
+}
