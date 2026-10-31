@@ -218,4 +218,5 @@ test('projection appears on both workflow and final review with drilldown',()=>{
  assert.match(app,/تفاصيل احتساب/);
  assert.match(app,/المتبقي المتوقع بعد جميع الالتزامات الشهرية/);
  assert.match(app,/التزامات شهرية لم تُغطَّ بعد/);
+ assert.match(app,/wfMonth===today\(\)\.slice\(0,7\)\?'':'hidden'/);
 });
