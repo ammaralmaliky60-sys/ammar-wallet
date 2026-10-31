@@ -709,7 +709,7 @@ function workflowPage(){
  const wfIds=plan?monthlyAllFields().map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
   settled=wfIds.filter(o=>(stats.reserved[o.id]||0)>0);
  return head('خطة الدخل الشهرية',salaryOnly?'استلام الراتب وتوزيع الالتزامات بخطوات واضحة.':'تابع استلام الحوافز والراتب وتخصيص الالتزامات.',
-   state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):(btn('smart-cycle-open','الدورة الذكية · استلام وتسوية وتوزيع','check')+btn('wf-fields-manage',monthlyFields().length?'إدارة البنود':'إضافة بنود الشهر','settings','secondary')))+thukhrFamilyWelcome()+
+   state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):(btn('wf-fields-manage',monthlyFields().length?'إدارة البنود':'إضافة بنود الشهر','settings','secondary')))+thukhrFamilyWelcome()+
  `<section class="wf-intro">
   <div class="wf-month"><label for="wfMonth">شهر الخطة</label><input id="wfMonth" type="month" value="${wfMonth}" max="${today().slice(0,7)}"><span class="thukhr-readable-month">${arabicMonth(wfMonth)}</span></div>
   <div class="wf-income-mode-controls"><span>نوع الدخل: <b>${salaryOnly?'راتب فقط':'راتب وحوافز'}</b></span>
@@ -721,14 +721,14 @@ function workflowPage(){
   </div>
  </section>
  ${state.demo?'<div class="notice warn">هذا سجل تجريبي. اضغط «بدء خطتي الفعلية» لتسجيل استلام الحوافز والراتب الحقيقيين. لا تُجرى أي حركة تلقائياً.</div>':''}
- ${!plan?'<div class="notice">ابدأ من «إدارة البنود» حتى تختار بنود الشهر، ثم افتح «تحديد مبالغ الشهر» لإدخال المبالغ. لا يُحجز أو يُدفع أي مبلغ إلا بعد تأكيدك.</div>':
+ ${!plan?'<div class="notice">ابدأ الدورة الذكية لإدخال الدخل وتسوية الالتزامات وتوزيع ميزانية المعيشة في شاشة واحدة. لا تُحفظ أي حركة قبل الاعتماد.</div>':
   salaryOnly?'':splitFields.map(o=>{const half=Math.floor(plan[o.key]/2);return `<div class="wf-parts"><span>${safe(o.label)} · المبلغ الكامل <b>${money(plan[o.key])}</b></span><span>من الحوافز <b>${money(half)}</b></span><span>من الراتب <b>${money(plan[o.key]-half)}</b></span></div>`;}).join('')}
  <section class="smart-cycle-intro"><strong>دورة الشهر بثلاث خطوات</strong><p>الدخل، ثم الالتزامات والميزانية، ثم مراجعة الأرصدة. حفظ واحد فقط بعد الاعتماد.</p>${state.demo?'':btn('smart-cycle-open','ابدأ الدورة الذكية','check')}</section>
  <details class="smart-cycle-advanced"><summary>إظهار الإجراءات التفصيلية المتقدمة</summary>
  ${state.demo?'':btn('wf-config','تحديد مبالغ الشهر','wallet','secondary')}
  ${wfStageSummary('incentives')}
  ${wfStageSummary('salary')}</details>
- <div class="wf-living-shortcut"><span>بعد حجز الالتزامات، افتح صفحة المعيشة المستقلة وقسّم الرصيد المتبقي على أقسام المعيشة التي تختارها.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
+ <div class="wf-living-shortcut"><span>توزيع الميزانية متاح داخل الدورة الذكية؛ ولتسجيل صرف يومي افتح المعيشة.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
  ${Object.values(stats.wallets).some(v=>v>0)?'<div class="notice">إذا كانت عندك مبالغ موزعة سابقاً على محافظ قديمة، فهي لا تُحجز مرة ثانية. تكدر ترجع جزء منها إلى المتاح بعد موافقتك. <button type="button" class="btn small secondary" data-action="wf-release">إرجاع مبلغ من محفظة قديمة</button></div>':''}
  ${settled.length?`<details class="smart-cycle-advanced"><summary>التزامات بانتظار الدفع (${settled.length})</summary><section class="wf-stage"><h2>الالتزامات المؤجلة</h2><p class="wf-help">الحجز غير السداد. اضغط «سداد» فقط عند خروج المبلغ من البطاقة أو النقد فعلياً.</p>${settled.map(o=>`<div class="wf-step"><span>${safe(o.label)} · محجوز ${money(stats.reserved[o.id])}</span><button class="btn small secondary" data-action="wf-pay" data-id="${o.id}">سداد</button></div>`).join('')}</section></details>`:''}
  <div class="notice">الأرقام تنحفظ على جهازك داخل نفس السجل المالي السابق. سجل الحركات والنسخ الاحتياطية باقية. الدخل لا يُسجَّل إلا عند استلامه، والالتزامات لا تتحول إلى حجز أو سداد إلا بقرار منك.</div>`;
