@@ -312,20 +312,38 @@ function livingCategories(st=state){
  const saved=st.settings.livingCategories;
  return Array.isArray(saved)?saved:WF_LIVING;
 }
+function livingHiddenCategories(st=state){return Array.isArray(st.settings.livingHiddenCategories)?st.settings.livingHiddenCategories:[];}
+function livingAllCategories(st=state){return [...livingCategories(st),...livingHiddenCategories(st)];}
+function livingCategoryIsUsed(st,id){
+ return st.transactions.some(t=>t.walletId===id||t.from===id||t.to===id)||
+   st.history.some(h=>Array.isArray(h.transactionIds)&&h.transactionIds.some(tid=>st.transactions.some(t=>t.id===tid&&(t.walletId===id||t.from===id||t.to===id)))||
+      (JSON.stringify(h).includes('"'+id+'"')));
+}
 function livingCategoryManage(){
- const categories=livingCategories(),stats=currentStats();
- modal('تحديد أقسام المعيشة','غيّر أسماء الأقسام أو أضف قسماً جديداً. الحذف مسموح فقط قبل استخدام القسم.',
- `<div class="wf-category-list">${categories.map(c=>{
-  const inUse=state.transactions.some(t=>t.walletId===c.id||t.from===c.id||t.to===c.id);
-  const balance=stats.wallets[c.id]||0;
+ const categories=livingCategories(),hidden=livingHiddenCategories(),stats=currentStats();
+ const activeRows=categories.map(c=>{
+  const used=livingCategoryIsUsed(state,c.id),balance=stats.wallets[c.id]||0;
   return `<div class="wf-category-row"><span class="wf-category-color" style="background:${c.color}"></span>
-  <div class="wf-category-info"><strong>${safe(c.label)}</strong><small>${inUse?'فيه حركات مالية':balance?'له رصيد':'يمكن تغييره أو حذفه'}</small></div>
-  <button class="btn small secondary" type="button" data-action="wf-category-edit" data-id="${c.id}">تعديل</button>
-  <button class="btn small danger" type="button" data-action="wf-category-delete" data-id="${c.id}" ${inUse||balance?'disabled':''}>حذف</button>
-  </div>`;
- }).join('')}</div>
- <p class="wf-help">تبقى الحسابات السابقة محفوظة. لا يخصم تعديل اسم القسم أي مبلغ من المحفظة.</p>
- <button type="button" class="btn wf-category-add" data-action="wf-category-add">إضافة قسم جديد</button>`);
+   <div class="wf-category-info"><strong>${safe(c.label)}</strong>
+    <small>${used?'عليه حركات مالية':balance?'له رصيد متبقٍ':'غير مستخدم ويمكن حذفه'}</small></div>
+   <button type="button" class="btn small secondary" data-action="wf-category-edit" data-id="${safe(c.id)}">تعديل</button>
+   ${!used&&!balance?`<button type="button" class="btn small danger" data-action="wf-category-delete" data-id="${safe(c.id)}">حذف</button>`:
+   `<button type="button" class="btn small secondary" data-action="wf-category-hide" data-id="${safe(c.id)}">إخفاء</button>`}
+   </div>`;
+ }).join('');
+ const hiddenRows=hidden.map(c=>`<div class="wf-category-row wf-category-hidden-row">
+   <span class="wf-category-color" style="background:${c.color}"></span>
+   <div class="wf-category-info"><strong>${safe(c.label)}</strong><small>مخفي من المعيشة · بياناته ورصيده محفوظان</small></div>
+   <button type="button" class="btn small secondary" data-action="wf-category-restore" data-id="${safe(c.id)}">إظهار</button>
+   </div>`).join('');
+ modal('إدارة أقسام المعيشة','تگدر تحذف حتى آخر قسم غير مستخدم، أو تخفي القسم المرتبط ببيانات وتسترجعه لاحقاً.',
+ `<div class="wf-category-list">
+  ${activeRows||'<div class="wf-category-empty"><strong>ما عندك أقسام معيشة حالياً</strong><p>أضف القسم الذي تحتاجه من الزر أدناه، ولا توجد أقسام إجبارية.</p></div>'}
+ </div><button type="button" class="btn wf-category-add" data-action="wf-category-add">إضافة قسم جديد</button>
+ ${hidden.length?`<div class="wf-category-hidden-section"><h3>أقسام مخفية (${hidden.length})</h3>
+ <p class="wf-help">تبقى ضمن السجل والأرصدة السابقة. تگدر ترجع أي قسم بزر «إظهار».</p>
+ <div class="wf-category-list">${hiddenRows}</div></div>`:''}
+ <p class="wf-help">حذف القسم غير المستخدم لا يحذف أي حركة مالية. الإخفاء يحافظ على الرصيد والحركات وميزانيات الشهور السابقة.</p>`);
 }
 function livingCategoryEdit(id=''){
  const old=id?livingCategories().find(x=>x.id===id):null;
@@ -362,23 +380,57 @@ function livingCategoryEdit(id=''){
    },old?'تم تحديث اسم القسم':'تمت إضافة القسم إلى المعيشة');
   },old?'حفظ التعديل':'إضافة القسم');
 }
-function livingCategoryDelete(id){
- const c=livingCategories().find(x=>x.id===id);
- if(!c)throw Error('القسم غير موجود.');
- if(livingCategories().length===1)throw Error('يجب إبقاء قسم واحد على الأقل.');
- const used=n=>n.transactions.some(t=>t.walletId===id||t.from===id||t.to===id)||
-  n.history.some(h=>JSON.stringify(h).includes('"'+id+'"'))||
-  Object.values(n.settings.livingTargets||{}).some(t=>Object.prototype.hasOwnProperty.call(t,id));
- if(used(state)||(currentStats().wallets[id]||0)!==0)throw Error('القسم مرتبط بمبلغ أو سجل سابق. يمكن تغيير اسمه بدلاً من حذفه.');
- confirmModal('حذف القسم غير المستخدم؟','سيُزال «'+c.label+'» من أقسام المعيشة فقط.',
+function livingCategoryHide(id){
+ const selected=livingCategories().find(c=>c.id===id);
+ if(!selected)throw Error('القسم غير موجود ضمن الأقسام الظاهرة.');
+ confirmModal('إخفاء قسم المعيشة؟','سيختفي قسم «'+selected.label+'» من المعيشة والصرف الجديد، لكن رصيده وحركاته السابقة تبقى محفوظة ويمكن إظهاره لاحقاً.',
  ()=>{
   act(n=>{
-   if(used(n)||(E.stats(n).wallets[id]||0)!==0)throw Error('القسم لم يعد قابلاً للحذف.');
+   const c=livingCategories(n).find(c=>c.id===id);
+   if(!c)throw Error('القسم غير موجود.');
+   n.settings.livingCategories=livingCategories(n).filter(c=>c.id!==id).map(c=>({...c}));
+   n.settings.livingHiddenCategories=[...livingHiddenCategories(n).map(c=>({...c})),{...c}];
+   return n;
+  },'تم إخفاء القسم مع الحفاظ على رصيده وحركاته');
+ },'إخفاء القسم');
+}
+function livingCategoryRestore(id){
+ const selected=livingHiddenCategories().find(c=>c.id===id);
+ if(!selected)throw Error('القسم غير موجود ضمن الأقسام المخفية.');
+ if(livingCategories().length>=12)throw Error('يمكن إظهار 12 قسماً كحد أقصى. أخفِ قسماً آخر أولاً.');
+ act(n=>{
+  const selected=livingHiddenCategories(n).find(c=>c.id===id);
+  if(!selected)throw Error('القسم غير موجود.');
+  if(livingCategories(n).length>=12)throw Error('الأقسام الظاهرة وصلت إلى الحد الأقصى.');
+  if(livingCategories(n).some(c=>c.label.toLowerCase()===selected.label.toLowerCase()))
+   throw Error('يوجد قسم ظاهر بنفس الاسم. غيّر الاسم أولاً.');
+  n.settings.livingHiddenCategories=livingHiddenCategories(n).filter(c=>c.id!==id).map(c=>({...c}));
+  n.settings.livingCategories=[...livingCategories(n).map(c=>({...c})),{...selected}];
+  return n;
+ },'تم إظهار القسم في المعيشة مرة أخرى');
+}
+function livingCategoryDelete(id){
+ const c=livingCategories().find(x=>x.id===id);
+ if(!c)throw Error('هذا القسم غير موجود.');
+ const used=livingCategoryIsUsed(state,id),balance=currentStats().wallets[id]||0;
+ if(used||balance)throw Error('هذا القسم عليه رصيد أو حركات مالية. استخدم «إخفاء» للحفاظ على بياناته.');
+ confirmModal('حذف القسم غير المستخدم؟','راح تحذف «'+c.label+'» من قائمة المعيشة. يسمح النظام بحذف آخر قسم أيضاً إذا كان غير مستخدم.',
+ ()=>{
+  act(n=>{
+   if(livingCategoryIsUsed(n,id)||(E.stats(n).wallets[id]||0)!==0)
+    throw Error('أصبح القسم مستخدماً؛ استخدم «إخفاء» بدلاً من الحذف.');
    n.settings.livingCategories=livingCategories(n).filter(x=>x.id!==id).map(x=>({...x}));
    n.wallets=n.wallets.filter(x=>x.id!==id);
+   if(n.settings.livingTargets){
+    for(const month of Object.keys(n.settings.livingTargets)){
+     const values={...n.settings.livingTargets[month]};
+     delete values[id];
+     n.settings.livingTargets[month]=values;
+    }
+   }
    return n;
   },'تم حذف القسم غير المستخدم');
- },'حذف القسم');
+ },'نعم، احذف القسم');
 }
 
 // تقرير المصروف الشهري يحسب المصروف السابق ورصيد المحفظة؛ تخصيص الفرق فقط.
@@ -767,7 +819,7 @@ function backup(){download(`mizan-backup-${today()}.json`,JSON.stringify(state,n
 function exportCsv(){const rows=[['التاريخ','العملية','التفاصيل','المبلغ','العملة','الحساب','الملاحظة','مصدر الدخل','شهر الاستحقاق'],...state.transactions.map(t=>[t.date,...txLabel(t).slice(0,2),inputMoney(t.amount),state.settings.currency,t.method||'داخلي',t.note||'',t.sourceName||'',t.incomePeriod||''])];const clean=v=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};download(`mizan-ledger-${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(clean).join(',')).join('\r\n'),'text/csv')}
 function help(){modal('كيف يعمل ميزان؟','من أول استلام إلى آخر يوم في الدورة.',`<div class="help-text"><p><b>مواعيدك:</b> الحوافز بين 10 و12، والراتب بين 22 و24 من كل شهر. عدّل المواعيد من إعدادات الدخل. الدفعتان ضمن الخطة الحالية؛ لا يضاف المتوقع قبل تأكيد استلامه.</p><br><p><b>1. استلم:</b> سجّل الدخل الذي وصل فعلياً إلى البطاقة أو النقد.</p><br><p><b>2. أضف ثم وافق:</b> تسجيل الالتزام لا يحجز أموالاً. حدّد الحجز لاحقاً من زر «حجز مبلغ» ووافق عليه صراحةً. الحجز ليس دفعاً.</p><br><p><b>3. وزّع:</b> امنح ما تبقّى محافظ للصرف واحتياطي للطوارئ والادخار.</p><br><p><b>4. سجّل:</b> المصروف يخفض الحساب والمحفظة. سداد الالتزام يخفض الحساب وحجز الالتزام. السحب النقدي والتحويل لا يغيّران إجمالي المال.</p><br><p><b>5. راجع:</b> تابع السقف اليومي وطابق الرصيد من التقارير. احفظ نسخة احتياطية دورياً.</p><br><p>تُحفظ أموالك في هذا المتصفح فقط. لا توجد مزامنة بين الأجهزة أو اتصال مصرفي. المبلغ المقترح للصرف تنظيم حسابي حسب بياناتك، وليس توقعاً لدخل لم يُستلم.</p></div><div class="form-actions">${btn('close','فهمت','check')}</div>`)}
 function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports'&&$('reconcileForm'))$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
-const actions={'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'preview-reset':resetPreviewData,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,theme:()=>{try{const s=structuredClone(state);s.settings.theme=s.settings.theme==='dark'?'light':'dark';save(s,'تم تغيير المظهر')}catch(e){toast(e.message)}},rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة')};
+const actions={'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'preview-reset':resetPreviewData,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,theme:()=>{try{const s=structuredClone(state);s.settings.theme=s.settings.theme==='dark'?'light':'dark';save(s,'تم تغيير المظهر')}catch(e){toast(e.message)}},rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة')};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=actions[b.dataset.action];if(fn){e.preventDefault();try{fn(b.dataset.id,b.dataset.period)}catch(ex){showError(ex.message)}}});
 $('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;E.validate(next);if(!currencies[next.settings.currency])throw Error('عملة الملف غير مدعومة في هذه الواجهة.');confirmModal('استعادة النسخة الاحتياطية؟',`تم التحقق من ${next.transactions.length} حركة. ستُستبدل البيانات الحالية بهذه النسخة. احفظ نسخة من سجلك الحالي قبل التأكيد.`,()=>{try{save(next,'تمت الاستعادة والتحقق من توازن الأرصدة',true)}catch(ex){toast(ex.message)}},'استعادة البيانات')}catch(ex){toast('تعذرت الاستعادة: '+ex.message)}finally{e.target.value=''}});
 let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('installBtn'))$('installBtn').hidden=false});document.addEventListener('click',async e=>{if(e.target.id==='installBtn'&&installPrompt){await installPrompt.prompt();installPrompt=null;e.target.hidden=true}});
