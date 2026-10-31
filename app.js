@@ -117,7 +117,7 @@ try {
     localStorage.setItem(skinKey,'1');
   }
 }catch(e){/* Visual preferences cannot alter financial state when storage fails. */}
-const navs=[['dashboard','grid','لوحة التحكم'],['salary','wallet','الراتب'],['incentives','income','الحوافز'],['fixed','calendar','الالتزامات الثابتة'],['workflow','check','الدورة الذكية'],['living','wallet','المصروف'],['emergency','shield','الطوارئ'],['reports','chart','التقارير'],['ledger','ledger','سجل الحركات'],['settings','settings','الإعدادات']];
+const navs=[['dashboard','grid','لوحة التحكم'],['salary','wallet','الراتب'],['incentives','income','الحوافز'],['fixed','calendar','الثوابت والالتزامات'],['workflow','check','الدورة الذكية'],['living','wallet','المصروف'],['emergency','shield','الطوارئ'],['reports','chart','التقارير'],['ledger','ledger','سجل الحركات'],['settings','settings','الإعدادات']];
 let settingsTab='account';
 const arabicMonth=period=>new Intl.DateTimeFormat('ar-IQ',{month:'long',year:'numeric'}).format(new Date(period+'-01T12:00:00'));
 const THUKHR_THEME_KEY='thukhr-appearance-v1';
@@ -354,7 +354,7 @@ function monthlyFieldEdit(key=''){
      select('وقت اقتطاع المبلغ','fieldStage',stageOptions,old?.stage||(wfIncomeMode()==='salary-only'?'salary':'incentives'))}
    ${isUsed?'':select('آلية الاستقطاع','fieldReserve',[['normal','يمكن الحجز أو السداد أو الاستقطاع قبل الإيداع'],['reserve','حجز فقط'] ],old?.reserveOnly?'reserve':'normal')}
   </div>
-  <p class="wf-help">إذا اخترت «النصفين»، أدخل المبلغ الشهري كاملاً، ويقسمه البرنامج بين الدفعتين تلقائياً.</p>`,
+  <p class="wf-help">إذا اخترت «النصفين»، أدخل المبلغ كاملاً، ويقسمه فِرزة بين الدفعتين. البنود الجديدة تُضبط على خصم تلقائي عند تسجيل استلام الدخل؛ تقدر تغيّرها من «الثوابت والالتزامات».</p>`,
  f=>{
   const name=String(f.fieldName||'').trim().replace(/\s+/g,' ');
   if(name.length<2||name.length>45||/[<>]/.test(name))throw Error('اسم البند يجب أن يكون من حرفين إلى 45 حرفاً.');
@@ -377,7 +377,7 @@ function monthlyFieldEdit(key=''){
     const id='item_'+uid().replace(/[^A-Za-z0-9_-]/g,'').slice(0,30);
     if(monthlyAllFields(n).some(o=>o.key===id))throw Error('تعذر توليد معرف البند. حاول مرة أخرى.');
     items.push({key:id,label:name,stage:f.fieldStage,
-     reserveOnly:f.fieldStage==='salary'||f.fieldReserve==='reserve'});
+     reserveOnly:false,autoDeduct:true,autoMethod:'receipt'});
    }
    n.settings.wfFields=items;
    return n;
@@ -1963,7 +1963,7 @@ function dashboardPage(){
   <a href="#fixed" class="fz-stream-card fz-fixed-stream" aria-label="فتح الالتزامات الثابتة">
    <div class="fz-stream-top"><span class="fz-stream-icon" aria-hidden="true">${icon('calendar')}</span>
     <span class="fz-status ${p.uncovered?'fz-warning':'fz-success'}">${p.uncovered?'توجد مبالغ غير مغطاة':'المغطى محسوب'}</span></div>
-   <h3>الالتزامات الثابتة</h3><strong>${money(p.plannedTotal)}</strong>
+   <h3>الثوابت والالتزامات</h3><strong>${money(p.plannedTotal)}</strong>
    <p>${p.count} بنود لهذا الشهر · المغطى ${money(m.covered)}</p>
    <span class="fz-card-link">تفاصيل الالتزامات ←</span></a>
  </section>
@@ -2132,7 +2132,7 @@ document.addEventListener('input',e=>{
 });
 function showError(msg){const el=$('modalError');if(el&&$('modal').open){el.textContent=msg;el.classList.add('show')}else toast(msg)}function closeModal(){$('modal').close()}
 function requireReal(){if(state.demo){modal('الخطة التوضيحية','جرّب الحركات هنا أو ابدأ بأرقامك.','<p class="help-text">يمكنك تعديل المثال بحرية. عند إنشاء خطتك تُستبدل أرقام المثال فقط بعد التأكيد.</p><div class="settings-actions">'+btn('setup','ابدأ خطتك','plus')+btn('close','متابعة التجربة','arrow','secondary')+'</div>');return false}return true}
-function openIncome(sourceId='',requestedPeriod=''){const source=S.sources(state).find(x=>x.id===sourceId),periodValue=requestedPeriod||today().slice(0,7);modal(source?'تأكيد استلام '+source.name:'تسجيل دخل مستلم','يدخل المبلغ الفعلي في خطتك الحالية دون تصفير الأرصدة.',`<div class="form-grid">${select('مصدر الدخل','sourceId',[['','دخل إضافي / رصيد افتتاحي'],...S.sources(state).filter(x=>wfIncomeMode(periodValue)!=='salary-only'||x.id!=='incentives').map(x=>[x.id,x.name])],source?.id||'')}${field('استحقاق أي شهر؟','incomePeriod','month',periodValue,`max="${today().slice(0,7)}"`)}${amountField()}${select('مكان الاستلام','method',methodOptions)}${dateField()}${field('الوصف','note','text',source?.name||'','required maxlength="100" placeholder="راتب، حوافز، عمل حر…"')}</div><div class="notice">الموعد المتوقع لا يزيد الرصيد. بعد تأكيد الاستلام، احجز الالتزامات ثم وزّع المتاح. يُسجّل كل مصدر مرة للشهر؛ الدفعات الإضافية تُسجّل كدخل إضافي.</div>`,f=>act(s=>{const selected=S.sources(s).find(x=>x.id===f.sourceId);
+function openIncome(sourceId='',requestedPeriod=''){const source=S.sources(state).find(x=>x.id===sourceId),periodValue=requestedPeriod||today().slice(0,7);modal(source?'تأكيد استلام '+source.name:'تسجيل دخل مستلم','يدخل المبلغ الفعلي في خطتك الحالية دون تصفير الأرصدة.',`<div class="form-grid">${select('مصدر الدخل','sourceId',[['','دخل إضافي / رصيد افتتاحي'],...S.sources(state).filter(x=>wfIncomeMode(periodValue)!=='salary-only'||x.id!=='incentives').map(x=>[x.id,x.name])],source?.id||'')}${field('استحقاق أي شهر؟','incomePeriod','month',periodValue,`max="${today().slice(0,7)}"`)}${amountField()}${select('مكان الاستلام','method',methodOptions)}${dateField()}${field('الوصف','note','text',source?.name||'','required maxlength="100" placeholder="راتب، حوافز، عمل حر…"')}</div><div class="notice">الموعد المتوقع لا يزيد الرصيد. بعد تسجيل الاستلام تُخصم البنود الثابتة التي فعّلت لها السداد الآلي فوراً من الحساب المحدد، من دون نافذة تأكيد ثانية. لا يتم خصم البنود اليدوية. لا تضف قسطاً مستقطعاً مسبقاً إلى الخصم التلقائي كي لا يُخصم مرتين.</div>`,f=>act(s=>{const selected=S.sources(s).find(x=>x.id===f.sourceId);
  if(selected?.id==='incentives'&&wfIncomeMode(f.incomePeriod,s)==='salary-only')throw Error('هذا الشهر راتب فقط؛ غيّر نوع الدخل أولاً.');
  const newAmount=amount(f.amount);
  const similar=s.transactions.find(t=>t.type==='income'&&!t.sourceId&&t.amount===newAmount&&t.date.slice(0,7)===f.incomePeriod);
