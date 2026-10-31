@@ -755,8 +755,40 @@ function workflowSettlementSnapshot(st=state,month=wfMonth){
   Boolean(settlement.salary&&settlement.incentives);
  return {total:stats.total,remaining:stats.unallocated,reserved,allocated,completed};
 }
+function monthlyCommitmentProjection(st=state,month=wfMonth){
+ const stats=E.stats(st),plan=wfData(st).plans?.[month]||null;
+ const entries=[],seen=new Set(),byId=new Map(st.obligations.map(o=>[o.id,o]));
+ const labels=new Map(monthlyAllFields(st).map(f=>[f.key,f.label]));
+ const add=(id,label,amount)=>{
+  const due=Number(amount);
+  if(!Number.isSafeInteger(due)||due<=0)return;
+  const reserved=Math.max(0,stats.reserved[id]||0);
+  const paid=Math.max(0,stats.paid[id]||0);
+  const withheld=Math.max(0,stats.withheld?.[id]||0);
+  const covered=Math.min(due,reserved+paid+withheld);
+  entries.push({id,label,amount:due,covered,uncovered:Math.max(0,due-covered)});
+  seen.add(id);
+ };
+ // Plan values include obligations that have not reached settlement and do not
+ // yet have a dedicated journal obligation record.
+ for(const [key,planned] of Object.entries(plan||{})){
+  const id=wfObId(month,key),registered=byId.get(id);
+  if(registered?.archived)continue;
+  add(id,registered?.name||labels.get(key)||key,registered?.amount??planned);
+ }
+ // A separately created commitment due this month is counted once, even when
+ // it overlaps with the plan's generated obligation ID.
+ for(const o of st.obligations){
+  if(o.archived||seen.has(o.id)||typeof o.due!=='string'||o.due.slice(0,7)!==month)continue;
+  add(o.id,o.name,o.amount);
+ }
+ const uncovered=entries.reduce((sum,o)=>sum+o.uncovered,0);
+ return {remainingAfter:stats.unallocated-uncovered,uncovered,
+  plannedTotal:entries.reduce((sum,o)=>sum+o.amount,0),
+  count:entries.length,hasPlan:plan!==null,entries};
+}
 function workflowPage(){
- const plan=wfPlan(),stats=currentStats(),salaryOnly=wfIncomeMode()==='salary-only',settlement=workflowSettlementSnapshot();
+ const plan=wfPlan(),stats=currentStats(),salaryOnly=wfIncomeMode()==='salary-only',settlement=workflowSettlementSnapshot(),projection=monthlyCommitmentProjection();
  const splitFields=monthlyAllFields().filter(o=>o.stage==='split'&&plan&&(plan[o.key]||0)>0);
  const wfIds=plan?monthlyAllFields().map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
   settled=wfIds.filter(o=>(stats.reserved[o.id]||0)>0);
@@ -773,6 +805,24 @@ function workflowPage(){
    </div>
    <strong class="wf-settlement-result-value">${money(settlement.remaining)}</strong>
    <p>المبلغ الحر بعد الحجوزات والتخصيصات المسجلة؛ لا يشمل المخصص للمعيشة والطوارئ. ${settlement.completed?'لا تُخصم الاستقطاعات الموثقة قبل الإيداع مرتين.':'قد يتغير عند اعتماد التسويات المتبقية.'}</p>
+  </div>
+  <div class="wf-commitment-projection ${projection.remainingAfter<0?'is-deficit':''}" aria-label="توقع الرصيد بعد الالتزامات الشهرية">
+   <div class="wf-commitment-projection-head">
+    <span>المتبقي المتوقع بعد جميع الالتزامات الشهرية</span>
+    <small>${projection.remainingAfter<0?'عجز متوقع':'تقدير وفق البنود المسجلة'}</small>
+   </div>
+   <strong class="wf-commitment-projection-value">${money(projection.remainingAfter)}</strong>
+   <div class="wf-commitment-projection-metrics">
+    <span>المتبقي الحر حالياً <b>${money(settlement.remaining)}</b></span>
+    <span>التزامات لم تُغطَّ بعد <b>${money(projection.uncovered)}</b></span>
+   </div>
+   <p>${projection.count?'يُطرح فقط الجزء غير المحجوز وغير المدفوع وغير المستقطع من التزامات هذا الشهر، مع منع احتساب البند مرتين.':'لم تُسجَّل التزامات للشهر المختار بعد؛ النتيجة لا تشمل أي التزامات لم تدخلها.'}
+   ${projection.remainingAfter<0?' توجد فجوة تمويلية متوقعة، وليست عملية سحب أو ديناً جديداً.':''}</p>
+   ${projection.count?`<details class="wf-commitment-projection-details"><summary>تفاصيل احتساب ${projection.count} التزام</summary>
+    <div class="wf-commitment-projection-list">${projection.entries.map(o=>`<div class="wf-commitment-projection-item">
+     <span>${safe(o.label)}</span><small>المبلغ ${money(o.amount)} · المغطى ${money(o.covered)}</small>
+     <b>غير مغطى ${money(o.uncovered)}</b></div>`).join('')}</div></details>`:''}
+   <small class="wf-commitment-projection-disclaimer">يشمل خطة الشهر والالتزامات غير المؤرشفة المسجلة باستحقاق هذا الشهر فقط؛ لا يفترض ورود دخل مستقبلي، ولا يغير الأرصدة أو الحجوزات.</small>
   </div>
   <div class="wf-snapshot">
    <div><span>رصيد الحساب الحالي</span><strong>${money(settlement.total)}</strong></div>
