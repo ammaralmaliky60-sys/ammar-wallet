@@ -40,7 +40,7 @@ test('status explanations update when a select changes',()=>{
  const wrapper={querySelector:t=>t==='select'?selector:display};
  const root={querySelectorAll:()=>[wrapper]};
  // Wrapper runs the handler under a mock $ lookup.
- const mocked=new Function('api','node','const $=()=>({querySelectorAll:()=>[node]});return ('+
+ const mocked=new Function('api','node','const obligationStatusExplanation=api.obligationStatusExplanation;const $=()=>({querySelectorAll:()=>[node]});return ('+
    api.wireObligationStatusExplanations.toString()+')()');
  mocked(api,wrapper);
  assert.match(display.textContent,/نحجزه/);
