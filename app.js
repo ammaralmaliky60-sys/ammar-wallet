@@ -216,7 +216,8 @@ function schedulePanel(compact=false){const p=compact?today().slice(0,7):schedul
 function openIncomeSources(){modal('مواعيد الدخل الشهري','يمكنك إضافة مصادر متعددة وتخصيص نافذة وصول كل منها.',`<div id="incomeSourcesRows"></div><button class="btn soft small" id="addIncomeSource" type="button">${icon('plus')}إضافة مصدر</button><div class="notice">الجدول الحالي يبدأ بالحوافز 10–12 ثم الراتب 22–24. هذه مواعيد متوقعة؛ لا تُنشئ مالاً أو حركات تلقائية.</div>`,(f,form)=>act(s=>{const list=[...form.querySelectorAll('.income-source-row')].map(row=>({id:row.dataset.id,name:row.querySelector('[data-source-name]').value.trim(),fromDay:Number(row.querySelector('[data-source-from]').value),toDay:Number(row.querySelector('[data-source-to]').value)}));S.validateSources(list);s.settings.incomeSources=list;return s},'تم حفظ مواعيد الدخل'),'حفظ المواعيد');const add=(x={id:uid(),name:'',fromDay:1,toDay:1})=>{const row=document.createElement('div');row.className='income-source-row';row.dataset.id=x.id;row.innerHTML=`<div class="source-row-name">${field('اسم المصدر','sourceName','text',x.name,'data-source-name required maxlength="100"')}<button type="button" class="icon-btn" data-remove-source aria-label="إزالة المصدر">${icon('trash')}</button></div><div class="form-grid">${field('من يوم في الشهر','fromDay','number',x.fromDay,'data-source-from required min="1" max="31" step="1"')}${field('إلى يوم في الشهر','toDay','number',x.toDay,'data-source-to required min="1" max="31" step="1"')}</div>`;row.querySelectorAll('.field').forEach(f=>{const input=f.querySelector('input');if(input){input.id='source-'+x.id+'-'+input.name;f.querySelector('label').htmlFor=input.id}});row.querySelector('[data-remove-source]').onclick=()=>row.remove();$('incomeSourcesRows').append(row)};S.sources(state).forEach(add);$('addIncomeSource').onclick=()=>add()}
 function openLinkReceipt(id,p){const source=S.sources(state).find(x=>x.id===id);if(!source)throw Error('مصدر الدخل غير موجود.');const eligible=state.transactions.filter(t=>t.type==='income'&&!t.sourceId&&t.date.slice(0,7)>=(p||schedulePeriod));modal('ربط دخل مسجّل',source.name,eligible.length?`<div class="form-grid"><div class="full">${select('حركة الدخل الموجودة','transactionId',eligible.map(t=>[t.id,`${date(t.date,true)} · ${fmt(t.amount)} ${unit()} · ${t.note||'دخل'}`]))}</div>${field('استحقاق أي شهر؟','incomePeriod','month',p||schedulePeriod,`required max="${today().slice(0,7)}"`)}</div><div class="notice">تُربط الحركة بهذا المصدر والشهر فقط؛ يبقى مبلغ الدخل ورصيد حساباتك كما هو.</div>`:empty('لا توجد حركة دخل متاحة للربط','ستظهر هنا حركات الدخل غير المرتبطة التي يعود تاريخها إلى هذا الشهر أو بعده.'),eligible.length?f=>act(s=>{const t=s.transactions.find(t=>t.id===f.transactionId),linked={...t,sourceId:id,sourceName:source.name,incomePeriod:f.incomePeriod};S.guardReceipt(s,linked);if(id==='incentives'&&wfIncomeMode(f.incomePeriod,s)==='salary-only')throw Error('هذا الشهر راتب فقط.');
  const mode=wfIncomeMode(f.incomePeriod,s);Object.assign(t,linked);
- s.settings.wfIncomeModes={...(s.settings.wfIncomeModes||{}),[f.incomePeriod]:mode};return s},'تم ربط الدخل السابق دون تغيير الأرصدة'):null,'ربط الحركة')}
+ s.settings.wfIncomeModes={...(s.settings.wfIncomeModes||{}),[f.incomePeriod]:mode};
+ return ['salary','incentives'].includes(id)?autoFixedSettlement(s,id,f.incomePeriod,t.method,t.date).next:s},'تم ربط الدخل السابق دون تغيير الأرصدة'):null,'ربط الحركة')}
 
 function overviewIdentity(){return `<span class="neo-title-mark" role="img" aria-label="شعار الفِرزة الذهبي المتحرك"><svg viewBox="0 0 160 145" xmlns="http://www.w3.org/2000/svg" focusable="false">   <defs>    <linearGradient id="mizan-scale-gold" x1="0" x2="1" y1="0" y2="1">     <stop offset="0" stop-color="#ab7935"/>     <stop offset=".35" stop-color="#ffe8ad"/>     <stop offset=".68" stop-color="#dbb36b"/>     <stop offset="1" stop-color="#9b6c2e"/>    </linearGradient>   </defs>   <ellipse cx="80" cy="136" rx="34" ry="4" fill="#f3c874" opacity=".20"/>   <path d="M80 43V124" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="10" stroke-linecap="round"/>   <path d="M52 130H108" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="8" stroke-linecap="round"/>   <g class="mizan-scales" fill="none" stroke="url(#mizan-scale-gold)" stroke-linecap="round" stroke-linejoin="round">    <path d="M38 58Q80 48 122 58" stroke-width="9"/>    <path d="M38 58L17 103M38 58L59 103M122 58L101 103M122 58L143 103" stroke-width="3"/>    <path d="M10 105Q38 134 66 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>    <path d="M94 105Q122 134 150 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>   </g>   <circle class="mizan-gold-point" cx="80" cy="30" r="12" fill="url(#mizan-scale-gold)"/>  </svg></span>`}
 function neoOverviewBudget(){
@@ -726,6 +727,17 @@ function autoFixedPlanShare(field,stage,month,st){
  if(field.stage==='split')return stage==='incentives'?Math.floor(full/2):full-Math.floor(full/2);
  return field.stage===stage?full:0;
 }
+function ensureRecurringAutoPlan(st,month){
+ const wf=wfData(st),current=wf.plans?.[month]||null;
+ const months=Object.keys(wf.plans||{}).filter(m=>m<month).sort().reverse();
+ const prev=wf.plans?.[months[0]]||{};
+ const additions=Object.fromEntries(monthlyAllFields(st).filter(f=>f.autoDeduct===true&&
+  !Object.prototype.hasOwnProperty.call(current||{},f.key)&&Number.isSafeInteger(prev[f.key])&&prev[f.key]>0)
+  .map(f=>[f.key,prev[f.key]]));
+ if(!Object.keys(additions).length)return st;
+ st.settings.twoStageWorkflow={...wf,plans:{...wf.plans,[month]:{...additions,...current}},completed:{...wf.completed}};
+ return st;
+}
 function autoFixedSettlement(original,stage,month,method,date){
  if(!['salary','incentives'].includes(stage))return {next:original,paid:0,skipped:[]};
  if(!['card','cash'].includes(method))throw Error('حساب خصم الالتزامات غير صالح.');
@@ -733,9 +745,9 @@ function autoFixedSettlement(original,stage,month,method,date){
  if(wfData(original).completed?.[month]?.[stage])return {next:original,paid:0,skipped:[]};
  if(wfIncomeMode(month,original)==='salary-only'&&stage==='incentives')
   return {next:original,paid:0,skipped:[]};
- // Only fields explicitly enabled by their owner are ever automatically settled.
- const all=monthlyAllFields(original).filter(f=>f.autoDeduct===true);
- let next=original,paid=0;
+ // Only opt-in fields are carried from a prior monthly plan and settled automatically.
+ let next=ensureRecurringAutoPlan(original,month),paid=0;
+ const all=monthlyAllFields(next).filter(f=>f.autoDeduct===true);
  const skipped=[],processed=[];
  for(const field of all){
   const part=autoFixedPlanShare(field,stage,month,next);
