@@ -1,21 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-<title id="title">ذُخر</title>
-<desc id="desc">شعار ذُخر: نبتة ذهبية ترمز للادخار ونمو مستقبل العائلة</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+<title id="t">فِرزة — FIRZA</title><desc id="d">علامة فِرزة الهندسية من أربع وحدات بالأزرق البترولي والفيروزي والأخضر الليموني ترمز إلى تصنيف الأموال وتنظيمها</desc>
 <defs>
- <linearGradient id="charcoal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#332820"/><stop offset=".52" stop-color="#1d1d20"/><stop offset="1" stop-color="#0b1017"/></linearGradient>
- <linearGradient id="metal" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#fff0c2"/><stop offset=".38" stop-color="#e7c283"/><stop offset=".75" stop-color="#bd8745"/><stop offset="1" stop-color="#8d5c2d"/></linearGradient>
- <radialGradient id="light"><stop stop-color="#d9ab6742"/><stop offset="1" stop-color="#e0ad6500"/></radialGradient>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123d5d"/><stop offset="1" stop-color="#071c30"/></linearGradient>
+<linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#177db9"/><stop offset="1" stop-color="#08466f"/></linearGradient>
+<linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1dd2cb"/><stop offset="1" stop-color="#079ca8"/></linearGradient>
+<linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#25c9ac"/><stop offset="1" stop-color="#0395a6"/></linearGradient>
+<linearGradient id="e" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c3f34b"/><stop offset="1" stop-color="#97df38"/></linearGradient>
 </defs>
-<rect width="512" height="512" rx="114" fill="url(#charcoal)"/>
-<circle cx="256" cy="186" r="212" fill="url(#light)"/>
-<rect x="13" y="13" width="486" height="486" rx="101" fill="none" stroke="#edc589" stroke-opacity=".35" stroke-width="3"/>
-<g fill="url(#metal)">
-<path d="M257 407c-8-94-10-145 1-234 3-16 19-19 19 1-6 75-11 156-5 233z"/>
-<path d="M259 289C162 288 112 238 123 151c66 8 136 57 136 138Z"/>
-<path d="M275 247c90 0 143-53 140-133-84 14-130 63-140 133Z"/>
-<path d="M254 195c-47-34-61-77-33-130 51 27 69 72 33 130Z"/>
-<path d="M273 368c81-19 123-64 123-118-70 8-122 45-123 118Z"/>
+<rect width="512" height="512" rx="110" fill="url(#bg)"/>
+<rect x="18" y="18" width="476" height="476" rx="95" fill="none" stroke="#7ad8dc" stroke-opacity=".17" stroke-width="2"/>
+<g>
+<path d="M118 238v-52c0-48 38-86 86-86h52v138Z" fill="url(#a)"/>
+<path d="M263 100h112c19 0 34 15 34 34v55c0 23-19 42-42 42H263Z" fill="url(#b)"/>
+<path d="M156 248h94v116c0 28-22 50-50 50h-45c-22 0-40-18-40-40v-85c0-23 18-41 41-41Z" fill="url(#c)"/>
+<path d="M263 248h112c19 0 34 15 34 34v36c0 31-25 56-56 56h-90Z" fill="url(#e)"/>
 </g>
-<path d="M190 425h140" fill="none" stroke="url(#metal)" stroke-width="14" stroke-linecap="round"/>
-<path d="M156 436h200" fill="none" stroke="#d4ad72" stroke-opacity=".42" stroke-width="4" stroke-linecap="round"/>
 </svg>
