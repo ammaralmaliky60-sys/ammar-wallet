@@ -313,3 +313,36 @@ body[data-thukhr-theme] .wf-commitment-projection.is-deficit .wf-commitment-proj
  body[data-thukhr-theme] .wf-commitment-projection-metrics>span{padding:8px 7px}
  body[data-thukhr-theme] .wf-commitment-projection-metrics b{font-size:12px}
 }
+
+/* Monthly nominal subtraction: account total less all planned obligations. */
+body[data-thukhr-theme] .wf-gross-equation{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+ margin:12px 0 11px;
+}
+body[data-thukhr-theme] .wf-gross-equation>span{
+ border:1px solid rgba(247,217,163,.23);border-radius:11px;
+ background:rgba(0,0,0,.13);padding:10px 9px;color:#f5e7cf;
+ font-size:12px;line-height:1.8;min-width:0;
+}
+body[data-thukhr-theme] .wf-gross-equation b{
+ display:block;color:#ffe1aa;font-size:15px;overflow-wrap:anywhere;
+}
+body[data-thukhr-theme] .wf-gross-deficit{
+ border-color:rgba(255,147,116,.77);
+ background:linear-gradient(135deg,rgba(115,42,42,.28),rgba(35,25,25,.33));
+}
+body[data-thukhr-theme] .wf-gross-deficit .wf-settlement-result-value,
+body[data-thukhr-theme] .wf-gross-deficit .wf-settlement-result-value .num{
+ color:#ffbdad;
+}
+body[data-thukhr-theme] .wf-settlement-result .wf-commitment-projection-details{
+ margin-top:13px;padding-top:12px;
+}
+body[data-thukhr-theme] .wf-settlement-result .wf-commitment-projection-item{
+ background:rgba(0,0,0,.11);
+}
+@media(max-width:760px){
+ body[data-thukhr-theme] .wf-gross-equation{gap:7px}
+ body[data-thukhr-theme] .wf-gross-equation>span{padding:8px 7px;font-size:11px}
+ body[data-thukhr-theme] .wf-gross-equation b{font-size:12px}
+}
