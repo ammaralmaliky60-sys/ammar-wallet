@@ -393,7 +393,7 @@ function livingCategoryEdit(id=''){
   f=>{
    const name=String(f.categoryName||'').trim().replace(/\s+/g,' ');
    if(name.length<2||name.length>35||/[<>]/.test(name))throw Error('اسم القسم يجب أن يكون من 2 إلى 35 حرفاً.');
-   if(livingCategories().some(c=>c.id!==id&&c.label.toLowerCase()===name.toLowerCase()))
+   if(livingAllCategories().some(c=>c.id!==id&&c.label.toLowerCase()===name.toLowerCase()))
     throw Error('هذا الاسم مستخدم مسبقاً.');
    if(!old&&!['spend','emergency'].includes(f.categoryKind))throw Error('نوع القسم غير صحيح.');
    act(n=>{
@@ -479,7 +479,7 @@ function livingTargets(month=wfMonth,st=state){
 }
 function livingNeeds(targets,st=state,month=wfMonth){
  const stats=E.stats(st);
- const result=livingCategories().map(w=>{
+ const result=livingCategories(st).map(w=>{
   const target=targets[w.id]||0;
   const spent=st.transactions.filter(t=>t.type==='expense'&&t.walletId===w.id&&t.date.slice(0,7)===month).reduce((sum,t)=>sum+t.amount,0);
   const balance=stats.wallets[w.id]||0;
@@ -496,7 +496,7 @@ function livingPeriodSummary(stage){
  const salary=S.receipts(state,'salary',wfMonth).sort((a,b)=>a.date.localeCompare(b.date))[0];
  const cutoff=salary?.date||null;
  const relevant=state.transactions.filter(t=>t.date.slice(0,7)===wfMonth&&
-   (t.type==='allocate'||t.type==='expense')&&livingCategories().some(w=>w.id===t.walletId));
+   (t.type==='allocate'||t.type==='expense')&&livingAllCategories().some(w=>w.id===t.walletId));
  const txs=relevant.filter(t=>livingStageName(t,cutoff)===stage);
  return {allocated:txs.filter(t=>t.type==='allocate').reduce((s,t)=>s+t.amount,0),
          spent:txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0)};
@@ -524,7 +524,7 @@ function livingPage(){
      <p>الأموال الواردة باسم «أخرى» تزيد هذا المتبقي عند استلامها فعلياً. التخصيص لا يخصم من البطاقة؛ السداد أو الشراء الفعلي فقط هو الذي ينقص الرصيد النقدي.</p>
      <div class="wf-other-line"><span>الوارد باسم «أخرى» خلال ${wfMonth}</span><b>${money(extra)}</b></div>
      <div class="wf-living-top-actions">
-       ${btn('wf-living-direct','إضافة مصروف','wallet')}
+       ${livingCategories().length?btn('wf-living-direct','إضافة مصروف','wallet'):''}
        ${btn('wf-living-extra','أخرى','income','secondary')}
        ${btn('wf-category-manage','تحديد الأقسام','settings','secondary')}
        ${btn('wf-living-pdf','تنزيل PDF','download','secondary')}
@@ -571,12 +571,12 @@ function wfLivingPanel(){
    <h2>أقسام مصاريف المعيشة</h2></div><span class="chip">${livingCategories().length} قسم</span></div>
   <div class="wf-living-overview">
    <div><span>المتبقي بعد جميع الحجوزات والتخصيصات</span><strong>${money(stats.unallocated)}</strong></div>
-   <div><span>المتوفر حالياً في أقسام المعيشة</span><strong>${money(livingCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
+   <div><span>المتوفر في الأقسام الظاهرة والمخفية</span><strong>${money(livingAllCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
   </div>
   ${!wfDone('salary')?'<div class="notice warn">الراتب أو بعض حجوزاته لم يُعتمد بعد. يمكنك التصرف من الحوافز المستلمة، لكن احتفظ بما يلزم للالتزامات القادمة.</div>':''}
-  <div class="wf-living-grid">${cards}</div>
+  <div class="wf-living-grid">${cards||`<div class="wf-category-empty"><strong>لا توجد أقسام معيشة حالياً</strong><p>اضغط «تحديد الأقسام» ثم «إضافة قسم جديد» حتى تبدأ بطريقتك.</p>${btn('wf-category-add','إضافة أول قسم','plus')}</div>`}</div>
   <div class="wf-living-actions">
-   ${btn('wf-living-allocate','تحديد ميزانية المعيشة للشهر','wallet')}
+   ${livingCategories().length?btn('wf-living-allocate','تحديد ميزانية المعيشة للشهر','wallet'):''}
    ${btn('wf-category-manage','تحديد أقسام المعيشة','settings','secondary')}
    ${btn('wf-release','إرجاع مبلغ إلى المتاح','wallet','secondary')}
   </div>
@@ -585,6 +585,7 @@ function wfLivingPanel(){
 }
 function wfLivingAllocate(){
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
+ if(!livingCategories().length)throw Error('أضف قسماً للمعيشة أولاً قبل تحديد الميزانية.');
  const preset=livingTargets(),available=currentStats().unallocated;
  const fields=livingCategories().map(w=>{
   const spent=livingSpent(w.id),balance=currentStats().wallets[w.id]||0;
@@ -618,7 +619,7 @@ function wfLivingAllocate(){
      next=event(next,{type:'allocate',walletId:row.id,amount:row.additional,date:today(),
        note:'ميزانية المعيشة '+wfMonth+' · من '+label+' · '+row.label});
     }
-    next.settings.livingTargets={...(next.settings.livingTargets||{}),[wfMonth]:targets};
+    next.settings.livingTargets={...(next.settings.livingTargets||{}),[wfMonth]:{...livingTargets(wfMonth,next),...targets}};
     return next;
    },required.additional?'تم استكمال الميزانية دون خصم مصاريف سابقة مرتين':'تم حفظ السقف الشهري؛ المخصص الحالي يكفي');
   },'اعتماد الميزانية واستكمال الفرق');
@@ -656,7 +657,7 @@ function wfLivingReport(){
    total:fmt(stats.total),available:fmt(stats.unallocated),
    reserved:fmt(Object.values(stats.reserved).reduce((a,b)=>a+b,0))
   },
-  wallets:livingCategories().map(w=>({
+  wallets:livingAllCategories().map(w=>({
    name:w.label,budget:fmt(livingTargets()[w.id]||0),
    spent:fmt(rows.filter(t=>t.type==='expense'&&t.walletId===w.id).reduce((a,t)=>a+t.amount,0)),
    balance:fmt(stats.wallets[w.id]||0)
@@ -673,12 +674,13 @@ function wfLivingReport(){
 }
 function wfLivingDirect(initialId=''){
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً قبل تسجيل المصروف.');
+ if(!livingCategories().length)throw Error('أضف قسماً للمعيشة قبل تسجيل المصروف.');
  const stats=currentStats(),usable=livingCategories().reduce((sum,w)=>sum+(stats.wallets[w.id]||0),0)+stats.unallocated;
  if(usable<=0)throw Error('لا يوجد رصيد قابل للصرف. راجع حجوزاتك أو سجّل استلام مبلغ أولاً.');
  const options=livingCategories().map(w=>[w.id,w.label]);
  modal('إضافة مصروف','لا تحتاج تحديد ميزانية الشهر أولاً. يُخصم المصروف من المتبقي غير المحجوز، ويُحتسب ضمن ميزانية الشهر لاحقاً.',
   `<div class="form-grid">
-   ${select('نوع المصروف','walletId',options,options.some(x=>x[0]===initialId)?initialId:'home')}
+   ${select('نوع المصروف','walletId',options,options.some(x=>x[0]===initialId)?initialId:options[0][0])}
    ${amountField()}
    ${select('طريقة الدفع','method',methodOptions)}
    ${dateField()}
