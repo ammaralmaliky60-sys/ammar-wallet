@@ -27,7 +27,7 @@ function fixture(state,mode='salary-only'){
    return {...o,key:o.key,amount:part,fullAmount:full};
   }).filter(o=>o.amount>0),
   event:(st,t)=>E.commit(st,{id:E.uid(),date:day,...t})};
- const api=new Function('env','with(env){'+source+';return {smartBuild,smartStage,smartPrior,fundLivingTargets}}')(env);
+ const api=new Function('env','with(env){'+source+';return {smartBuild,smartStage,smartPrior,fundLivingTargets,workflowSettlementSnapshot}}')(env);
  return api;
 }
 const draft=(st,opts={})=>({base:JSON.stringify(st),month,mode:'salary-only',stage:'salary',existing:false,
@@ -116,4 +116,46 @@ test('source code saves only once after confirmation',()=>{
  assert.match(app,/act\(n=>smartBuild\(n,d\)\.next/);
  assert.match(app,/function smartReview\(d\)/);
  assert.match(app,/smart-cycle-advanced/);
+});
+
+test('settlement overview balances screenshot numbers without treating allocation as spending',()=>{
+ let st=base();
+ st.settings.wfIncomeModes={[month]:'salary-only'};
+ st.settings.twoStageWorkflow={plans:{},completed:{[month]:{salary:{mode:'smart'}}}};
+ st=E.commit(st,{type:'income',id:E.uid(),amount:1663000,method:'card',date:day});
+ st=E.commit(st,{type:'allocate',id:E.uid(),amount:368000,walletId:'home',date:day});
+ const r=fixture(st).workflowSettlementSnapshot(st,month);
+ assert.equal(r.total,1663000);
+ assert.equal(r.allocated,368000);
+ assert.equal(r.reserved,0);
+ assert.equal(r.remaining,1295000);
+ assert.equal(r.completed,true);
+ assert.equal(r.total,r.allocated+r.reserved+r.remaining);
+});
+test('settlement balance responds to reservation/payment; source withholding is documentation only',()=>{
+ let st=base();
+ st.settings.wfIncomeModes={[month]:'salary-only'};
+ st=E.commit(st,{type:'income',id:E.uid(),amount:720000,method:'card',date:day});
+ st.obligations.push({id:'loan',name:'سلفة',amount:250000,due:day,recurring:false});
+ st=E.commit(st,{type:'reserve',id:E.uid(),obligationId:'loan',amount:250000,date:day});
+ let r=fixture(st).workflowSettlementSnapshot(st,month);
+ assert.equal(r.remaining,470000);
+ assert.equal(r.reserved,250000);
+ assert.equal(r.completed,false);
+ st=E.commit(st,{type:'pay',id:E.uid(),obligationId:'loan',amount:250000,method:'card',date:day});
+ r=fixture(st).workflowSettlementSnapshot(st,month);
+ assert.equal(r.total,470000);
+ assert.equal(r.remaining,470000);
+ assert.equal(r.reserved,0);
+ st.obligations.push({id:'deduction',name:'قسط مستقطع',amount:218000,due:day,recurring:false});
+ st=E.commit(st,{type:'withheld',id:E.uid(),obligationId:'deduction',amount:218000,note:'خصم قبل إيداع الراتب',date:day});
+ const after=fixture(st).workflowSettlementSnapshot(st,month);
+ assert.equal(after.total,r.total);
+ assert.equal(after.remaining,r.remaining);
+});
+test('the settlement result is prominent and the savings allocations are separated',()=>{
+ assert.match(app,/class="wf-settlement-result"/);
+ assert.match(app,/المتبقي بعد التسوية والتخصيص/);
+ assert.match(app,/مخصص للأقسام/);
+ assert.match(app,/محجوز للالتزامات/);
 });
