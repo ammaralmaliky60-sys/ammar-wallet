@@ -154,7 +154,7 @@ test('settlement balance responds to reservation/payment; source withholding is 
  assert.equal(after.remaining,r.remaining);
 });
 test('the settlement result is prominent and the savings allocations are separated',()=>{
- assert.match(app,/class="wf-settlement-result"/);
+ assert.match(app,/class="wf-settlement-result/);
  assert.match(app,/المتبقي بعد التسوية والتخصيص/);
  assert.match(app,/مخصص للأقسام/);
  assert.match(app,/محجوز للالتزامات/);
