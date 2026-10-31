@@ -336,10 +336,49 @@ const wfEmpty=()=>Object.fromEntries(monthlyFields().map(o=>[o.key,0]));
 function wfData(st=state){const d=st.settings.twoStageWorkflow;return d&&typeof d==='object'?d:{plans:{},completed:{}}}
 function wfPlan(month=wfMonth){return wfData().plans?.[month]||null}
 function wfDone(stage,month=wfMonth){return wfData().completed?.[month]?.[stage]||null}
+function wfIncomeMode(month=wfMonth,st=state){
+ const mode=st.settings.wfIncomeModes?.[month];
+ if(mode==='salary-only'||mode==='both')return mode;
+ const active=st.settings.wfDefaultIncomeMode;
+ const since=st.settings.wfIncomeModeSince;
+ if((active==='salary-only'||active==='both')&&since&&month>=since)return active;
+ const wf=wfData(st);
+ const historical=Object.prototype.hasOwnProperty.call(wf.plans||{},month)||
+  Object.prototype.hasOwnProperty.call(wf.completed||{},month)||
+  st.transactions.some(t=>t.type==='income'&&t.incomePeriod===month&&['salary','incentives'].includes(t.sourceId));
+ return historical?'both':active==='salary-only'?'salary-only':'both';
+}
+function wfFreezeIncomeMode(st,month){
+ st.settings.wfIncomeModes={...(st.settings.wfIncomeModes||{}),[month]:wfIncomeMode(month,st)};
+ return st;
+}
+function wfIncomeModePicker(){
+ if(state.demo)throw Error('ابدأ خطتك الفعلية أولاً.');
+ modal('نوع الدخل الشهري','حدد طريقة الاستلام لهذا الشهر والأشهر القادمة، دون تغيير السجلات السابقة.',
+  `<div class="form-grid">${select('نوع الاستلام','incomeMode',[['both','راتب وحوافز'],['salary-only','راتب فقط (بدون حوافز)']],wfIncomeMode())}</div>
+   <div class="notice">عند اختيار «راتب فقط» تُحسب جميع بنود الشهر من الراتب، ولا تُنشأ حوافز وهمية أو عمليات مالية تلقائياً. لا يمكن تغيير شهر تم اعتماد استقطاعاته.</div>`,
+  f=>act(st=>{
+   if(!['both','salary-only'].includes(f.incomeMode))throw Error('نوع الدخل غير صالح.');
+   const wf=wfData(st);
+   if(wf.completed?.[wfMonth]?.incentives||wf.completed?.[wfMonth]?.salary)
+    throw Error('تم اعتماد استقطاعات هذا الشهر سابقاً؛ لا يمكن تغيير نوع دخله.');
+   if(f.incomeMode==='salary-only'&&S.receipts(st,'incentives',wfMonth).length)
+    throw Error('تم تسجيل حوافز لهذا الشهر؛ لا يمكن جعله راتباً فقط.');
+   const months=new Set([...Object.keys(wf.plans||{}),...Object.keys(wf.completed||{}),
+    ...st.transactions.filter(t=>t.type==='income'&&t.incomePeriod).map(t=>t.incomePeriod)]);
+   const frozen={...(st.settings.wfIncomeModes||{})};
+   for(const m of months)if(!Object.prototype.hasOwnProperty.call(frozen,m))frozen[m]=wfIncomeMode(m,st);
+   st.settings.wfIncomeModes={...frozen,[wfMonth]:f.incomeMode};
+   st.settings.wfDefaultIncomeMode=f.incomeMode;
+   st.settings.wfIncomeModeSince=wfMonth;
+   return st;
+  },'تم حفظ نوع الدخل دون تعديل الحركات أو الأرصدة'),'حفظ نوع الدخل');
+}
 function wfReceive(stage){
  if(state.demo)throw Error('أنهِ الخطة التوضيحية أولاً بزر «بدء خطتي الفعلية».');
- if(stage==='salary'&&!S.receipts(state,'incentives',wfMonth).length)
-  throw Error('سجّل الحوافز المستلمة أولاً، ثم الراتب.');
+ if(stage==='incentives'&&wfIncomeMode()==='salary-only')throw Error('هذه الخطة تعتمد الراتب فقط.');
+ if(stage==='salary'&&wfIncomeMode()==='both'&&!S.receipts(state,'incentives',wfMonth).length)
+  throw Error('إذا ما تستلم حوافز، اختر «راتب فقط» من نوع الدخل؛ بخطة الدفعتين سجّل الحوافز أولاً.');
  if(S.receipts(state,stage,wfMonth).length)throw Error('هذا الدخل مسجّل لهذا الشهر. لا تُضفه مرة أخرى.');
  openIncome(stage,wfMonth);
 }
@@ -382,6 +421,16 @@ function wfConfig(){
 function wfObId(month,key){return 'wf_'+key+'_'+month.replace('-','_')}
 function wfAmount(plan,stage){
  const rows=[];
+ if(wfIncomeMode()==='salary-only'){
+  if(stage!=='salary')return rows;
+  for(const item of monthlyAllFields()){
+   const full=plan[item.key]||0,hidden=monthlyHiddenFields().some(x=>x.key===item.key);
+   if(hidden&&!full)continue;
+   rows.push({key:item.key,amount:full,label:item.label+(hidden?' (مخفي)':''),fullAmount:full,
+    reserveOnly:!!item.reserveOnly,hidden});
+  }
+  return rows;
+ }
  for(const o of monthlyAllFields()){
   const amountFull=plan[o.key]||0;
   const which=o.stage||(['generator','bankLoan'].includes(o.key)?'salary':o.key==='workLoan'?'split':'incentives');
@@ -403,9 +452,11 @@ function wfStageSummary(stage){
  const plan=wfPlan(),done=wfDone(stage),rec=S.receipts(state,stage,wfMonth),
   first=stage==='incentives',label=first?'الحوافز الشهرية':'الراتب الشهري';
  const steps=plan?wfAmount(plan,stage):[],total=steps.reduce((a,x)=>a+x.amount,0),eligible=state.transactions.some(t=>t.type==='income'&&!t.sourceId&&t.date.slice(0,7)>=wfMonth);
- const title=first?'1 · استلام الحوافز ثم استقطاعاتها':'2 · استلام الراتب ثم الحجوزات المتبقية';
+ const salaryOnly=wfIncomeMode()==='salary-only';
+ if(first&&salaryOnly)return '';
+ const title=salaryOnly?'1 · استلام الراتب واستقطاعاته':first?'1 · استلام الحوافز ثم استقطاعاتها':'2 · استلام الراتب ثم الحجوزات المتبقية';
  return `<section class="wf-stage">
-  <div class="wf-stage-top"><div><span class="wf-kicker">${first?'الدفعة الأولى':'الدفعة الثانية'}</span><h2>${title}</h2></div>
+  <div class="wf-stage-top"><div><span class="wf-kicker">${salaryOnly?'الدخل الشهري':first?'الدفعة الأولى':'الدفعة الثانية'}</span><h2>${title}</h2></div>
   <span class="chip ${done?'':'amber'}">${done?'تم تنفيذ المرحلة':rec.length?'تم الاستلام · بانتظار التخصيص':'لم تُستلم'}</span></div>
   <div class="wf-receipt">
     <span>${label}</span><strong>${rec.length?money(rec.reduce((a,t)=>a+t.amount,0)):'لم يُسجّل الاستلام بعد'}</strong>
@@ -416,20 +467,22 @@ function wfStageSummary(stage){
   ${first?'<p class="wf-help">بنود الحوافز القابلة للسداد يمكن حجزها أو دفعها أو توثيق استقطاعها قبل الإيداع. أما بنود «الحجز فقط» فلا تُسدد تلقائياً.</p>':
     '<p class="wf-help">بنود الراتب وأنصاف البنود المقسّمة تُحجز بعد الاستلام، ولا تُحتسب مدفوعة إلا بعد السداد الفعلي.</p>'}
   ${done?`<div class="wf-done">${icon('check')} ${done.mode==='withheld'?'استقطاعات الحوافز قبل الإيداع موثقة دون خصم مكرر':'تم تنفيذ التخصيص بعد موافقتك'}</div>`:
-    (plan&&rec.length&&(!first?!!wfDone('incentives'):true)
+    (plan&&rec.length&&(!first?(salaryOnly||!!wfDone('incentives')):true)
      ?btn(first?'wf-incentives-apply':'wf-salary-apply',total?first?'مراجعة الاستقطاعات والحجز':'مراجعة حجوزات الراتب':'تأكيد عدم وجود استقطاعات','check')
      :'')}
  </section>`;
 }
 function workflowPage(){
- const plan=wfPlan(),stats=currentStats();
+ const plan=wfPlan(),stats=currentStats(),salaryOnly=wfIncomeMode()==='salary-only';
  const splitFields=monthlyAllFields().filter(o=>o.stage==='split'&&plan&&(plan[o.key]||0)>0);
  const wfIds=plan?monthlyAllFields().map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
   settled=wfIds.filter(o=>(stats.reserved[o.id]||0)>0);
- return head('ذُخر | دورة الحوافز والراتب','خطة شهرية من دفعتين، على ترتيب استلامك الحقيقي. لا يتم الحجز أو السداد تلقائياً.',
+ return head(salaryOnly?'ذُخر | دورة الراتب':'ذُخر | دورة الحوافز والراتب',salaryOnly?'خطة شهرية براتب واحد دون اشتراط حوافز. لا يتم الحجز أو السداد تلقائياً.':'خطة شهرية من دفعتين، على ترتيب استلامك الحقيقي. لا يتم الحجز أو السداد تلقائياً.',
    state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):( (monthlyFields().length?btn('wf-config','تحديد مبالغ الشهر','wallet','secondary'):'')+btn('wf-fields-manage',monthlyFields().length?'إدارة البنود':'إضافة بنود الشهر','settings',monthlyFields().length?'secondary':'') ))+thukhrFamilyWelcome()+
  `<section class="wf-intro">
-  <div class="wf-month"><label for="wfMonth">شهر الدفعتين</label><input id="wfMonth" type="month" value="${wfMonth}" max="${today().slice(0,7)}"></div>
+  <div class="wf-month"><label for="wfMonth">شهر الدخل</label><input id="wfMonth" type="month" value="${wfMonth}" max="${today().slice(0,7)}"></div>
+  <div class="wf-income-mode-controls"><span>طريقة الاستلام: <b>${salaryOnly?'راتب فقط':'راتب وحوافز'}</b></span>
+   ${state.demo?'':btn('wf-income-mode','تغيير نوع الدخل','settings','secondary')}</div>
   <div class="wf-snapshot">
    <div><span>رصيد الحساب</span><strong>${money(stats.total)}</strong></div>
    <div><span>المتاح بعد الحجز والتخصيص</span><strong>${money(stats.unallocated)}</strong></div>
@@ -438,7 +491,7 @@ function workflowPage(){
  </section>
  ${state.demo?'<div class="notice warn">هذا سجل تجريبي. اضغط «بدء خطتي الفعلية» لتسجيل استلام الحوافز والراتب الحقيقيين. لا تُجرى أي حركة تلقائياً.</div>':''}
  ${!plan?'<div class="notice">ابدأ من «إدارة البنود» حتى تختار بنود الشهر، ثم افتح «تحديد مبالغ الشهر» لإدخال المبالغ. لا يُحجز أو يُدفع أي مبلغ إلا بعد تأكيدك.</div>':
-  splitFields.map(o=>{const half=Math.floor(plan[o.key]/2);return `<div class="wf-parts"><span>${safe(o.label)} · المبلغ الكامل <b>${money(plan[o.key])}</b></span><span>من الحوافز <b>${money(half)}</b></span><span>من الراتب <b>${money(plan[o.key]-half)}</b></span></div>`;}).join('')}
+  salaryOnly?'':splitFields.map(o=>{const half=Math.floor(plan[o.key]/2);return `<div class="wf-parts"><span>${safe(o.label)} · المبلغ الكامل <b>${money(plan[o.key])}</b></span><span>من الحوافز <b>${money(half)}</b></span><span>من الراتب <b>${money(plan[o.key]-half)}</b></span></div>`;}).join('')}
  ${wfStageSummary('incentives')}
  ${wfStageSummary('salary')}
  <div class="wf-living-shortcut"><span>بعد حجز الالتزامات، افتح صفحة المعيشة المستقلة وقسّم الرصيد المتبقي على أقسام المعيشة التي تختارها.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
@@ -451,8 +504,9 @@ function wfApply(stage){
  const p=wfPlan(),done=wfDone(stage);
  if(!p)throw Error('حدّد مبالغ الشهر أولاً.');
  if(done)throw Error('هذه المرحلة منفذة مسبقاً ولن تُنفذ مرتين.');
+ if(stage==='incentives'&&wfIncomeMode()==='salary-only')throw Error('هذا الشهر راتب فقط.');
  if(!S.receipts(state,stage,wfMonth).length)throw Error('أكّد استلام الدفعة أولاً.');
- if(stage==='salary'&&!wfDone('incentives'))throw Error('أكمل مرحلة الحوافز أولاً.');
+ if(stage==='salary'&&wfIncomeMode()==='both'&&!wfDone('incentives'))throw Error('أكمل مرحلة الحوافز أولاً.');
  const ops=wfAmount(p,stage).filter(x=>x.amount>0);
  const isIncentives=stage==='incentives';
  const options=isIncentives?
@@ -1174,7 +1228,7 @@ function backup(){download(`mizan-backup-${today()}.json`,JSON.stringify(state,n
 function exportCsv(){const rows=[['التاريخ','العملية','التفاصيل','المبلغ','العملة','الحساب','الملاحظة','مصدر الدخل','شهر الاستحقاق'],...state.transactions.map(t=>[t.date,...txLabel(t).slice(0,2),inputMoney(t.amount),state.settings.currency,t.method||'داخلي',t.note||'',t.sourceName||'',t.incomePeriod||''])];const clean=v=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};download(`mizan-ledger-${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(clean).join(',')).join('\r\n'),'text/csv')}
 function help(){modal('كيف يعمل ذُخر؟','من أول استلام إلى آخر يوم في الدورة.',`<div class="help-text"><p><b>مواعيدك:</b> الحوافز بين 10 و12، والراتب بين 22 و24 من كل شهر. عدّل المواعيد من إعدادات الدخل. الدفعتان ضمن الخطة الحالية؛ لا يضاف المتوقع قبل تأكيد استلامه.</p><br><p><b>1. استلم:</b> سجّل الدخل الذي وصل فعلياً إلى البطاقة أو النقد.</p><br><p><b>2. أضف ثم وافق:</b> تسجيل الالتزام لا يحجز أموالاً. حدّد الحجز لاحقاً من زر «حجز مبلغ» ووافق عليه صراحةً. الحجز ليس دفعاً.</p><br><p><b>3. وزّع:</b> امنح ما تبقّى محافظ للصرف واحتياطي للطوارئ والادخار.</p><br><p><b>4. سجّل:</b> المصروف يخفض الحساب والمحفظة. سداد الالتزام يخفض الحساب وحجز الالتزام. السحب النقدي والتحويل لا يغيّران إجمالي المال.</p><br><p><b>5. راجع:</b> تابع السقف اليومي وطابق الرصيد من التقارير. احفظ نسخة احتياطية دورياً.</p><br><p>تُحفظ أموالك في هذا المتصفح فقط. لا توجد مزامنة بين الأجهزة أو اتصال مصرفي. المبلغ المقترح للصرف تنظيم حسابي حسب بياناتك، وليس توقعاً لدخل لم يُستلم.</p></div><div class="form-actions">${btn('close','فهمت','check')}</div>`)}
 function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports'&&$('reconcileForm'))$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
-const actions={'wf-fields-manage':monthlyFieldsManage,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
+const actions={'wf-fields-manage':monthlyFieldsManage,'wf-income-mode':wfIncomeModePicker,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=actions[b.dataset.action];if(fn){e.preventDefault();try{fn(b.dataset.id,b.dataset.period)}catch(ex){showError(ex.message)}}});
 $('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;E.validate(next);if(!currencies[next.settings.currency])throw Error('عملة الملف غير مدعومة في هذه الواجهة.');confirmModal('استعادة النسخة الاحتياطية؟',`تم التحقق من ${next.transactions.length} حركة. ستُستبدل البيانات الحالية بهذه النسخة. احفظ نسخة من سجلك الحالي قبل التأكيد.`,()=>{try{save(next,'تمت الاستعادة والتحقق من توازن الأرصدة',true)}catch(ex){toast(ex.message)}},'استعادة البيانات')}catch(ex){toast('تعذرت الاستعادة: '+ex.message)}finally{e.target.value=''}});
 let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('installBtn'))$('installBtn').hidden=false});document.addEventListener('click',async e=>{if(e.target.id==='installBtn'&&installPrompt){await installPrompt.prompt();installPrompt=null;e.target.hidden=true}});
