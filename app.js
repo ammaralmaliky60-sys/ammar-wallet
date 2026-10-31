@@ -239,7 +239,7 @@ function neoOverviewBudget(){
  </div>`;
 }
 let wfMonth=today().slice(0,7);
-const WF_FIELDS=[
+const LEGACY_WF_FIELDS=[
  {key:'hyper',label:'الهايبر ماركت',stage:'incentives',reserveOnly:false},
  {key:'housing',label:'الإسكان',stage:'incentives',reserveOnly:false},
  {key:'workLoan',label:'سلفة الدوام (كامل القسط الشهري)',stage:'split',reserveOnly:false},
@@ -247,7 +247,16 @@ const WF_FIELDS=[
  {key:'generator',label:'المولّدة',stage:'salary',reserveOnly:true},
  {key:'bankLoan',label:'سلفة المصرف',stage:'salary',reserveOnly:true}
 ];
-function monthlyFields(st=state){return Array.isArray(st.settings.wfFields)?st.settings.wfFields:WF_FIELDS;}
+function monthlyFields(st=state){
+ if(Array.isArray(st.settings.wfFields))return st.settings.wfFields;
+ // Compatibility for historical accounts with financial use of the original fields.
+ const legacy=LEGACY_WF_FIELDS;
+ const keys=new Set(legacy.map(f=>f.key));
+ const plans=st.settings.twoStageWorkflow?.plans||{};
+ const used=Object.values(plans).some(p=>Object.keys(p||{}).some(key=>keys.has(key)))||
+  st.obligations.some(o=>legacy.some(f=>o.id.startsWith('wf_'+f.key+'_')));
+ return used?legacy:[];
+}
 function monthlyHiddenFields(st=state){return Array.isArray(st.settings.wfHiddenFields)?st.settings.wfHiddenFields:[];}
 function monthlyAllFields(st=state){return [...monthlyFields(st),...monthlyHiddenFields(st)];}
 function monthlyFieldUsed(st,key){
@@ -2190,14 +2199,99 @@ function openFinancialResetFinal(attempt){
    setupStart();
   },'أوافق · تهيئة الملف');
 }
-function setupStart(){if(!state.demo&&state.transactions.length){confirmModal('إنشاء خطة جديدة؟','سيُستبدل السجل الحالي. نزّل نسخة احتياطية قبل المتابعة.',()=>{wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()},'متابعة وإنشاء خطة');return}wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()}
+function setupStart(){if(!state.demo&&state.transactions.length){confirmModal('إنشاء خطة جديدة؟','سيُستبدل السجل الحالي. نزّل نسخة احتياطية قبل المتابعة.',()=>{wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',incomeMode:wfIncomeMode(),obligations:[]};wizardStep=0;renderWizard()},'متابعة وإنشاء خطة');return}wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',incomeMode:wfIncomeMode(),obligations:[]};wizardStep=0;renderWizard()}
 function wizardBack(form){if(form){const f=Object.fromEntries(new FormData(form));if(wizardStep===1){wizard.obligations=wizardRows(form)}else Object.assign(wizard,f)}wizardStep=Math.max(0,wizardStep-1);renderWizard()}
-function wizardRows(form){return [...form.querySelectorAll('.setup-ob')].map(row=>({name:row.querySelector('[data-name]').value.trim(),amount:row.querySelector('[data-amount]').value,due:row.querySelector('[data-due]').value})).filter(o=>o.name||o.amount)}
+function wizardRows(form){
+ return [...form.querySelectorAll('.setup-ob')].map(row=>({
+  name:row.querySelector('[data-name]').value.trim(),
+  amount:row.querySelector('[data-amount]').value,
+  stage:row.querySelector('[data-stage]').value
+ })).filter(o=>o.name||o.amount);
+}
+function wizardValidateCommitments(rows,dec,mode){
+ if(!Array.isArray(rows)||rows.length>16)throw Error('يمكن إدخال 16 التزاماً شهرياً كحد أقصى.');
+ const allowed=mode==='salary-only'?['salary']:['salary','incentives','split'],seen=new Set();
+ return rows.map(o=>{
+  const name=String(o.name||'').trim().replace(/\s+/g,' ');
+  if(name.length<2||name.length>45||/[<>]/.test(name))throw Error('اسم الالتزام يجب أن يكون من حرفين إلى 45 حرفاً.');
+  if(seen.has(name.toLowerCase()))throw Error('هذا الالتزام مكرر: '+name);
+  seen.add(name.toLowerCase());
+  if(!allowed.includes(o.stage))throw Error('حدد دفعة الالتزام: '+name);
+  return {name,amount:parseMoney(o.amount,dec),stage:o.stage};
+ });
+}
+function wizardFreshPlan(source,setup){
+ const mode=setup.incomeMode;
+ if(!['salary-only','both'].includes(mode))throw Error('اختر نوع دخل صحيحاً.');
+ const cur=currencies[setup.currency];if(!cur)throw Error('عملة غير مدعومة.');
+ const rows=wizardValidateCommitments(setup.obligations,cur.dec,mode);
+ const amountReceived=parseMoney(setup.income,cur.dec,true),month=setup.start.slice(0,7);
+ let next=E.initial();next.demo=false;
+ next.settings={...next.settings,name:setup.name.trim(),currency:setup.currency,
+  digits:source.settings.digits,incomeSources:S.sources(source),wfFields:[],wfHiddenFields:[],
+  wfDefaultIncomeMode:mode,wfIncomeModeSince:month,wfIncomeModes:{[month]:mode}};
+ next.cycle={...next.cycle,start:setup.start,days:Number(setup.days)};
+ const plan={};
+ for(const row of rows){
+  const key='item_'+uid().replace(/[^A-Za-z0-9_-]/g,'').slice(0,30);
+  if(next.settings.wfFields.some(x=>x.key===key))throw Error('تكرر معرف الالتزام؛ أعد المحاولة.');
+  next.settings.wfFields.push({key,label:row.name,stage:row.stage,reserveOnly:row.stage==='salary'});
+  plan[key]=row.amount;
+ }
+ if(rows.length)next.settings.twoStageWorkflow={plans:{[month]:plan},completed:{}};
+ if(amountReceived){
+  const sourceIncome=S.sources(next).find(x=>x.id===setup.sourceId);
+  if(mode==='salary-only'&&sourceIncome?.id==='incentives')throw Error('لا تسجل الحوافز في خطة راتب فقط.');
+  next=event(next,{type:'income',date:setup.start,method:setup.method,amount:amountReceived,
+   note:sourceIncome?.name||'بداية الخطة — دخل مستلم',
+   ...(sourceIncome?{sourceId:sourceIncome.id,sourceName:sourceIncome.name,
+    incomePeriod:setup.incomePeriod||month}:{})});
+ }
+ if(setup.plan!=='later'&&amountReceived){
+  const weights=setup.plan==='balanced'?[50,20,10,20]:[125,120,60,30];
+  next.wallets.forEach((w,i)=>w.weight=weights[i]);
+  const parts=E.distribute(E.stats(next).unallocated,next.wallets);
+  for(const w of next.wallets)if(parts[w.id])next=event(next,{
+   type:'allocate',walletId:w.id,amount:parts[w.id],date:setup.start});
+ }
+ E.validate(next);return next;
+}
 function renderWizard(){const stepNames=['دخلك الفعلي','التزاماتك أولاً','خطتك جاهزة'];let body=`<div class="steps">${stepNames.map((s,i)=>`<span class="${i<=wizardStep?'active':''}" title="${s}"></span>`).join('')}</div>`;let submit;
-if(wizardStep===0){body+=`<div class="form-grid">${field('الاسم المفضل','name','text',wizard.name,'maxlength="40"')}${select('العملة','currency',Object.entries(currencies).map(([k,c])=>[k,c.label]),wizard.currency)}${field('تاريخ الاستلام','start','date',wizard.start,`required max="${today()}"`)}${field('مدة الدورة بالأيام','days','number',wizard.days,'required min="1" max="366" step="1"')}${select('نوع الدفعة المستلمة','sourceId',[['','رصيد افتتاحي / دخل آخر'],...S.sources(state).map(x=>[x.id,x.name])],wizard.sourceId||'')}${field('شهر الاستحقاق','incomePeriod','month',wizard.incomePeriod||wizard.start.slice(0,7),`max="${today().slice(0,7)}"`)}${moneyField('الدخل المستلم','income',wizard.income,'required',currencies[wizard.currency]?.dec??0)}${select('مكان المبلغ','method',methodOptions,wizard.method)}</div><div class="notice">ابدأ بالدخل المستلم أو الرصيد الفعلي الذي تريد إدارته. يمكنك إضافة مصادر أخرى لاحقاً.</div>`;submit=f=>{const cur=currencies[f.currency];if(!cur)throw Error('اختر عملة مدعومة.');parseMoney(f.income,cur.dec);Object.assign(wizard,f);wizardStep=1;renderWizard()}}
-if(wizardStep===1){body+=`<p class="help-text" style="margin-bottom:16px">سجّل الالتزامات بقيمتها الكاملة، حتى إذا تجاوزت الدخل. لا يتم الحجز الآن، بل لاحقاً بموافقتك.</p><div id="setupObligations"></div><button class="btn soft small" type="button" id="addSetupOb">${icon('plus')}إضافة التزام</button><div class="notice">الإضافة هنا توثّق الالتزامات فقط ولا تخصمها من الرصيد. لا يُنشأ أي حجز إلا بموافقتك اللاحقة.</div>`;submit=(f,form)=>{wizard.obligations=wizardRows(form);const dec=currencies[wizard.currency].dec;let total=0;for(const o of wizard.obligations){if(!o.name||!o.due)throw Error('أكمل اسم الالتزام ومبلغه وتاريخ استحقاقه.');total+=parseMoney(o.amount,dec)}wizardStep=2;renderWizard()}}
-if(wizardStep===2){const u=currencies[wizard.currency].unit,dec=currencies[wizard.currency].dec,income=parseMoney(wizard.income,dec),ob=wizard.obligations.reduce((a,o)=>a+parseMoney(o.amount,dec),0),available=income;body+=`<div class="wizard-summary"><div class="keyval"><span>الدخل المستلم</span><b class="num">${formatMinor(income,dec)} ${u}</b></div><div class="keyval"><span>التزامات مسجّلة غير محجوزة</span><b class="num">${formatMinor(ob,dec)} ${u}</b></div><div class="keyval"><span>المبلغ المحجوز الآن</span><b class="num">0 ${u}</b></div><div class="keyval"><span>المتاح للتوزيع</span><b class="income-color num">${formatMinor(available,dec)} ${u}</b></div></div>${select('توزيع المبلغ المتبقي','plan',[['original','نسب الخطة الأصلية: المنزل / الشخصية / الأسرة / الطوارئ'],['balanced','خطة عامة: معيشة 50% / شخصية 20% / أسرة 10% / طوارئ 20%'],['later','إبقاؤه متاحاً وتوزيعه يدوياً لاحقاً']],'later')}<div class="notice">كل الالتزامات المذكورة تبقى غير محجوزة حتى تختار حجزها. أنصح بإبقاء المال متاحاً للتوزيع إلى أن تقرر الحجز أو التخصيص بنفسك.</div>`;submit=f=>{const dec=currencies[wizard.currency].dec;let next=E.initial();next.demo=false;next.settings={...state.settings,name:wizard.name.trim(),currency:wizard.currency};next.cycle={...next.cycle,start:wizard.start,days:Number(wizard.days)};const income=parseMoney(wizard.income,dec),firstSource=S.sources(next).find(x=>x.id===wizard.sourceId);next=event(next,{type:'income',amount:income,date:wizard.start,method:wizard.method,note:firstSource?firstSource.name:'بداية الخطة — دخل مستلم',...(firstSource?{sourceId:firstSource.id,sourceName:firstSource.name,incomePeriod:wizard.incomePeriod||wizard.start.slice(0,7)}:{})});for(const o of wizard.obligations){const id=uid(),a=parseMoney(o.amount,dec);next.obligations.push({id,name:o.name,amount:a,due:o.due,recurring:false})}if(f.plan!=='later'){const weights=f.plan==='balanced'?[50,20,10,20]:[125,120,60,30],available=E.stats(next).unallocated;next.wallets.forEach((w,i)=>w.weight=weights[i]);const parts=E.distribute(available,next.wallets);for(const w of next.wallets)if(parts[w.id])next=event(next,{type:'allocate',walletId:w.id,amount:parts[w.id],date:wizard.start})}save(next,'بدأت خطتك المالية. أهلاً بك في ميزان',true);closeModal();location.hash='overview';}}
-modal(`ابدأ خطتك · ${stepNames[wizardStep]}`,`الخطوة ${wizardStep+1} من 3`,body,submit,wizardStep===2?'اعتماد خطتي':'متابعة');const actions=$('modalForm').querySelector('.form-actions');if(wizardStep>0){const back=document.createElement('button');back.type='button';back.className='btn secondary';back.textContent='السابق';back.onclick=()=>wizardBack($('modalForm'));actions.prepend(back)}if(wizardStep===1){const add=(o={})=>{const row=document.createElement('div');row.className='setup-ob';row.innerHTML=`<div class="form-grid" style="margin-bottom:17px">${field('اسم الالتزام','ob-name','text',o.name||'','data-name maxlength="70"')}${moneyField('المبلغ','ob-amount',o.amount||'','data-amount',currencies[wizard.currency]?.dec??0)}${field('الاستحقاق','ob-due','date',o.due||today(),'data-due')}<div class="field" style="justify-content:end"><button class="btn danger small" type="button" data-remove>حذف</button></div></div>`;row.querySelector('[data-remove]').onclick=()=>row.remove();$('setupObligations').append(row);wireMoneyInputs(row)};wizard.obligations.forEach(add);$('addSetupOb').onclick=()=>add()}}
+if(wizardStep===0){body+=`<div class="form-grid">${field('الاسم المفضل','name','text',wizard.name,'maxlength="40"')}${select('العملة','currency',Object.entries(currencies).map(([k,c])=>[k,c.label]),wizard.currency)}${field('تاريخ الاستلام','start','date',wizard.start,`required max="${today()}"`)}${field('مدة الدورة بالأيام','days','number',wizard.days,'required min="1" max="366" step="1"')}${select('نوع الدخل الشهري','incomeMode',[['salary-only','راتب فقط'],['both','راتب وحوافز']],wizard.incomeMode||'salary-only')}${select('نوع الدفعة المستلمة','sourceId',[['','رصيد افتتاحي / دخل آخر'],...S.sources(state).map(x=>[x.id,x.name])],wizard.sourceId||'')}${field('شهر الاستحقاق','incomePeriod','month',wizard.incomePeriod||wizard.start.slice(0,7),`max="${today().slice(0,7)}"`)}${moneyField('الدخل المستلم (0 إذا لم تستلم بعد)','income',wizard.income||'0','required',currencies[wizard.currency]?.dec??0)}${select('مكان المبلغ','method',methodOptions,wizard.method)}</div><div class="notice">ابدأ بالدخل المستلم أو الرصيد الفعلي الذي تريد إدارته. يمكنك إضافة مصادر أخرى لاحقاً.</div>`;submit=f=>{const cur=currencies[f.currency];if(!cur)throw Error('اختر عملة مدعومة.');parseMoney(f.income,cur.dec,true);Object.assign(wizard,f);if(f.incomeMode==='salary-only')wizard.obligations=wizard.obligations.map(o=>({...o,stage:'salary'}));wizardStep=1;renderWizard()}}
+if(wizardStep===1){
+ body+=`<p class="help-text" style="margin-bottom:16px">تبدأ من <b>صفر التزامات</b>. أضف فقط الالتزامات التي تريدها، بأسمائها ومبالغها ومن أي دفعة تتم تغطيتها. تستطيع المتابعة دون أي بند.</p>
+ <div id="setupObligations"></div>
+ <button class="btn soft small" type="button" id="addSetupOb">${icon('plus')}إضافة التزام</button>
+ <div class="notice">هذه خطة شهرية فقط. لا يحجز النظام مبلغاً ولا يعتبر الالتزام مدفوعاً إلا بعد اعتماد الحركة بنفسك.</div>`;
+ submit=(f,form)=>{
+  wizard.obligations=wizardRows(form);
+  wizardValidateCommitments(wizard.obligations,currencies[wizard.currency].dec,wizard.incomeMode);
+  wizardStep=2;renderWizard();
+ };
+}
+if(wizardStep===2){
+ const dec=currencies[wizard.currency].dec,u=currencies[wizard.currency].unit;
+ const received=parseMoney(wizard.income,dec,true);
+ const rows=wizardValidateCommitments(wizard.obligations,dec,wizard.incomeMode);
+ const obligations=rows.reduce((sum,o)=>sum+o.amount,0);
+ body+=`<div class="wizard-summary">
+  <div class="keyval"><span>الدخل المستلم</span><b class="num">${formatMinor(received,dec)} ${u}</b></div>
+  <div class="keyval"><span>الالتزامات من إدخالك</span><b class="num">${formatMinor(obligations,dec)} ${u}</b></div>
+  <div class="keyval"><span>المحجوز الآن</span><b class="num">0 ${u}</b></div>
+  <div class="keyval"><span>المتبقي التخطيطي</span><b class="num">${formatMinor(received-obligations,dec)} ${u}</b></div>
+  <div class="keyval"><span>الرصيد الفعلي قبل التوزيع</span><b class="income-color num">${formatMinor(received,dec)} ${u}</b></div>
+ </div>
+ ${select('توزيع الدخل المتاح','plan',[['later','أحدد التخصيص لاحقاً'],['original','نسب مبدئية'],['balanced','توزيع عام 50 / 20 / 10 / 20']],'later')}
+ <div class="notice">لن تظهر التزامات جاهزة أو مبالغ وهمية. تحفظ البنود التي أدخلتها فقط، ولا تخصم تلقائياً من حسابك.</div>`;
+ submit=f=>{
+  wizard.plan=f.plan;
+  const next=wizardFreshPlan(state,wizard);
+  save(next,'تم إنشاء خطة فِرزة ببنودك فقط ومن دون التزامات افتراضية.',true);
+  closeModal();wfMonth=wizard.start.slice(0,7);location.hash='dashboard';
+ };
+}
+
+modal(`ابدأ خطتك · ${stepNames[wizardStep]}`,`الخطوة ${wizardStep+1} من 3`,body,submit,wizardStep===2?'اعتماد خطتي':'متابعة');const actions=$('modalForm').querySelector('.form-actions');if(wizardStep>0){const back=document.createElement('button');back.type='button';back.className='btn secondary';back.textContent='السابق';back.onclick=()=>wizardBack($('modalForm'));actions.prepend(back)}if(wizardStep===1){const add=(o={})=>{const row=document.createElement('div');row.className='setup-ob';row.innerHTML=`<div class="form-grid" style="margin-bottom:17px">${field('اسم الالتزام','ob-name','text',o.name||'','data-name maxlength="70"')}${moneyField('المبلغ','ob-amount',o.amount||'','data-amount',currencies[wizard.currency]?.dec??0)}${select('يُغطى من','ob-stage',wizard.incomeMode==='salary-only'?[['salary','الراتب']]:[['salary','الراتب'],['incentives','الحوافز'],['split','نصف من كل دفعة']],o.stage||'salary').replace('<select ','<select data-stage ')}<div class="field" style="justify-content:end"><button class="btn danger small" type="button" data-remove>حذف</button></div></div>`;row.querySelector('[data-remove]').onclick=()=>row.remove();$('setupObligations').append(row);wireMoneyInputs(row)};wizard.obligations.forEach(add);$('addSetupOb').onclick=()=>add()}}
 function confirmModal(title,text,yes,label='تأكيد'){modal(title,'',`<p class="help-text">${safe(text)}</p>`,()=>{closeModal();yes()},label)}
 function download(name,data,type='application/json'){const blob=new Blob([data],{type:type+';charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 const ROLLING_BACKUP_KEY='thukhr-rolling-backup-v1:';
