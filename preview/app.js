@@ -322,31 +322,46 @@ function wfActivate(){
  },'أوافق وأبدأ بدون رصيد');
 }
 function wfConfig(){
- if(state.demo)throw Error('اضغط «بدء خطتي الفعلية» أولاً.');
- if(wfDone('incentives')||wfDone('salary'))throw Error('لا يمكن تعديل مبالغ شهر بدأ تسجيل استقطاعاته. انتقل إلى شهر جديد أو راجع السجل.');
- const p=wfPlan()||wfEmpty();
- const fields=WF_FIELDS.map(o=>moneyField(o.label,o.key,inputMoney(p[o.key]||0),
-  'required',ccy().dec)).join('');
- modal('مبالغ دورة '+wfMonth,'أدخل قيمة كل بند، وسلفة الدوام كاملة حتى نقسمها تلقائياً إلى نصفين.',
-  `<div class="wf-form-grid">${fields}</div>
-   <div class="notice">الصفر يعني عدم وجود هذا الالتزام هذا الشهر. حفظ الأرقام لا يحجز ولا يسدّد أي مبلغ. كل بند يُنفّذ لاحقاً فقط بعد استلام الدفعة وموافقتك.</div>`,
-  f=>act(n=>{
-   const values={};
-   for(const o of WF_FIELDS)values[o.key]=amount(f[o.key],true);
-   const w=wfData(n);
-   n.settings.twoStageWorkflow={plans:{...w.plans,[wfMonth]:values},completed:{...w.completed}};
-   return n;
-  },'تم حفظ مبالغ الدورة دون خصم أو حجز'), 'حفظ المبالغ فقط');
+ if(state.demo)throw Error('ابدأ خطتك الفعلية أولاً.');
+ if(wfDone('incentives')||wfDone('salary'))throw Error('لا يمكن تعديل مبالغ شهر تم تنفيذ إحدى دفعاته. البنود قابلة للإدارة للمستقبل دون تغيير الحركات الماضية.');
+ const selected=monthlyFields();if(!selected.length)throw Error('قائمة البنود فارغة. اضغط «إدارة البنود» لإضافة أول بند.');
+ const current=wfPlan()||{};
+ const inputs=selected.map(o=>`<div class="wf-budget-field">
+ ${moneyField(o.label,'monthly-'+o.key,inputMoney(current[o.key]||0),'required',ccy().dec)}
+ <small>${monthlyFieldStageLabel(o)}${o.stage==='split'?' · أدخل المبلغ كاملاً':''}</small></div>`).join('');
+ const hiddenWithValues=monthlyHiddenFields().filter(o=>(current[o.key]||0)>0);
+ modal('تحديد مبالغ الشهر · '+wfMonth,
+ 'حدد مبلغ كل بند من البنود التي اخترتها. الحفظ لا يحجز أموالاً ولا يسدد شيئاً.',
+ `<div class="wf-form-grid">${inputs}</div>
+  ${hiddenWithValues.length?`<div class="notice warn">يوجد ${hiddenWithValues.length} بند مخفي له مبالغ محددة في هذه الدورة. تبقى مبالغه دون تغيير. أظهِره من إدارة البنود إذا تحتاج تعديله.</div>`:''}
+  <div class="notice">البند المقسّم بين الدفعتين يُدخل كاملاً. الصفر يعني عدم وجود مبلغ مستحق.</div>`,
+ form=>act(n=>{
+  const values={...(wfData(n).plans?.[wfMonth]||{})};
+  for(const o of monthlyFields(n))values[o.key]=amount(form['monthly-'+o.key],true);
+  const w=wfData(n);
+  n.settings.twoStageWorkflow={...w,plans:{...w.plans,[wfMonth]:values},completed:{...w.completed}};
+  return n;
+ },'تم حفظ مبالغ الشهر دون حجز أو خصم'),'حفظ مبالغ الشهر');
 }
 function wfObId(month,key){return 'wf_'+key+'_'+month.replace('-','_')}
-function wfAmount(p,stage){
- const first=Math.floor((p.workLoan||0)/2),second=(p.workLoan||0)-first;
- return stage==='incentives'
-  ?[{key:'hyper',amount:p.hyper||0,label:'الهايبر ماركت'},{key:'housing',amount:p.housing||0,label:'الإسكان'},
-    {key:'workLoan',amount:first,label:'نصف سلفة الدوام'},{key:'internet',amount:p.internet||0,label:'الإنترنت'}]
-  :[{key:'workLoan',amount:second,label:'النصف المتبقي من سلفة الدوام'},
-    {key:'generator',amount:p.generator||0,label:'المولّدة'},
-    {key:'bankLoan',amount:p.bankLoan||0,label:'سلفة المصرف'}];
+function wfAmount(plan,stage){
+ const rows=[];
+ for(const o of monthlyAllFields()){
+  const amountFull=plan[o.key]||0;
+  const which=o.stage||(['generator','bankLoan'].includes(o.key)?'salary':o.key==='workLoan'?'split':'incentives');
+  const hidden=monthlyHiddenFields().some(h=>h.key===o.key);
+  if(hidden&&!amountFull)continue;
+  if(which==='split'){
+   const half=Math.floor(amountFull/2),remaining=amountFull-half;
+   rows.push({key:o.key,amount:stage==='incentives'?half:remaining,
+     label:(stage==='incentives'?'نصف ':'النصف المتبقي من ')+o.label+(hidden?' (مخفي)':''),
+     fullAmount:amountFull,reserveOnly:false,hidden});
+  }else if(which===stage){
+   rows.push({key:o.key,amount:amountFull,label:o.label+(hidden?' (مخفي)':''),
+     fullAmount:amountFull,reserveOnly:!!o.reserveOnly,hidden});
+  }
+ }
+ return rows;
 }
 function wfStageSummary(stage){
  const plan=wfPlan(),done=wfDone(stage),rec=S.receipts(state,stage,wfMonth),
@@ -362,8 +377,8 @@ function wfStageSummary(stage){
   </div>
   <div class="wf-steps">${steps.map(item=>`<div class="wf-step"><span>${safe(item.label)}</span><b>${money(item.amount)}</b></div>`).join('')||'<p>حدّد مبالغ الالتزامات أولاً.</p>'}</div>
   ${plan?`<div class="wf-stage-footer"><span>إجمالي مبالغ هذه المرحلة</span><strong>${money(total)}</strong></div>`:''}
-  ${first?'<p class="wf-help">الهايبر ماركت والإسكان ونصف سلفة الدوام: تُحدد عند التأكيد هل دُفعت فعلياً، أم تُحجز فقط، أم انخصمت قبل وصول الحوافز. الإنترنت حجز فقط.</p>':
-    '<p class="wf-help">النصف الثاني من سلفة الدوام والمولّدة وسلفة المصرف تُحجز بعد وصول الراتب، ولا تُحتسب مدفوعة إلا عند تسجيل السداد.</p>'}
+  ${first?'<p class="wf-help">بنود الحوافز القابلة للسداد يمكن حجزها أو دفعها أو توثيق استقطاعها قبل الإيداع. أما بنود «الحجز فقط» فلا تُسدد تلقائياً.</p>':
+    '<p class="wf-help">بنود الراتب وأنصاف البنود المقسّمة تُحجز بعد الاستلام، ولا تُحتسب مدفوعة إلا بعد السداد الفعلي.</p>'}
   ${done?`<div class="wf-done">${icon('check')} ${done.mode==='withheld'?'استقطاعات الحوافز قبل الإيداع موثقة دون خصم مكرر':'تم تنفيذ التخصيص بعد موافقتك'}</div>`:
     (plan&&rec.length&&(!first?!!wfDone('incentives'):true)
      ?btn(first?'wf-incentives-apply':'wf-salary-apply',total?first?'مراجعة الاستقطاعات والحجز':'مراجعة حجوزات الراتب':'تأكيد عدم وجود استقطاعات','check')
@@ -373,7 +388,7 @@ function wfStageSummary(stage){
 function workflowPage(){
  const plan=wfPlan(),stats=currentStats();
  const workPart=plan?Math.floor((plan.workLoan||0)/2):0;
- const wfIds=plan?WF_FIELDS.map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
+ const wfIds=plan?monthlyAllFields().map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
   settled=wfIds.filter(o=>(stats.reserved[o.id]||0)>0);
  return head('ميزان | دورة الحوافز والراتب','خطة شهرية من دفعتين، على ترتيب استلامك الحقيقي. لا يتم الحجز أو السداد تلقائياً.',
    state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):btn('wf-config','تحديد مبالغ الشهر','settings','secondary'))+
@@ -405,7 +420,7 @@ function wfApply(stage){
  const ops=wfAmount(p,stage).filter(x=>x.amount>0);
  const isIncentives=stage==='incentives';
  const options=isIncentives?
-  `<div class="field"><label>كيف تُعامل استقطاعات الهايبر ماركت والإسكان ونصف سلفة الدوام؟</label>
+  `<div class="field"><label>كيف تُعامل بنود الحوافز القابلة للسداد؟</label>
    <select name="mode" required><option value="reserve">حجزها من الحوافز الآن، والسداد لاحقاً</option>
    <option value="pay">دفعتها فعلياً بعد وصول الحوافز</option>
    <option value="withheld">انخصمت قبل وصول الحوافز للحساب (دخلي المدخل صافي)</option></select></div>
@@ -424,16 +439,16 @@ function wfApply(stage){
     if(wf.completed?.[wfMonth]?.[stage])throw Error('تم تنفيذ المرحلة بالفعل.');
     let next=n;
     for(const o of ops){
-     if(mode==='withheld'&&o.key!=='internet')continue;
+     if(mode==='withheld'&&!o.reserveOnly)continue;
      const id=wfObId(wfMonth,o.key);
      if(!next.obligations.some(q=>q.id===id)){
-      next.obligations.push({id,name:o.key==='workLoan'?'سلفة الدوام':o.label,
-       amount:p[o.key],due:today(),recurring:false});
-     }else if(next.obligations.find(q=>q.id===id).amount!==p[o.key])
+      next.obligations.push({id,name:o.key==='workLoan'?'سلفة الدوام':o.label.replace(' (مخفي)',''),
+       amount:o.fullAmount,due:today(),recurring:false});
+     }else if(next.obligations.find(q=>q.id===id).amount!==o.fullAmount)
        throw Error('قيمة الالتزام تغيّرت عن التسجيل السابق. راجع السجل.');
      const note='دورة '+wfMonth+' · '+(stage==='incentives'?'حوافز':'راتب')+' · '+o.label;
      next=event(next,{type:'reserve',obligationId:id,amount:o.amount,date:today(),note:'حجز: '+note});
-     if(mode==='pay'&&o.key!=='internet')
+     if(mode==='pay'&&!o.reserveOnly)
       next=event(next,{type:'pay',obligationId:id,amount:o.amount,method:f.method,date:today(),note:'سداد فعلي: '+note});
     }
     const prev=wfData(next);
@@ -854,7 +869,7 @@ function wfLivingExpense(id){
 }
 
 function wfPay(id){
- if(!WF_FIELDS.some(x=>id.startsWith('wf_'+x.key+'_')))throw Error('هذا الحجز ليس من دورة الدفعتين.');
+ if(!monthlyAllFields().some(x=>id===wfObId(wfMonth,x.key)))throw Error('هذا الحجز ليس ضمن دورة الشهر المعروضة.');
  obligationAction('pay',id);
 }
 
