@@ -39,8 +39,6 @@ test('status explanations update when a select changes',()=>{
  const selector={value:'reserve',addEventListener:(name,fn)=>{if(name==='change')listener=fn}};
  const wrapper={querySelector:t=>t==='select'?selector:display};
  const root={querySelectorAll:()=>[wrapper]};
- const oldRoot=global.__testRoot;
- const wire=new Function('root','fn','return fn(root)')(root,api.wireObligationStatusExplanations);
  // Wrapper runs the handler under a mock $ lookup.
  const mocked=new Function('api','node','const $=()=>({querySelectorAll:()=>[node]});return ('+
    api.wireObligationStatusExplanations.toString()+')()');
