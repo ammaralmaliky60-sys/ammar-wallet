@@ -213,10 +213,45 @@ test('empty month shows no fictitious commitments',()=>{
  const p=fixture(st).monthlyCommitmentProjection(st,month);
  assert.equal(p.count,0);assert.equal(p.uncovered,0);assert.equal(p.remainingAfter,95000);
 });
-test('projection appears on both workflow and final review with drilldown',()=>{
+test('planning result and ledger free balance are separately presented',()=>{
  assert.match(app,/class="wf-commitment-projection/);
- assert.match(app,/تفاصيل احتساب/);
- assert.match(app,/المتبقي المتوقع بعد جميع الالتزامات الشهرية/);
- assert.match(app,/التزامات شهرية لم تُغطَّ بعد/);
- assert.match(app,/wfMonth===today\(\)\.slice\(0,7\)\?'':'hidden'/);
+ assert.match(app,/المتبقي بعد طرح جميع الالتزامات الشهرية/);
+ assert.match(app,/رصيد الحساب الكلي/);
+ assert.match(app,/ناقص مجموع الالتزامات/);
+ assert.match(app,/المتبقي الحر فعلياً بعد الحجز والتخصيص/);
+ assert.match(app,/تفاصيل الالتزامات الشهرية/);
+ assert.match(app,/wfMonth===today\(\)\.slice\(0,7\)/);
+ assert.match(app,/المتبقي التخطيطي بعد كامل الالتزامات/);
 });
+test('nominal monthly total less six listed obligations returns 213000 IQD, separately from free cash',()=>{
+ let st=base();
+ st.settings.twoStageWorkflow={plans:{[month]:{
+  hyper:150000,housing:320000,workLoan:500000,internet:35000,generator:60000,bankLoan:385000
+ }},completed:{}};
+ st=E.commit(st,{type:'income',date:day,id:E.uid(),method:'card',amount:1663000});
+ st=E.commit(st,{type:'allocate',date:day,id:E.uid(),walletId:'home',amount:368000});
+ const recorded=JSON.stringify(st),p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.count,6);
+ assert.equal(p.plannedTotal,1450000);
+ assert.equal(p.grossAfterAll,213000);
+ assert.equal(E.stats(st).unallocated,1295000);
+ assert.equal(p.remainingAfter,-155000);
+ assert.equal(JSON.stringify(st),recorded);
+});
+test('nominal comparison remains explicit even for already covered obligations',()=>{
+ let st=base();
+ st.settings.twoStageWorkflow={plans:{[month]:{bankLoan:218000,housing:320000}},completed:{}};
+ st=E.commit(st,{type:'income',date:day,id:E.uid(),method:'card',amount:720000});
+ for(const [k,value] of [['bankLoan',218000],['housing',320000]]){
+  const id='wf_'+k+'_'+month.replace('-','_');
+  st.obligations.push({id,name:k,amount:value,due:day,recurring:false});
+  st=E.commit(st,{type:'withheld',date:day,id:E.uid(),obligationId:id,amount:value,note:'استقطاع قبل الإيداع تم توثيقه'});
+ }
+ const p=fixture(st).monthlyCommitmentProjection(st,month);
+ assert.equal(p.uncovered,0);
+ assert.equal(p.remainingAfter,720000);
+ assert.equal(p.plannedTotal,538000);
+ assert.equal(p.grossAfterAll,182000);
+ assert.equal(E.stats(st).total,720000);
+});
+
