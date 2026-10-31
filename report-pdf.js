@@ -161,8 +161,8 @@ function buildPDF(jpegs,searchRows=[]){
   jpegs.forEach((jpg,i)=>{
     const page=3+i*3,content=page+1,image=page+2;
     object(page,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+PDF_W+' '+PDF_H+'] /Resources << /XObject << /Im0 '+image+' 0 R >> /Font << /F1 '+fontId+' 0 R >> >> /Contents '+content+' 0 R >>');
-    const layer=(searchable[i]||[]).map((s,j)=>'BT /F1 5 Tf 3 Tr 10 '+(25+j*7)+' Td ('+s+') Tj ET\\n').join('');
-    const stream='q\\n'+PDF_W+' 0 0 '+PDF_H+' 0 0 cm\\n/Im0 Do\\nQ\\n'+layer;
+    const layer=(searchable[i]||[]).map((s,j)=>'BT /F1 5 Tf 3 Tr 10 '+(25+j*7)+' Td ('+s+') Tj ET\n').join('');
+    const stream='q\n'+PDF_W+' 0 0 '+PDF_H+' 0 0 cm\n/Im0 Do\nQ\n'+layer;
     object(content,'<< /Length '+encoder.encode(stream).length+' >>\nstream\n'+stream+'endstream');
     offsets[image]=size;put(image+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+PAGE_W+' /Height '+PAGE_H+
       ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');
