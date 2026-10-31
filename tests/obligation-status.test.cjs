@@ -51,9 +51,10 @@ test('status explanations update when a select changes',()=>{
 test('responsive styles and versioned deployment reference the update',()=>{
  assert.match(css,/thukhr-status-explain/);
  assert.match(css,/@media\(max-width:760px\)/);
- assert.match(index,/thukhr-multi-quick-budget-20261031-r1/);
- assert.match(sw,/thukhr-multi-quick-budget-20261031-r1/);
- assert.match(sw,/v1\.8\.8-multi-quick-budget/);
+ const asset=index.match(/app\.js\?v=([^"']+)/)?.[1];
+ assert.ok(asset,'Versioned app script missing');
+ assert.ok(sw.includes('app.js?v='+asset),'The offline cache must contain the active script');
+ assert.match(sw,/const CACHE='(?:firza|thukhr)-static-[^']+'/);
 });
 test('engine accounting remains independent of new UI words',()=>{
  const engine=get('engine.js');
