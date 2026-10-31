@@ -247,3 +247,69 @@ body[data-thukhr-theme] .wf-settlement-result>p{
  body[data-thukhr-theme] .wf-settlement-result-head>span:first-child{font-size:13px;}
  body[data-thukhr-theme] .wf-settlement-result-value{font-size:28px;}
 }
+
+
+/* Monthly commitments: prospective remaining balance, no money movements. */
+body[data-thukhr-theme] .wf-commitment-projection{
+ padding:15px 17px;margin:0 0 12px;border-radius:15px;
+ border:1px solid rgba(210,189,151,.32);
+ background:linear-gradient(135deg,rgba(20,25,32,.60),rgba(48,39,37,.65));
+ color:#eee4d5;
+}
+body[data-thukhr-theme] .wf-commitment-projection-head{
+ display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+}
+body[data-thukhr-theme] .wf-commitment-projection-head>span{font-size:14px;font-weight:800;color:#f4e9d6;line-height:1.8}
+body[data-thukhr-theme] .wf-commitment-projection-head>small{font-size:11px;color:#e6cfac;line-height:1.6}
+body[data-thukhr-theme] .wf-commitment-projection-value{
+ display:block;margin:9px 0;color:#f4d19b;font-weight:800;
+ font-size:clamp(24px,5.3vw,32px);line-height:1.45;overflow-wrap:anywhere;
+ font-variant-numeric:tabular-nums;
+}
+body[data-thukhr-theme] .wf-commitment-projection-value .num{font-size:inherit;font-weight:inherit;color:inherit}
+body[data-thukhr-theme] .wf-commitment-projection-value small{color:#d9c8ab;font-size:13px}
+body[data-thukhr-theme] .wf-commitment-projection-metrics{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:6px;
+}
+body[data-thukhr-theme] .wf-commitment-projection-metrics>span{
+ border:1px solid rgba(244,211,161,.16);border-radius:10px;padding:9px;
+ font-size:11px;line-height:1.8;color:#e0d5c7;min-width:0;
+}
+body[data-thukhr-theme] .wf-commitment-projection-metrics b{
+ display:block;font-size:14px;color:#f2dfbc;overflow-wrap:anywhere;
+}
+body[data-thukhr-theme] .wf-commitment-projection>p{
+ margin:10px 0;color:#ddd0c0;font-size:12px;line-height:1.9;
+}
+body[data-thukhr-theme] .wf-commitment-projection-disclaimer{
+ display:block;color:#cdbfae;line-height:1.8;font-size:11px;margin-top:11px;
+}
+body[data-thukhr-theme] .wf-commitment-projection-details{
+ border-top:1px solid rgba(246,218,165,.21);padding-top:10px;margin-top:10px;
+}
+body[data-thukhr-theme] .wf-commitment-projection-details summary{
+ cursor:pointer;color:#f2dfbc;font-size:12px;font-weight:700;
+}
+body[data-thukhr-theme] .wf-commitment-projection-list{display:grid;gap:8px;margin-top:12px}
+body[data-thukhr-theme] .wf-commitment-projection-item{
+ display:grid;gap:2px;padding:10px;border-radius:9px;border:1px solid rgba(245,213,163,.20);
+ font-size:12px;line-height:1.7;
+}
+body[data-thukhr-theme] .wf-commitment-projection-item>span{font-weight:700}
+body[data-thukhr-theme] .wf-commitment-projection-item>small{color:#cfc1ae}
+body[data-thukhr-theme] .wf-commitment-projection-item>b{color:#f6d4a3;font-size:12px}
+body[data-thukhr-theme] .wf-commitment-projection.is-deficit{
+ border-color:rgba(249,155,124,.70);
+ background:linear-gradient(135deg,rgba(99,37,39,.48),rgba(40,25,33,.76));
+}
+body[data-thukhr-theme] .wf-commitment-projection.is-deficit .wf-commitment-projection-value{
+ color:#ffc4b2;
+}
+@media(max-width:760px){
+ body[data-thukhr-theme] .wf-commitment-projection{padding:13px 14px}
+ body[data-thukhr-theme] .wf-commitment-projection-head>span{font-size:13px}
+ body[data-thukhr-theme] .wf-commitment-projection-value{font-size:27px}
+ body[data-thukhr-theme] .wf-commitment-projection-metrics{gap:7px}
+ body[data-thukhr-theme] .wf-commitment-projection-metrics>span{padding:8px 7px}
+ body[data-thukhr-theme] .wf-commitment-projection-metrics b{font-size:12px}
+}
