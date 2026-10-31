@@ -238,7 +238,7 @@ function monthlyFieldEdit(key=''){
    ${field('اسم البند','fieldName','text',old?.label||'','required maxlength="45" placeholder="مثلاً إيجار أو قسط سيارة"')}
    ${isUsed?`<div class="field"><label>مرحلة البند</label><p class="wf-help">${monthlyFieldStageLabel(old)} (ثابتة لأن للبند مبالغ سابقة)</p></div>`:
      select('وقت اقتطاع المبلغ','fieldStage',stageOptions,old?.stage||(wfIncomeMode()==='salary-only'?'salary':'incentives'))}
-   ${isUsed?'':select('آلية الحوافز','fieldReserve',[['normal','يمكن الحجز أو السداد أو الاستقطاع قبل الإيداع'],['reserve','حجز فقط'] ],old?.reserveOnly?'reserve':'normal')}
+   ${isUsed?'':select('آلية الاستقطاع','fieldReserve',[['normal','يمكن الحجز أو السداد أو الاستقطاع قبل الإيداع'],['reserve','حجز فقط'] ],old?.reserveOnly?'reserve':'normal')}
   </div>
   <p class="wf-help">إذا اخترت «النصفين»، أدخل المبلغ الشهري كاملاً، ويقسمه البرنامج بين الدفعتين تلقائياً.</p>`,
  f=>{
@@ -467,7 +467,7 @@ function wfStageSummary(stage){
   <div class="wf-steps">${steps.map(item=>`<div class="wf-step"><span>${safe(item.label)}</span><b>${money(item.amount)}</b></div>`).join('')||'<p>حدّد مبالغ الالتزامات أولاً.</p>'}</div>
   ${plan?`<div class="wf-stage-footer"><span>إجمالي مبالغ هذه المرحلة</span><strong>${money(total)}</strong></div>`:''}
   ${first?'<p class="wf-help">بنود الحوافز القابلة للسداد يمكن حجزها أو دفعها أو توثيق استقطاعها قبل الإيداع. أما بنود «الحجز فقط» فلا تُسدد تلقائياً.</p>':
-    '<p class="wf-help">بنود الراتب وأنصاف البنود المقسّمة تُحجز بعد الاستلام، ولا تُحتسب مدفوعة إلا بعد السداد الفعلي.</p>'}
+    '<p class="wf-help">بنود الراتب تُحجز بعد الاستلام، ولا تُحتسب مدفوعة إلا بعد السداد الفعلي.</p>'}
   ${done?`<div class="wf-done">${icon('check')} ${done.mode==='withheld'?'استقطاعات الحوافز قبل الإيداع موثقة دون خصم مكرر':'تم تنفيذ التخصيص بعد موافقتك'}</div>`:
     (plan&&rec.length&&(!first?(salaryOnly||!!wfDone('incentives')):true)
      ?btn(first?'wf-incentives-apply':'wf-salary-apply',total?first?'مراجعة الاستقطاعات والحجز':'مراجعة حجوزات الراتب':'تأكيد عدم وجود استقطاعات','check')
@@ -753,7 +753,7 @@ function livingPage(){
    extra=state.transactions.filter(t=>t.type==='income'&&t.note==='أخرى'&&t.date.slice(0,7)===wfMonth).reduce((a,t)=>a+t.amount,0),
    first=livingPeriodSummary('incentives'),second=livingPeriodSummary('salary');
  const sections=`<div class="wf-living-phases">
-   <article class="wf-phase" ${wfIncomeMode()==='salary-only'?'hidden':''}>
+   <article class="wf-phase" ${wfIncomeMode()==='salary-only'?'hidden style="display:none!important"':''}>
     <div><span class="wf-kicker">القسم الأول</span><h2>المعيشة من الحوافز</h2></div>
     <span class="chip ${incentive?'':'amber'}">${incentive?'تم تسجيل الاستلام':'لم تسجل الحوافز'}</span>
     <div class="wf-phase-amounts"><span>مخصص أثناء الحوافز <b>${money(first.allocated)}</b></span><span>مصروف قبل الراتب <b>${money(first.spent)}</b></span></div>
