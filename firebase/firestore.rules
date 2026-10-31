@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Create exactly two /approvedUsers/{uid} docs via Firebase console/Admin SDK.
+    // No client can approve an account or enumerate the allow-list.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function approvedOwner(uid) {
+      return signedIn()
+        && request.auth.uid == uid
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/approvedUsers/$(uid));
+    }
+
+    function validLedger() {
+      return request.resource.data.keys().hasAll(['schemaVersion', 'revision', 'savedAt', 'state'])
+        && request.resource.data.keys().hasOnly(['schemaVersion', 'revision', 'savedAt', 'state'])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.revision is int
+        && request.resource.data.revision >= 1
+        && request.resource.data.state is map
+        && request.resource.data.state.version == 2
+        && request.resource.data.savedAt == request.time;
+    }
+
+    match /approvedUsers/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    match /users/{uid}/private/{documentId} {
+      // One financial snapshot per user. No listing or destructive deletes.
+      allow get: if documentId == 'ledger' && approvedOwner(uid);
+      allow list, delete: if false;
+
+      allow create: if documentId == 'ledger'
+        && approvedOwner(uid)
+        && validLedger()
+        && request.resource.data.revision == 1;
+
+      allow update: if documentId == 'ledger'
+        && approvedOwner(uid)
+        && validLedger()
+        && resource.data.revision is int
+        && request.resource.data.revision == resource.data.revision + 1;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
