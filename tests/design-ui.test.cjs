@@ -7,8 +7,14 @@ const root=path.join(__dirname,'..');
 const get=p=>fs.readFileSync(path.join(root,p),'utf8');
 const app=get('app.js'),html=get('index.html'),css=get('thukhr-design-system.css'),sw=get('sw.js');
 test('new design is linked and cached for offline use',()=>{
- assert.match(html,/thukhr-design-system\.css\?v=20261031-r1/);
- assert.match(sw,/thukhr-design-system\.css\?v=20261031-r1/);
+ assert.match(html,/thukhr-design-system\.css\?v=20261031-r2/);
+ assert.match(sw,/thukhr-design-system\.css\?v=20261031-r2/);
+});
+test('date filters have explicit visible labels and human-readable Arabic dates',()=>{
+ assert.match(app,/class="thukhr-date-filter"/);
+ assert.match(app,/fromFilterReadable/);
+ assert.match(app,/toFilterReadable/);
+ assert.match(css,/thukhr-date-filter/);
 });
 test('five primary mobile navigation choices',()=>{
  assert.equal((html.match(/data-neo-page=/g)||[]).length+2,5);
