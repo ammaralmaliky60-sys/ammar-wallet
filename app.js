@@ -268,6 +268,53 @@ function monthlyFieldUsed(st,key){
 function monthlyFieldStageLabel(f){
  return wfIncomeMode()==='salary-only'?'من الراتب':f.stage==='split'?'نصف من الحوافز ونصف من الراتب':f.stage==='incentives'?'الحوافز':'الراتب';
 }
+function fixedCommitmentEdit(key=''){
+ if(state.demo)throw Error('ابدأ حسابك الفعلي أولاً.');
+ if(wfMonth!==today().slice(0,7)||state.settings.closedMonths?.[wfMonth])
+  throw Error('يمكن تعديل الثوابت للشهر الجاري المفتوح فقط.');
+ const item=key?monthlyFields().find(o=>o.key===key):null;
+ if(key&&!item)throw Error('الالتزام غير موجود.');
+ if(!item&&monthlyFields().length>=16)throw Error('الحد الأقصى 16 التزاماً.');
+ const locked=!!(item&&state.obligations.some(o=>o.id.startsWith('wf_'+item.key+'_')));
+ const current=wfPlan()?.[key]||0,onlySalary=wfIncomeMode()==='salary-only';
+ const stageOptions=onlySalary?[['salary','الراتب']]:[['salary','الراتب'],['incentives','الحافز'],['split','نصف من كل دفعة']];
+ modal(item?'تعديل الثابت':'إضافة التزام ثابت',
+ 'حدد القيمة ومصدر السداد، وسيتم الخصم عند تسجيل استلام الدفعة فعلياً.',
+ `<div class="form-grid">
+ ${field('اسم الالتزام','fixedName','text',item?.label||'','required maxlength="45" placeholder="مثلاً قسط المصرف"')}
+ ${moneyField('قيمة الالتزام الشهري','fixedAmount',inputMoney(current),'required')}
+ ${locked?`<div class="field"><label>مصدر الخصم</label><p class="wf-help">${safe(monthlyFieldStageLabel(item))} · مثبت لحماية سجل سابق</p></div>`:
+ select('يخصم من','fixedStage',stageOptions,onlySalary?'salary':item?.stage||'salary')}
+ ${select('حساب الخصم','fixedMethod',[['receipt','نفس حساب استلام الراتب أو الحافز'],['card','البطاقة'],['cash','النقد']],item?.autoMethod||'receipt')}
+ <div class="field full"><label><input type="checkbox" name="autoDeduct" value="yes" ${item?.autoDeduct===false?'':'checked'}> خصم تلقائي عند تسجيل استلام الدفعة، بدون تأكيد سداد إضافي</label></div>
+ </div>
+ <div class="notice warn">الخصم التلقائي يُسجّل سداداً في دفتر فِرزة ويخفض رصيد الحساب المحدد؛ لا يجري تحويلاً مصرفياً. إذا كان القسط مستقطعاً من الراتب قبل إيداع الصافي، أوقف الخصم الآلي حتى لا يُحسب مرتين.</div>
+ <div class="notice">إذا كان الرصيد غير كافٍ، يبقى الالتزام غير مغطى دون أن يصبح الحساب سالباً.</div>`,
+ f=>act(n=>{
+  const label=String(f.fixedName||'').trim().replace(/\s+/g,' ');
+  if(label.length<2||label.length>45||/[<>]/.test(label))throw Error('اسم الالتزام غير صالح.');
+  const value=amount(f.fixedAmount),stage=locked?item.stage:f.fixedStage;
+  if(!['salary','incentives','split'].includes(stage)||(onlySalary&&stage!=='salary'))
+   throw Error('اختر مصدر خصم متوافقاً مع نظام دخلك.');
+  if(!['receipt','cash','card'].includes(f.fixedMethod))throw Error('حساب الخصم غير صالح.');
+  if(monthlyAllFields(n).some(o=>o.key!==key&&o.label.trim().toLowerCase()===label.toLowerCase()))
+   throw Error('يوجد التزام بهذا الاسم.');
+  if(wfData(n).completed?.[wfMonth]?.salary||wfData(n).completed?.[wfMonth]?.incentives)
+   throw Error('بدأت تسوية هذا الشهر؛ لا يمكن تغيير التزامات الشهر الحالية.');
+  const fields=monthlyFields(n).map(o=>({...o}));
+  let field=fields.find(o=>o.key===key);
+  if(!field){
+   const id='item_'+uid().replace(/[^A-Za-z0-9_-]/g,'').slice(0,30);
+   field={key:id,label,stage,reserveOnly:false};fields.push(field);
+  }
+  field.label=label;field.stage=stage;field.autoDeduct=f.autoDeduct==='yes';
+  field.autoMethod=f.fixedMethod;n.settings.wfFields=fields;
+  const wf=wfData(n);
+  n.settings.twoStageWorkflow={...wf,plans:{...wf.plans,
+   [wfMonth]:{...(wf.plans?.[wfMonth]||{}),[field.key]:value}},completed:{...wf.completed}};
+  return wfFreezeIncomeMode(n,wfMonth);
+ },'تم حفظ الالتزام وتوجيه الخصم الآلي إلى الدفعة المحددة.'),'حفظ الالتزام');
+}
 function monthlyFieldsManage(){
  const active=monthlyFields(),hidden=monthlyHiddenFields();
  const rows=active.map(o=>{
@@ -695,6 +742,7 @@ function autoFixedSettlement(original,stage,month,method,date){
  for(const field of all){
   const part=autoFixedPlanShare(field,stage,month,next);
   if(part<=0)continue;
+  const paymentMethod=['cash','card'].includes(field.autoMethod)?field.autoMethod:method;
   const id=wfObId(month,field.key),plan=wfData(next).plans?.[month]||{},full=Number(plan[field.key]||0);
   const o=next.obligations.find(x=>x.id===id);
   if(o?.archived||o&&o.amount!==full){skipped.push({label:field.label,reason:'سجل الالتزام مختلف أو مؤرشف'});continue}
@@ -706,14 +754,14 @@ function autoFixedSettlement(original,stage,month,method,date){
   if(!due)continue;
   const reserved=stats.reserved[id]||0;
   const extra=Math.max(0,due-reserved);
-  if(extra>stats.unallocated||due>stats[method]){
+  if(extra>stats.unallocated||due>stats[paymentMethod]){
    skipped.push({label:field.label,amount:due,reason:'الرصيد غير المحجوز أو حساب الدفع لا يكفي'});
    continue;
   }
   if(!o)next.obligations.push({id,name:field.label,amount:full,due:date,recurring:false});
   if(extra)next=event(next,{type:'reserve',date,obligationId:id,amount:extra,
    note:'حجز آلي تمهيداً لسداد '+field.label+' · '+month});
-  next=event(next,{type:'pay',date,obligationId:id,amount:due,method,
+  next=event(next,{type:'pay',date,obligationId:id,amount:due,method:paymentMethod,
    note:'خصم تلقائي من '+(stage==='salary'?'الراتب':'الحوافز')+' · '+month+' · '+field.label});
   paid+=due;processed.push({key:field.key,amount:due});
  }
@@ -1966,8 +2014,8 @@ function fixedCommitmentsPage(){
  const month=wfMonth,projection=monthlyCommitmentProjection(state,month),total=projection.plannedTotal;
  const covered=projection.entries.reduce((n,x)=>n+x.covered,0),pct=total?Math.min(100,Math.round(covered/total*100)):0;
  const editable=month===today().slice(0,7)&&!state.settings.closedMonths?.[month]&&!state.demo&&!wfDone('salary')&&!wfDone('incentives');
- return head('الالتزامات الثابتة','خطة مستقلة للأقساط والمصاريف الثابتة؛ التسجيل والتسوية ليسا خصماً جديداً حتى اعتماد الحركة.',
-  btn('wf-fields-manage','إدارة البنود','settings','secondary')+(editable?btn('wf-config','تحديد مبالغ الشهر','wallet'):'') )+
+ return head('الثوابت والالتزامات','مساحة مستقلة لتحديد قيمة كل التزام ومصدر خصمه الآلي عند استلام الدفعة.',
+  (editable?btn('fixed-entry','إضافة التزام ثابت','plus'):'')+btn('wf-fields-manage','إدارة البنود','settings','secondary')+(editable?btn('wf-config','تحديد مبالغ الشهر','wallet','secondary'):'') )+
  `<div class="fz-finance-page">${firzaMonthSelector()}
  <section class="fz-fixed-overview">
   <article class="fz-stage-primary"><span>إجمالي الالتزامات الثابتة لهذا الشهر</span><strong>${money(total)}</strong>
@@ -1980,7 +2028,10 @@ function fixedCommitmentsPage(){
  <section class="fz-finance-info">
   ${section('بنود الالتزامات الشهرية','يعرض المبلغ الأصلي وما غُطّي منه وما بقي دون احتساب مزدوج.')}
   ${projection.entries.length?projection.entries.map(item=>`<article class="fz-fixed-item">
-   <div><strong>${safe(item.label)}</strong><span>المبلغ الكامل ${money(item.amount)}</span></div>
+   <div><strong>${safe(item.label)}</strong><span>المبلغ الكامل ${money(item.amount)}</span>
+   ${monthlyAllFields().find(f=>wfObId(month,f.key)===item.id)?`<small>مصدر الخصم: ${safe(monthlyFieldStageLabel(monthlyAllFields().find(f=>wfObId(month,f.key)===item.id)))} · ${monthlyAllFields().find(f=>wfObId(month,f.key)===item.id)?.autoDeduct===true?'تلقائي':'يدوي'}</small>
+   ${editable?`<button type="button" class="btn small secondary" data-action="fixed-edit" data-id="${safe(monthlyAllFields().find(f=>wfObId(month,f.key)===item.id).key)}">تعديل المبلغ ومصدر الخصم</button>`:''}`:''}
+   </div>
    <div class="fz-fixed-item-amount"><b>${money(item.uncovered)}</b><small>غير مغطى</small></div>
    <div class="fz-fixed-item-meta">مغطى بالسداد أو الحجز أو الاستقطاع: ${money(item.covered)}</div></article>`).join(''):
     '<p class="fz-empty-note">ماكو بنود ثابتة مسجلة لهذا الشهر. أضف البنود وحدد قيمها.</p>'}
@@ -1991,7 +2042,7 @@ function fixedCommitmentsPage(){
   <a class="btn secondary" href="#workflow">الدورة الذكية</a>
   <a class="btn secondary" href="#obligations">الالتزامات العامة</a>
  </div>
- <div class="notice">الالتزامات الثابتة منفصلة عن ميزانية المصروف. لا يخصم التطبيق مبالغ الخطة من البطاقة أو النقد إلا عند تسجيل دفع فعلي، ولا يكرر خصم الاستقطاع قبل الإيداع.</div>
+ <div class="notice">الالتزامات الثابتة منفصلة عن المصروف اليومي. إذا فُعّل الخصم الآلي، يسجّل فِرزة سداد الالتزام تلقائياً عند توثيق استلام الراتب أو الحافز، دون تأكيد ثانٍ؛ لا يتم تحويل أي مبلغ مصرفياً، ولا يجوز تكرار قسط مستقطع قبل إيداع الراتب.</div>
  </div>`;
 }
 function overview(){const s=currentStats(),sum=summary(),days=left(),elapsed=state.cycle.days-days,end=addDays(state.cycle.start,state.cycle.days-1);return head(overviewIdentity()+'ملخص أموالك',state.settings.name?`مرحباً ${safe(state.settings.name)}، هذه نظرتك المالية اليوم`:'رصيدك ومصروفاتك في مكان واحد.',btn('new-cycle','دورة جديدة','calendar','secondary')+btn('expense','إضافة مصروف'),'neo-overview-heading')+`<div class="dashboard-top"><section class="hero"><div class="hero-badge">${state.demo?'خطة توضيحية':'أموالك تحت السيطرة'}</div><div><div class="hero-label">${icon('wallet')}إجمالي رصيدك الحالي</div><div class="hero-total">${money(s.total)}</div><div class="hero-sub">${icon('shield')}يشمل المحافظ والالتزامات المحجوزة والمبلغ غير الموزع</div></div><div class="hero-bottom"><div><span>رصيد البطاقة</span><b>${money(s.card)}</b></div><div><span>النقد المتوفر</span><b>${money(s.cash)}</b></div><div><span>متاح للتوزيع</span><b>${money(s.unallocated)}</b></div></div></section><div class="neo-snapshot" aria-label="ملخص المصروف والمتاح"><article class="neo-snapshot-item expense"><span class="neo-snapshot-label">${icon('chart')} المصروف الفعلي</span><strong>${money(sum.expenses+sum.paid)}</strong></article><article class="neo-snapshot-item available"><span class="neo-snapshot-label">${icon('saving')} المتاح الآمن اليوم</span><strong>${money(cap())}</strong></article></div><section class="cycle-card"><div class="card-top"><span class="eyebrow">دورة دخلك الحالية</span><span class="chip">${days?'دورة نشطة':'اكتملت الدورة'}</span></div><h2>كل يوم بخطة أوضح</h2><div class="cycle-range">${date(state.cycle.start)} — ${date(end,true)}</div><div class="cycle-progress"><div class="progress"><i style="width:${Math.min(100,elapsed/state.cycle.days*100)}%"></i></div><div class="progress-meta"><span>مضى ${elapsed} من ${state.cycle.days} يوماً</span><span>${Math.round(elapsed/state.cycle.days*100)}%</span></div></div><div class="cycle-footer"><span>${icon('clock')} <b class="num">${days}</b> يوماً متبقياً</span><button class="text-btn" data-action="new-cycle">إدارة الدورة ${icon('chevron')}</button></div></section></div>${neoOverviewBudget()}${schedulePanel(true)}<div class="stat-grid">${stat(state.migration?'الدخل والرصيد الافتتاحي':'الدخل المستلم',sum.income,'income','من بداية الدورة الحالية')}${stat('الالتزامات المتبقية',Object.values(s.reserved).reduce((a,n)=>a+n,0),'calendar',`${state.obligations.filter(o=>(s.reserved[o.id]||0)>0).length} التزامات محجوزة`,'gold')}${stat('المصروف الفعلي',sum.expenses+sum.paid,'chart','يشمل المصروفات والالتزامات المدفوعة','blue')}${stat('المتاح الآمن اليوم',cap(),'saving','يستثني الادخار والطوارئ والالتزامات','purple')}</div>${section('محافظك، لكل غرض مساحة','قسّم أموالك بوعي، وأنفق بطمأنينة.',`<a class="text-btn" href="#plan">إدارة المحافظ ${icon('arrow')}</a>`)}<div class="wallet-grid">${walletCards()}</div><div class="bottom-grid"><section class="panel">${section('آخر الحركات','خطواتك المالية، أولاً بأول',`<a class="text-btn" href="#ledger">عرض السجل ${icon('arrow')}</a>`)}${ledgerRows([...state.transactions].reverse().slice(0,4),true)}</section><section class="panel">${section('كيف تتوزّع أموالك؟','توزيع الرصيد الحالي بحسب الغرض')}${donut()}</section></div>`}
@@ -2308,7 +2359,7 @@ function wizardFreshPlan(source,setup){
  for(const row of rows){
   const key='item_'+uid().replace(/[^A-Za-z0-9_-]/g,'').slice(0,30);
   if(next.settings.wfFields.some(x=>x.key===key))throw Error('تكرر معرف الالتزام؛ أعد المحاولة.');
-  next.settings.wfFields.push({key,label:row.name,stage:row.stage,reserveOnly:row.stage==='salary'});
+  next.settings.wfFields.push({key,label:row.name,stage:row.stage,reserveOnly:false,autoDeduct:true,autoMethod:'receipt'});
   plan[key]=row.amount;
  }
  if(rows.length)next.settings.twoStageWorkflow={plans:{[month]:plan},completed:{}};
@@ -2319,6 +2370,8 @@ function wizardFreshPlan(source,setup){
    note:sourceIncome?.name||'بداية الخطة — دخل مستلم',
    ...(sourceIncome?{sourceId:sourceIncome.id,sourceName:sourceIncome.name,
     incomePeriod:setup.incomePeriod||month}:{})});
+  if(sourceIncome&&['salary','incentives'].includes(sourceIncome.id))
+   next=autoFixedSettlement(next,sourceIncome.id,month,setup.method,setup.start).next;
  }
  if(setup.plan!=='later'&&amountReceived){
   const weights=setup.plan==='balanced'?[50,20,10,20]:[125,120,60,30];
@@ -2418,7 +2471,7 @@ function help(){modal('كيف يعمل فِرزة؟','من أول استلام �
 function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;for(const id of ['fromFilter','toFilter']){const element=$(id),readable=$(id+'Readable');
   if(readable)readable.textContent=element.value?date(element.value,true):'التاريخ اختياري';}
  const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs);$('ledgerMobileResults').innerHTML=ledgerMobileRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'&&$('settingsForm')){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports'&&$('reconcileForm'))$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
-const actions={'thukhr-more':()=>{const menu=$('thukhrMoreMenu'),button=$('thukhrMoreButton');if(!menu||!button)return;menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));},'ledger-detail':ledgerDetail,'settings-tab':id=>{if(['account','appearance','income','backup'].includes(id)){settingsTab=id;render()}},'financial-reset':openFinancialReset,'smart-cycle-open':smartOpen,'wf-fields-manage':monthlyFieldsManage,'wf-income-mode':wfIncomeModePicker,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-fund':wfLivingFund,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'close-finance-month':wfCloseMonth,'finance-csv':exportFinanceCsv,'finance-reconcile':financeReconcile,'finance-resolve':financeResolve,'rolling-download':downloadRollingBackup,'profile-create':profileCreate,'profile-switch':profileSwitch,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
+const actions={'thukhr-more':()=>{const menu=$('thukhrMoreMenu'),button=$('thukhrMoreButton');if(!menu||!button)return;menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));},'ledger-detail':ledgerDetail,'settings-tab':id=>{if(['account','appearance','income','backup'].includes(id)){settingsTab=id;render()}},'financial-reset':openFinancialReset,'smart-cycle-open':smartOpen,'wf-fields-manage':monthlyFieldsManage,'fixed-entry':()=>fixedCommitmentEdit(),'fixed-edit':fixedCommitmentEdit,'wf-income-mode':wfIncomeModePicker,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-fund':wfLivingFund,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'close-finance-month':wfCloseMonth,'finance-csv':exportFinanceCsv,'finance-reconcile':financeReconcile,'finance-resolve':financeResolve,'rolling-download':downloadRollingBackup,'profile-create':profileCreate,'profile-switch':profileSwitch,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=actions[b.dataset.action];if(fn){e.preventDefault();try{fn(b.dataset.id,b.dataset.period)}catch(ex){showError(ex.message)}}});
 $('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;if(next.backupIntegrity){
  const info=next.backupIntegrity;
