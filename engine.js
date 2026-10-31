@@ -57,9 +57,38 @@
       obligations: [], transactions: [], history: [], reconciliations: []
     };
   }
+function isEmergencyMovement(e,kinds){
+ const id=e.type==="expense"||e.type==="release"?e.walletId:e.type==="transfer"?e.from:null;
+ return id!==null&&kinds.get(id)==="emergency";
+}
+  function checkEmergencyApproval(e){
+ const auth=e.emergencyAuthorization;
+ if(!record(auth)||auth.confirmed!==true||!["medical","repair","family","other"].includes(auth.category)||
+    typeof auth.reason!=="string"||auth.reason.trim().length<8||auth.reason.length>240)
+   fail("صرف الطوارئ أو إخراج المال منها يتطلب سبباً مفصلاً لا يقل عن 8 أحرف وموافقة صريحة.");
+}
+  function ensureEmergencyProtection(state){
+ if(state.settings.emergencyProtection)return;
+ const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
+ state.settings.emergencyProtection={version:1,legacyIds:state.transactions.filter(e=>isEmergencyMovement(e,kinds)).map(e=>e.id)};
+}
+  
   function checkStructure(state) {
     if (!record(state) || state.version !== 2 || !record(state.settings) || !record(state.cycle) || !Array.isArray(state.wallets) || !Array.isArray(state.obligations) || !Array.isArray(state.transactions) || !Array.isArray(state.history) || !Array.isArray(state.reconciliations)) fail('ملف البيانات غير متوافق مع الإصدار الحالي.');
     text(state.settings.name, 100, 'الاسم');
+    const p=state.settings.emergencyProtection;
+    if(p!==undefined){
+      if(!record(p)||p.version!==1||!Array.isArray(p.legacyIds))fail('قواعد حماية الطوارئ غير صالحة.');
+      for(const item of p.legacyIds)id(item);
+      if(new Set(p.legacyIds).size!==p.legacyIds.length)fail('تكرار معرّفات الطوارئ السابقة.');
+    }
+    if(state.settings.emergencyCorrections!==undefined){
+      if(!Array.isArray(state.settings.emergencyCorrections))fail('سجل تصحيحات الطوارئ غير صالح.');
+      for(const c of state.settings.emergencyCorrections){
+        if(!record(c)||!record(c.original)||typeof c.reason!=='string'||c.reason.trim().length<8||c.reason.length>240||!validDate(c.correctedAt))fail('بيانات تصحيح الطوارئ غير صالحة.');
+        id(c.id);id(c.original.id);
+      }
+    }
     S.validateSources(S.sources(state));
     if (!/^[A-Z]{3}$/.test(state.settings.currency)) fail('رمز العملة غير صالح.');
     if (!['light', 'dark', 'system'].includes(state.settings.theme) || !['en', 'ar'].includes(state.settings.digits)) fail('إعدادات العرض غير صالحة.');
@@ -113,6 +142,8 @@
     checkStructure(state);
     const s = { card: 0, cash: 0, total: 0, unallocated: 0, wallets: {}, reserved: {}, paid: {}, income: 0, expenses: 0, obligationPaid: 0 };
     const obligations = new Map(state.obligations.map(o => [o.id, o]));
+    const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
+    const legacy=state.settings.emergencyProtection?new Set(state.settings.emergencyProtection.legacyIds):null;
     for (const w of state.wallets) s.wallets[w.id] = 0;
     for (const o of state.obligations) { s.reserved[o.id] = 0; s.paid[o.id] = 0; }
     const transactionIds = new Set();
@@ -136,6 +167,7 @@
         receiptKeys.add(key);
       }
       if (e.note !== undefined) text(e.note, 500, 'الملاحظة');
+      if(isEmergencyMovement(e,kinds) && !(legacy===null||legacy.has(e.id)))checkEmergencyApproval(e);
     }
     for (const h of state.history) {
       if (h.transactionIds.some(transactionId => !transactionIds.has(transactionId))) fail('الأرشيف يشير إلى حركة مالية مفقودة.');
@@ -215,7 +247,10 @@
     date(event.date);
     S.guardReceipt(state, event);
     if (event.date < state.cycle.start) fail('لا يمكن إضافة حركة إلى دورة مؤرشفة؛ اختر تاريخاً ضمن الدورة الحالية.');
+    const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
+    if(isEmergencyMovement(event,kinds))checkEmergencyApproval(event);
     const next = clone(state);
+    ensureEmergencyProtection(next);
     const value = clone(event);
     if (!value.id) value.id = uid();
     next.transactions.push(value);
@@ -228,10 +263,29 @@
     const next = clone(state);
     const index = next.transactions.findIndex(t => t.id === eventId);
     if (index < 0) fail('الحركة المطلوب حذفها غير موجودة.');
+    if(isEmergencyMovement(next.transactions[index],new Map(next.wallets.map(w=>[w.id,w.kind]))))
+      fail('عملية الطوارئ محمية. استخدم التصحيح الموثق من خزنة الطوارئ.');
     next.transactions.splice(index, 1);
     validate(next);
     return next;
   }
+function correctEmergency(state,eventId,reason){
+ validate(state);
+ if(typeof reason!=="string"||reason.trim().length<8||reason.length>240)fail("أدخل سبب التصحيح بالتفصيل.");
+ const kinds=new Map(state.wallets.map(w=>[w.id,w.kind]));
+ const target=state.transactions.find(t=>t.id===eventId);
+ if(!target||!isEmergencyMovement(target,kinds))fail("هذه ليست عملية خروج محمية من الطوارئ.");
+ if(state.history.some(h=>h.transactionIds.includes(eventId)))fail("هذه الحركة ضمن دورة مؤرشفة ولا يمكن تعديلها.");
+ const next=clone(state);
+ ensureEmergencyProtection(next);
+ const index=next.transactions.findIndex(t=>t.id===eventId);
+ next.transactions.splice(index,1);
+ next.settings.emergencyProtection.legacyIds=next.settings.emergencyProtection.legacyIds.filter(id=>id!==eventId);
+ const corrections=Array.isArray(next.settings.emergencyCorrections)?next.settings.emergencyCorrections:[];
+ next.settings.emergencyCorrections=[...corrections,{id:uid(),correctedAt:today(),reason:reason.trim(),original:clone(target)}];
+ validate(next);
+ return next;
+}
   function distribute(amount, weights) {
     money(amount, true);
     let entries, arrayResult = false;
@@ -286,5 +340,5 @@
     validate(next);
     return next;
   }
-  return Object.freeze({ initial, stats, validate, commit, remove, distribute, startCycle, today, uid, validDate });
+  return Object.freeze({ initial, stats, validate, commit, remove, correctEmergency, distribute, startCycle, today, uid, validDate });
 });
