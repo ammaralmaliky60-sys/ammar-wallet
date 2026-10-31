@@ -105,3 +105,31 @@ test('opted-in fixed editor and ordinary income recording are both connected',()
  assert.match(app,/autoFixedSettlement\(next,selected\.id,f\.incomePeriod,f\.method,f\.date\)/);
  assert.match(app,/autoFixedSettlement\(n,d\.stage,d\.month,d\.payMethod,d\.date\)/);
 });
+
+test('salary arriving before incentive still pays each split half correctly',()=>{
+ let st=configured(base('both'),[field('splitReverse','split',100001)]);
+ st=income(st,500000,'salary');
+ let r=result(st,'salary');assert.equal(r.paid,50001);
+ assert.equal(r.next.settings.twoStageWorkflow.completed[month].salary.mode,'automatic');
+ st=income(r.next,300000,'incentives');
+ r=result(st,'incentives');
+ assert.equal(r.paid,50000);
+ assert.equal(E.stats(r.next).paid.wf_splitReverse_2026_10,100001);
+ assert.equal(E.stats(r.next).total,699999);
+ assert.equal(r.next.transactions.filter(t=>t.type==='pay').length,2);
+});
+test('an already completed stage cannot generate duplicate automatic payments',()=>{
+ let st=income(configured(base(),[field('oldAuto','salary',30000)]),100000);
+ const first=result(st);
+ const repeated=result(first.next);
+ assert.equal(repeated.paid,0);
+ assert.equal(JSON.stringify(repeated.next),JSON.stringify(first.next));
+});
+test('account routing can select the receipt card or a separate available cash account',()=>{
+ let st=configured(base(),[field('cardPay','salary',25000,true,'receipt'),field('cashPay','salary',10000,true,'cash')]);
+ st=income(st,100000,'salary','card');
+ let r=result(st);
+ assert.equal(r.paid,25000);assert.equal(r.skipped.length,1);
+ assert.equal(E.stats(r.next).card,75000);
+ assert.equal(E.stats(r.next).cash,0);
+});
