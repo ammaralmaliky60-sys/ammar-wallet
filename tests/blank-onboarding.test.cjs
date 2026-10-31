@@ -72,3 +72,10 @@ test('user must add commitments in the setup wizard; no preloaded entries',()=>{
  assert.match(app,/wizard\.obligations\.forEach\(add\)/);
  assert.match(app,/إضافة التزام/);
 });
+
+test('a first-time visitor sees blank data and is guided to enter commitments',()=>{
+ assert.match(app,/needsFirstSetup=true;const fresh=E\.initial\(\);fresh\.demo=false;return fresh/);
+ assert.match(app,/if\(needsFirstSetup&&!storageError&&!brokenRaw\)setupStart\(\)/);
+ assert.match(app,/function makeDemo\(\)/);
+ assert.match(app,/function load\(\)/);
+});
