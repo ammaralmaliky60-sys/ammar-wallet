@@ -154,7 +154,7 @@ function section(title,sub='',action=''){return `<div class="section-heading"><d
 const walletIcon=w=>w.kind==='emergency'?'shield':w.kind==='saving'?'saving':w.id==='home'?'home':w.id==='kids'?'kids':'user';
 function allocationOf(id){return state.transactions.reduce((n,t)=>n+(t.type==='allocate'&&t.walletId===id?t.amount:0)+(t.type==='transfer'&&t.to===id?t.amount:0)-(t.type==='transfer'&&t.from===id?t.amount:0)-(t.type==='release'&&t.walletId===id?t.amount:0),0)}
 function walletCards(){const s=currentStats();return state.wallets.map(w=>{const bal=s.wallets[w.id]||0,budget=allocationOf(w.id),pct=budget?Math.max(0,Math.min(100,bal/budget*100)):0;return `<article class="wallet-card" style="--wc:${safe(w.color)}"><div class="wallet-top"><div class="wallet-name"><span class="wallet-icon">${icon(walletIcon(w))}</span>${safe(w.name)}</div><button class="dots" data-action="wallet-edit" data-id="${safe(w.id)}" aria-label="إعدادات ${safe(w.name)}">⋯</button></div><div class="wallet-balance">${money(bal)}</div><div class="wallet-detail">من أصل ${fmt(budget)} ${unit()}</div><div class="progress"><i style="width:${pct}%"></i></div><div class="wallet-foot"><span>${w.kind==='spend'?'المتاح اليوم':'رصيد محمي من الصرف اليومي'}</span><b>${w.kind==='spend'?`${fmt(cap(w.id))} ${unit()}`:w.kind==='emergency'?'احتياطي آمن':'هدف ادخار'}</b></div></article>`}).join('')}
-function txLabel(t){const w=id=>state.wallets.find(w=>w.id===id)?.name||'',o=()=>state.obligations.find(o=>o.id===t.obligationId)?.name||'التزام';return {income:['دخل مستلم',t.sourceName?`${t.sourceName} · ${t.incomePeriod}`:t.note||'دخل جديد','income'],expense:[t.emergencyAuthorization?'صرف طارئ':t.note||'مصروف',w(t.walletId),'wallet'],reserve:['حجز التزام',o(),'calendar'],pay:['سداد التزام',o(),'check'],allocate:['تخصيص لمحفظة',w(t.walletId),'wallet'],transfer:['تحويل بين المحافظ',`${w(t.from)} ← ${w(t.to)}`,'transfer'],account:[t.from==='card'?'سحب نقدي':'إيداع في البطاقة','حركة داخلية بين الحسابات','transfer'],release:['إعادة للمتاح',w(t.walletId),'wallet'],unreserve:['إلغاء حجز',o(),'calendar']}[t.type]||['حركة','','ledger']}
+function txLabel(t){const w=id=>state.wallets.find(w=>w.id===id)?.name||'',o=()=>state.obligations.find(o=>o.id===t.obligationId)?.name||'التزام';return {income:['دخل مستلم',t.sourceName?`${t.sourceName} · ${t.incomePeriod}`:t.note||'دخل جديد','income'],expense:[t.emergencyAuthorization?'صرف طارئ':t.note||'مصروف',w(t.walletId),'wallet'],reserve:['حجز التزام',o(),'calendar'],pay:['سداد التزام',o(),'check'],withheld:['استقطاع قبل الإيداع',o(),'check'],allocate:['تخصيص لمحفظة',w(t.walletId),'wallet'],transfer:['تحويل بين المحافظ',`${w(t.from)} ← ${w(t.to)}`,'transfer'],account:[t.from==='card'?'سحب نقدي':'إيداع في البطاقة','حركة داخلية بين الحسابات','transfer'],release:['إعادة للمتاح',w(t.walletId),'wallet'],unreserve:['إلغاء حجز',o(),'calendar']}[t.type]||['حركة','','ledger']}
 function ledgerRows(txs,compact=false){if(!txs.length)return empty('سجلك يبدأ من أول خطوة','أضف دخلك أو سجّل أول حركة لتظهر هنا.');return `<div class="table-wrap"><table><thead><tr><th>العملية</th>${!compact?'<th>الغرض / الحساب</th>':''}<th>التاريخ</th><th class="align-left">المبلغ</th>${!compact?'<th></th>':''}</tr></thead><tbody>${txs.map(t=>{const [label,detail,ic]=txLabel(t),sign=t.type==='income'?'+':t.type==='expense'||t.type==='pay'?'−':'';return `<tr><td><div class="cell-name"><span class="cell-icon">${icon(ic)}</span><div>${safe(label)}<small>${safe(compact?detail:t.note||detail)}</small></div></div></td>${!compact?`<td>${safe(detail)}<br><small class="muted">${t.method==='card'?'البطاقة':t.method==='cash'?'نقداً':'تخصيص داخلي'}</small></td>`:''}<td class="muted">${date(t.date)}</td><td class="align-left ${t.type==='income'?'income-color':sign?'expense-color':''}"><span class="num">${sign}${fmt(t.amount)}</span> <small>${unit()}</small></td>${!compact?`<td class="align-left"><button class="icon-btn" data-action="delete-tx" data-id="${safe(t.id)}" aria-label="حذف الحركة">${icon('trash')}</button></td>`:''}</tr>`}).join('')}</tbody></table></div>`}
 function ledgerMobileRows(txs){
  if(!txs.length)return empty('لا توجد حركات مطابقة','عدّل البحث أو الفترة.');
@@ -536,52 +536,61 @@ function workflowPage(){
 function wfApply(stage){
  if(state.demo)throw Error('ابدأ خطتك الفعلية أولاً.');
  const p=wfPlan(),done=wfDone(stage);
- if(!p)throw Error('حدّد مبالغ الشهر أولاً.');
- if(done)throw Error('هذه المرحلة منفذة مسبقاً ولن تُنفذ مرتين.');
+ if(!p)throw Error('حدد مبالغ الشهر أولاً.');
+ if(done)throw Error('تم تنفيذ هذه المرحلة مسبقاً.');
  if(stage==='incentives'&&wfIncomeMode()==='salary-only')throw Error('هذا الشهر راتب فقط.');
- if(!S.receipts(state,stage,wfMonth).length)throw Error('أكّد استلام الدفعة أولاً.');
+ if(!S.receipts(state,stage,wfMonth).length)throw Error('سجّل استلام الدفعة أولاً.');
  if(stage==='salary'&&wfIncomeMode()==='both'&&!wfDone('incentives'))throw Error('أكمل مرحلة الحوافز أولاً.');
  const ops=wfAmount(p,stage).filter(x=>x.amount>0);
- const isIncentives=stage==='incentives';
- const options=isIncentives?
-  `<div class="field"><label>كيف تُعامل بنود الحوافز القابلة للسداد؟</label>
-   <select name="mode" required><option value="reserve">حجزها من الحوافز الآن، والسداد لاحقاً</option>
-   <option value="pay">دفعتها فعلياً بعد وصول الحوافز</option>
-   <option value="withheld">انخصمت قبل وصول الحوافز للحساب (دخلي المدخل صافي)</option></select></div>
-   ${select('مكان دفع الاستقطاعات (عند اختيار دفعتها فعلياً)','method',methodOptions)}`:'';
- modal(isIncentives?'مراجعة الحوافز واستقطاعاتها':'مراجعة حجوزات الراتب',
-  'لن تُنفذ أي حركة مالية دون موافقتك.',
-  `<div class="wf-steps">${ops.map(o=>`<div class="wf-step"><span>${safe(o.label)}</span><b>${money(o.amount)}</b></div>`).join('')}</div>
-   ${options}<div class="notice">حجز المبلغ يقلل المتاح للتوزيع فقط. الدفع الفعلي يقلل رصيد البطاقة أو النقد أيضاً. الاستقطاع السابق للإيداع لا يُخصم ثانيةً من الدخل الصافي.</div>
-   <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أوافق على تنفيذ مبالغ هذه المرحلة كما هو مبيّن</label></div>`,
-  f=>{
-   if(f.approve!=='yes')throw Error('الموافقة مطلوبة.');
-   const mode=isIncentives?f.mode:'reserve';
-   if(!['reserve','pay','withheld'].includes(mode))throw Error('طريقة الاستقطاع غير صالحة.');
-   act(n=>{
-    const wf=wfData(n);
-    if(wf.completed?.[wfMonth]?.[stage])throw Error('تم تنفيذ المرحلة بالفعل.');
-    let next=n;
-    for(const o of ops){
-     if(mode==='withheld'&&!o.reserveOnly)continue;
-     const id=wfObId(wfMonth,o.key);
-     if(!next.obligations.some(q=>q.id===id)){
-      next.obligations.push({id,name:o.key==='workLoan'?'سلفة الدوام':o.label.replace(' (مخفي)',''),
-       amount:o.fullAmount,due:today(),recurring:false});
-     }else if(next.obligations.find(q=>q.id===id).amount!==o.fullAmount)
-       throw Error('قيمة الالتزام تغيّرت عن التسجيل السابق. راجع السجل.');
-     const note='دورة '+wfMonth+' · '+(stage==='incentives'?'حوافز':'راتب')+' · '+o.label;
-     next=event(next,{type:'reserve',obligationId:id,amount:o.amount,date:today(),note:'حجز: '+note});
-     if(mode==='pay'&&!o.reserveOnly)
-      next=event(next,{type:'pay',obligationId:id,amount:o.amount,method:f.method,date:today(),note:'سداد فعلي: '+note});
+ const options=ops.map((o,i)=>`<div class="wf-settlement-item">
+  <div class="wf-step"><span>${safe(o.label)}</span><b>${money(o.amount)}</b></div>
+  ${select('حالة القسط: '+o.label,'settlement_'+i,[
+   ['reserve','حجز للسداد لاحقاً'],['pay','مدفوع بعد استلام الدخل'],['withheld','مستقطع قبل إيداع الدخل الصافي']
+  ],'reserve')}</div>`).join('');
+ modal('التسوية المباشرة لاستقطاعات '+(stage==='salary'?'الراتب':'الحوافز'),
+  'اختر حالة كل بند على حدة، لا يُسحب المال إلا عند السداد الفعلي.',
+  `<div class="wf-settlements">${options||'<p>لا توجد أقساط مقررة لهذه الدفعة.</p>'}</div>
+   ${select('الدفع الفعلي من','method',methodOptions)}
+   <div class="field full"><label>مرجع الاستقطاعات قبل الإيداع (عند اختيارها)</label>
+    <textarea name="withheldReason" rows="2" maxlength="240" placeholder="مثال: قسط مخصوم من كشف الراتب الصافي"></textarea></div>
+   <div class="notice">«مستقطع قبل الإيداع» يُوثّق كالتزام مسوّى بلا خصم جديد من رصيد البطاقة أو النقد. أما «مدفوع» فيُخصم مرة واحدة، و«محجوز» يقلل المتاح فقط.</div>
+   <div class="field"><label><input type="checkbox" name="netConfirm" value="yes"> أؤكد أن الدخل المسجّل صافي بعد الاستقطاعات السابقة، إن وُجدت</label></div>
+   <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أوافق على تنفيذ التسوية كما حددتها</label></div>`,
+ f=>{
+  if(f.approve!=='yes')throw Error('الموافقة مطلوبة.');
+  const chosen=ops.map((o,i)=>({o,mode:f['settlement_'+i]}));
+  if(chosen.some(x=>!['reserve','pay','withheld'].includes(x.mode)))throw Error('حالة استقطاع غير صالحة.');
+  if(chosen.some(x=>x.mode==='withheld')&&(f.netConfirm!=='yes'||String(f.withheldReason||'').trim().length<8))
+   throw Error('الاستقطاع قبل الإيداع يتطلب إقرار الدخل الصافي ومرجعاً لا يقل عن 8 أحرف.');
+  act(n=>{
+   if(wfData(n).completed?.[wfMonth]?.[stage])throw Error('المرحلة منفذة مسبقاً.');
+   let next=n;
+   const details=[];
+   for(const {o,mode} of chosen){
+    const id=wfObId(wfMonth,o.key);
+    if(!next.obligations.some(q=>q.id===id)){
+     next.obligations.push({id,name:o.key==='workLoan'?'سلفة الدوام':o.label.replace(' (مخفي)',''),
+      amount:o.fullAmount,due:today(),recurring:false});
+    }else if(next.obligations.find(q=>q.id===id).amount!==o.fullAmount)
+     throw Error('قيمة الالتزام تغيّرت. راجع سجل الشهر.');
+    const ref='دورة '+wfMonth+' · '+(stage==='salary'?'راتب':'حوافز')+' · '+o.label;
+    if(mode==='withheld'){
+     next=event(next,{type:'withheld',amount:o.amount,obligationId:id,date:today(),withheldConfirmed:true,
+      note:'استقطاع قبل الإيداع · '+ref+' · '+String(f.withheldReason).trim()});
+    }else{
+     next=event(next,{type:'reserve',obligationId:id,amount:o.amount,date:today(),note:'حجز: '+ref});
+     if(mode==='pay')next=event(next,{type:'pay',obligationId:id,amount:o.amount,date:today(),
+       method:f.method,note:'سداد فعلي: '+ref});
     }
-    const prev=wfData(next);
-    next.settings.twoStageWorkflow={plans:{...prev.plans},
-      completed:{...prev.completed,[wfMonth]:{...prev.completed?.[wfMonth],
-       [stage]:{mode,at:today(),total:ops.reduce((a,o)=>a+o.amount,0)}}}};
-    return next;
-   },'تم تنفيذ مرحلة '+(isIncentives?'الحوافز':'الراتب')+' مرة واحدة');
-  },'أوافق وأنفذ الآن');
+    details.push({key:o.key,mode,amount:o.amount});
+   }
+   const prev=wfData(next);
+   next.settings.twoStageWorkflow={...prev,plans:{...prev.plans},
+    completed:{...prev.completed,[wfMonth]:{...prev.completed?.[wfMonth],
+     [stage]:{mode:'itemized',details,at:today(),total:ops.reduce((s,x)=>s+x.amount,0)}}}};
+   return next;
+  },'تمت تسوية الاستقطاعات مع منع الخصم المكرر');
+ },'اعتماد تسوية الاستقطاعات');
 }
 
 const WF_LIVING=[
