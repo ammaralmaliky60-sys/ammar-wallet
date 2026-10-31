@@ -1,5 +1,11 @@
 (()=>{'use strict';
-const E=window.FinanceEngine, S=window.IncomeSchedule, KEY='mizan-finance-v2', $=id=>document.getElementById(id);
+const E=window.FinanceEngine, S=window.IncomeSchedule, $=id=>document.getElementById(id);
+const PROFILE_REGISTRY='thukhr-profiles-v1',ACTIVE_PROFILE='thukhr-active-profile-v1',ROOT_KEY='mizan-finance-v2';
+let PROFILE='default';
+try{const p=localStorage.getItem(ACTIVE_PROFILE);
+ if(p&&/^p[a-z0-9_-]{8,50}$/.test(p))PROFILE=p;
+}catch{}
+const KEY=PROFILE==='default'?ROOT_KEY:ROOT_KEY+'-profile-'+PROFILE;
 const paths={grid:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',income:'M12 3v12m-4-4 4 4 4-4 M4 15v5h16v-5',calendar:'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2 M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2',wallet:'M4 6h14V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h15V7H5a2 2 0 0 1-2-2 M16 12h5v5h-5a2.5 2.5 0 0 1 0-5z',ledger:'M6 3h12v18l-3-2-3 2-3-2-3 2z M9 7h6m-6 4h6m-6 4h3',chart:'M4 3v18h17M8 16v-5m5 5V6m5 10v-8',settings:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M10 3h4l1 3 3 1 3 1v4l-3 1-1 3-1 3h-4l-1-3-3-1-3-1v-4l3-1 1-3z',plus:'M12 5v14M5 12h14',arrow:'M18 12H6m5-5-5 5 5 5',chevron:'m14 7-5 5 5 5',shield:'M12 3 3 7v6c0 5 9 9 9 9s9-4 9-9V7z M8 12l3 3 5-5',moon:'M20 14a8 8 0 0 1-10-10 9 9 0 1 0 10 10z',sun:'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8',help:'M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.01 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20',home:'m3 11 9-8 9 8M5 10v11h14V10M9 21v-7h6v7',user:'M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M4 21v-3a8 8 0 0 1 16 0v3',kids:'M9 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6 M16 6a2.5 2.5 0 1 0 0 5 M3 20v-3a6 6 0 0 1 12 0v3m2-6a4 4 0 0 1 4 4v2',saving:'M5 9h13l3 3-2 5h-2v3h-3v-2H9v2H6v-4l-3-2v-3z M8 9V6h5M16 12h.01',trend:'m3 17 6-6 4 4 8-10m-6 0h6v6',clock:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20 M12 6v6l4 2',check:'m5 12 4 4L19 6',close:'m6 6 12 12M6 18 18 6',transfer:'M3 7h17m-5-5 5 5-5 5 M21 17H4m5-5-5 5 5 5',download:'M12 3v12m-5-5 5 5 5-5 M4 15v6h16v-6',upload:'M12 16V4m-5 5 5-5 5 5 M4 16v5h16v-5',trash:'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7',bulb:'M8 15a6 6 0 1 1 8 0l-1 3H9z M9 21h6',card:'M3 5h18v14H3z M3 10h18m-14 5h4',cash:'M2 6h20v13H2z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6 M5 9v7m14-7v7',print:'M6 8V3h12v5M6 17H3V9h18v8h-3M6 14h12v7H6z',edit:'m4 16 12-12 4 4-12 12-5 1z M14 6l4 4'};
 const icon=(name)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.wallet}"/></svg>`;
 const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10,6 +16,78 @@ const date=(s,long=false)=>new Intl.DateTimeFormat('ar-IQ',{day:'numeric',month:
 const uid=()=>crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2);
 const currencies={IQD:{label:'دينار عراقي',unit:'د.ع',dec:0},USD:{label:'دولار أمريكي',unit:'$',dec:2},SAR:{label:'ريال سعودي',unit:'ر.س',dec:2},AED:{label:'درهم إماراتي',unit:'د.إ',dec:2},EUR:{label:'يورو',unit:'€',dec:2}};
 let state,storageError='',brokenRaw='',page='workflow',wizard={},wizardStep=0,schedulePeriod=today().slice(0,7);
+function knownProfiles(){
+ let x=[];try{x=JSON.parse(localStorage.getItem(PROFILE_REGISTRY)||'[]')}catch{}
+ if(!Array.isArray(x))x=[];
+ return [{id:'default',name:'حسابي الأصلي'},...x.filter(p=>p&&typeof p.name==='string'&&/^p[a-z0-9_-]{8,50}$/.test(p.id))];
+}
+function profilePanel(){
+ const p=knownProfiles(),selected=PROFILE;
+ return `<section class="panel" data-settings-group="account" ${settingsTab==='account'?'':'hidden'}>
+ ${section('الملفات المالية المنفصلة','لكل شخص سجل مالي مستقل على هذا المتصفح؛ لا يوجد تسجيل دخول أو حماية بكلمة مرور.')}
+ <div class="notice warn">الأموال والصور منفصلة بين الملفات المحلية، لكن أي شخص لديه إمكانية الوصول إلى هذا المتصفح يمكنه الانتقال بينها. لا تستخدم ذلك كبديل لتشفير البيانات.</div>
+ <div class="settings-actions">${p.map(x=>`<button type="button" class="btn ${selected===x.id?'':'secondary'}" data-action="profile-switch" data-id="${safe(x.id)}">${safe(x.name)} ${selected===x.id?'✓':''}</button>`).join('')}
+ ${btn('profile-create','إضافة شخص جديد','plus','secondary')}</div>
+ </section>`;
+}
+function profileCreate(){
+ modal('ملف مالي جديد','ينشئ سجلاً مستقلاً ولا يغير أرصدة الحساب المفتوح.',
+ `${field('اسم الملف','name','text','','required maxlength="45" placeholder="مثلاً: راتب الشخص الثاني"')}
+ <div class="notice">تأكد من تنزيل نسخة JSON لحسابك الحالي. الملف الجديد يبدأ بأرصدة صفر ولا يشارك الحركات أو الصورة العائلية.</div>`,
+ f=>{
+  const name=f.name.trim();if(name.length<2||name.length>45)throw Error('اسم الملف من حرفين إلى 45 حرفاً.');
+  const id='p'+uid().replace(/[^a-z0-9_-]/gi,'').slice(0,30).toLowerCase(),store=ROOT_KEY+'-profile-'+id;
+  const profiles=knownProfiles().slice(1);
+  if(profiles.some(p=>p.name===name))throw Error('يوجد ملف بهذا الاسم.');
+  const s=E.initial();s.settings.name=name;s.demo=false;E.validate(s);
+  try{
+   localStorage.setItem(store,JSON.stringify(s));
+   localStorage.setItem(PROFILE_REGISTRY,JSON.stringify([...profiles,{id,name}]));
+   localStorage.setItem(ACTIVE_PROFILE,id);
+  }catch(e){throw Error('تعذر إنشاء ملف مستقل بسبب امتلاء التخزين المحلي.')}
+  location.reload();
+ },'إنشاء الملف والانتقال إليه');
+}
+function profileSwitch(id){
+ const target=knownProfiles().find(p=>p.id===id);
+ if(!target)throw Error('الملف المطلوب غير موجود.');
+ if(target.id===PROFILE){toast('أنت تستخدم هذا الملف حالياً.');return;}
+ confirmModal('الانتقال إلى '+target.name,'سيُغلق عرض الملف الحالي ويُفتح سجل الشخص المحدد. بيانات كل ملف محفوظة بصورة مستقلة على الجهاز.',
+ ()=>{localStorage.setItem(ACTIVE_PROFILE,id);location.reload()},'تغيير الملف');
+}
+const SNAPSHOT_PREFIX='thukhr-rolling-backup-v1:';
+function readSnapshots(){
+ try{const a=JSON.parse(localStorage.getItem(SNAPSHOT_PREFIX+KEY)||'[]');
+ return Array.isArray(a)?a.slice(0,3):[]}catch{return []}
+}
+function rollingSnapshot(previous){
+ if(!previous||previous.demo||!previous.transactions.length)return;
+ const old=readSnapshots();if(old[0]?.date===today())return;
+ try{const item={date:today(),savedAt:new Date().toISOString(),data:JSON.stringify(previous)};
+  localStorage.setItem(SNAPSHOT_PREFIX+KEY,JSON.stringify([item,...old].slice(0,3)));
+ }catch(e){console.warn('تعذر الاحتفاظ بنسخة استرجاع محلية. نزّل JSON يدوياً.',e)}
+}
+function backupPanel(){
+ const copies=readSnapshots();
+ return `<section class="panel" data-settings-group="backup" ${settingsTab==='backup'?'':'hidden'}>
+ ${section('نسخ الاسترجاع المحلية','يحتفظ ذُخر حتى بثلاث نسخ من أيام مختلفة قبل تغييرات السجل، ما دامت مساحة المتصفح متاحة.')}
+ <div class="notice warn">هذه نسخ على الجهاز نفسه، وليست سحابية. حذف بيانات المتصفح يمحوها جميعاً. نزّل JSON إلى مكان خارجي دورياً.</div>
+ ${copies.length?copies.map((c,i)=>`<div class="keyval"><span>نسخة يوم ${safe(c.date)}</span>
+ <button type="button" class="btn secondary small" data-action="backup-rolling" data-id="${i}">تنزيل JSON</button></div>`).join(''):'<p class="help-text">لم تُنشأ نسخة استرجاع محلية بعد.</p>'}
+ </section>`;
+}
+function backupRolling(i){
+ const selected=readSnapshots()[Number(i)];
+ if(!selected)throw Error('نسخة الاسترجاع غير موجودة.');
+ const candidate=JSON.parse(selected.data);E.validate(candidate);
+ download('thukhr-snapshot-'+selected.date+'.json',JSON.stringify(candidate,null,2));
+}
+async function digestFinance(json){
+ if(!crypto.subtle)throw Error('التحقق من سلامة الملف غير مدعوم.');
+ const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(json));
+ return [...new Uint8Array(hash)].map(n=>n.toString(16).padStart(2,'0')).join('');
+}
+
 function load(){try{const raw=localStorage.getItem(KEY);if(raw){try{const s=JSON.parse(raw);E.validate(s);return s}catch(e){brokenRaw=raw;storageError='تعذر قراءة البيانات المحفوظة. احتفظ بنسخة منها قبل بدء خطة جديدة.';return E.initial()}}return makeDemo()}catch(e){storageError='الحفظ المحلي غير متاح في هذا المتصفح. صدّر نسخة قبل المغادرة.';return E.initial()}}
 function ccy(){return currencies[state.settings.currency]||currencies.IQD}const unit=()=>ccy().unit;
 function inputMoney(n,dec=ccy().dec){const b=BigInt(n||0),neg=b<0n,a=neg?-b:b,p=10n**BigInt(dec);return (neg?'-':'')+(a/p).toString()+(dec?'.'+(a%p).toString().padStart(dec,'0'):'')}
@@ -72,7 +150,7 @@ function save(next,message='تم الحفظ بنجاح',replaceBroken=false){
       JSON.stringify(next.settings.twoStageWorkflow?.plans?.[m]||null))
     throw Error('ميزانية الشهر '+m+' مغلقة ولا يمكن تعديلها.');
   }
- }if(brokenRaw&&!replaceBroken)throw Error('توجد بيانات محفوظة تعذر قراءتها. نزّلها من زر الإنقاذ، ثم ابدأ خطة جديدة أو استعد نسخة صحيحة.');E.validate(next);try{localStorage.setItem(KEY,JSON.stringify(next))}catch(e){throw Error('تعذر حفظ التغيير. صدّر نسخة احتياطية أو أتح مساحة تخزين ثم حاول مجدداً.')}state=next;storageError='';brokenRaw='';applySettings();render();if(message)toast(message)}
+ }if(brokenRaw&&!replaceBroken)throw Error('توجد بيانات محفوظة تعذر قراءتها. نزّلها من زر الإنقاذ، ثم ابدأ خطة جديدة أو استعد نسخة صحيحة.');E.validate(next);rollingSnapshot(state);try{localStorage.setItem(KEY,JSON.stringify(next))}catch(e){throw Error('تعذر حفظ التغيير. صدّر نسخة احتياطية أو أتح مساحة تخزين ثم حاول مجدداً.')}state=next;storageError='';brokenRaw='';applySettings();render();if(message)toast(message)}
 function act(fn,msg){try{save(fn(structuredClone(state)),msg);closeModal()}catch(e){showError(e.message)}}
 function event(s,t){return E.commit(s,{id:uid(),date:today(),...t})}
 function makeDemo(){let s=E.initial();s.demo=true;s.settings.name='';s.cycle.start=addDays(today(),-9);s.cycle.days=30;
@@ -1303,7 +1381,7 @@ function settingsPage(){const html= head('الإعدادات','الحساب وا
   ${section('مظهر ذُخر','اختر بين الأنماط الأربعة، دون تغيير البيانات أو الأرصدة.')}
   ${thukhrThemePicker()}
   <p class="help-text">يُحفظ اختيار المظهر على هذا الجهاز فقط. الألوان المالية والأرصدة لا تتغير.</p></section>`;
- return tagged.replace('<div class="two-col">',tabs+'<div class="two-col">')+appearance;
+ return tagged.replace('<div class="two-col">',tabs+'<div class="two-col">')+appearance+profilePanel()+backupPanel();
 }
 function render(){page=location.hash.slice(1)||page;if(!navs.some(n=>n[0]===page))page='workflow';$('nav').innerHTML=navs.map(([p,ic,label])=>`<a class="nav-link ${page===p?'active':''}" href="#${p}" data-page="${p}">${icon(ic)}<span>${label}</span>${page===p?'<i class="nav-dot"></i>':''}</a>`).join('');$('breadcrumb').textContent=navs.find(n=>n[0]===page)[2];let banner=state.demo?`<div class="demo-banner"><span><b>أنت تتصفح خطة توضيحية</b> · الأرقام مثال للتجربة، ابدأ بخطة تحمل أرقامك.</span><button class="text-btn" data-action="setup">ابدأ خطتك ${icon('arrow')}</button></div>`:'';if(storageError)banner+=`<div class="notice warn">${safe(storageError)} ${brokenRaw?'<button class="text-btn" data-action="rescue">تنزيل البيانات الأصلية</button>':''}</div>`;const renders={workflow:workflowPage,living:livingPage,emergency:emergencyPage,reports:statementPage,overview,income:incomePage,obligations:obligationsPage,plan:planPage,ledger:ledgerPage,settings:settingsPage};const mobile='';$('main').innerHTML=mobile+banner+renders[page]();paintIcons();window.ThukhrFamily?.sync();document.querySelectorAll('[data-neo-page]').forEach(a=>{const active=a.dataset.neoPage===page;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});const more=$('thukhrMoreButton'),moreMenu=$('thukhrMoreMenu');
  if(more){const active=['ledger','emergency','settings'].includes(page);more.classList.toggle('active',active);
@@ -1434,7 +1512,16 @@ if(wizardStep===2){const u=currencies[wizard.currency].unit,dec=currencies[wizar
 modal(`ابدأ خطتك · ${stepNames[wizardStep]}`,`الخطوة ${wizardStep+1} من 3`,body,submit,wizardStep===2?'اعتماد خطتي':'متابعة');const actions=$('modalForm').querySelector('.form-actions');if(wizardStep>0){const back=document.createElement('button');back.type='button';back.className='btn secondary';back.textContent='السابق';back.onclick=()=>wizardBack($('modalForm'));actions.prepend(back)}if(wizardStep===1){const add=(o={})=>{const row=document.createElement('div');row.className='setup-ob';row.innerHTML=`<div class="form-grid" style="margin-bottom:17px">${field('اسم الالتزام','ob-name','text',o.name||'','data-name maxlength="70"')}${moneyField('المبلغ','ob-amount',o.amount||'','data-amount',currencies[wizard.currency]?.dec??0)}${field('الاستحقاق','ob-due','date',o.due||today(),'data-due')}<div class="field" style="justify-content:end"><button class="btn danger small" type="button" data-remove>حذف</button></div></div>`;row.querySelector('[data-remove]').onclick=()=>row.remove();$('setupObligations').append(row);wireMoneyInputs(row)};wizard.obligations.forEach(add);$('addSetupOb').onclick=()=>add()}}
 function confirmModal(title,text,yes,label='تأكيد'){modal(title,'',`<p class="help-text">${safe(text)}</p>`,()=>{closeModal();yes()},label)}
 function download(name,data,type='application/json'){const blob=new Blob([data],{type:type+';charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function backup(){download(`mizan-backup-${today()}.json`,JSON.stringify(state,null,2));toast('تم تجهيز النسخة الاحتياطية')}
+async function backup(){
+ try{
+  const original=structuredClone(state);
+  delete original.backupIntegrity;
+  const digest=await digestFinance(JSON.stringify(original));
+  const data={...original,backupIntegrity:{algorithm:'SHA-256',digest}};
+  download('thukhr-backup-'+today()+'.json',JSON.stringify(data,null,2));
+  toast('تم تنزيل نسخة JSON مع بصمة للتحقق من سلامة الملف');
+ }catch(e){showError('تعذر تجهيز النسخة المحققة: '+e.message)}
+}
 function exportCsv(){const rows=[['التاريخ','العملية','التفاصيل','المبلغ','العملة','الحساب','الملاحظة','مصدر الدخل','شهر الاستحقاق'],...state.transactions.map(t=>[t.date,...txLabel(t).slice(0,2),inputMoney(t.amount),state.settings.currency,t.method||'داخلي',t.note||'',t.sourceName||'',t.incomePeriod||''])];const clean=v=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};download(`mizan-ledger-${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(clean).join(',')).join('\r\n'),'text/csv')}
 function help(){modal('كيف يعمل ذُخر؟','من أول استلام إلى آخر يوم في الدورة.',`<div class="help-text"><p><b>مواعيدك:</b> الحوافز بين 10 و12، والراتب بين 22 و24 من كل شهر. عدّل المواعيد من إعدادات الدخل. الدفعتان ضمن الخطة الحالية؛ لا يضاف المتوقع قبل تأكيد استلامه.</p><br><p><b>1. استلم:</b> سجّل الدخل الذي وصل فعلياً إلى البطاقة أو النقد.</p><br><p><b>2. أضف ثم وافق:</b> تسجيل الالتزام لا يحجز أموالاً. حدّد الحجز لاحقاً من زر «حجز مبلغ» ووافق عليه صراحةً. الحجز ليس دفعاً.</p><br><p><b>3. وزّع:</b> امنح ما تبقّى محافظ للصرف واحتياطي للطوارئ والادخار.</p><br><p><b>4. سجّل:</b> المصروف يخفض الحساب والمحفظة. سداد الالتزام يخفض الحساب وحجز الالتزام. السحب النقدي والتحويل لا يغيّران إجمالي المال.</p><br><p><b>5. راجع:</b> تابع السقف اليومي وطابق الرصيد من التقارير. احفظ نسخة احتياطية دورياً.</p><br><p>تُحفظ أموالك في هذا المتصفح فقط. لا توجد مزامنة بين الأجهزة أو اتصال مصرفي. المبلغ المقترح للصرف تنظيم حسابي حسب بياناتك، وليس توقعاً لدخل لم يُستلم.</p></div><div class="form-actions">${btn('close','فهمت','check')}</div>`)}
 function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;for(const id of ['fromFilter','toFilter']){const element=$(id),readable=$(id+'Readable');
@@ -1451,9 +1538,16 @@ function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEv
   save(next,delta?'تم تسجيل فرق المطابقة للمراجعة':'تم توثيق مطابقة الرصيد دون فرق');
  }catch(ex){showError(ex.message)}
 };}
-const actions={'thukhr-more':()=>{const menu=$('thukhrMoreMenu'),button=$('thukhrMoreButton');if(!menu||!button)return;menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));},'ledger-detail':ledgerDetail,'settings-tab':id=>{if(['account','appearance','income','backup'].includes(id)){settingsTab=id;render()}},'wf-fields-manage':monthlyFieldsManage,'wf-income-mode':wfIncomeModePicker,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'month-close':monthClose,'month-reopen':monthReopen,'financial-csv':detailedFinancialCsv,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
+const actions={'thukhr-more':()=>{const menu=$('thukhrMoreMenu'),button=$('thukhrMoreButton');if(!menu||!button)return;menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));},'ledger-detail':ledgerDetail,'settings-tab':id=>{if(['account','appearance','income','backup'].includes(id)){settingsTab=id;render()}},'wf-fields-manage':monthlyFieldsManage,'wf-income-mode':wfIncomeModePicker,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'month-close':monthClose,'month-reopen':monthReopen,'financial-csv':detailedFinancialCsv,'profile-create':profileCreate,'profile-switch':profileSwitch,'backup-rolling':backupRolling,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=actions[b.dataset.action];if(fn){e.preventDefault();try{fn(b.dataset.id,b.dataset.period)}catch(ex){showError(ex.message)}}});
-$('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;E.validate(next);if(!currencies[next.settings.currency])throw Error('عملة الملف غير مدعومة في هذه الواجهة.');confirmModal('استعادة النسخة الاحتياطية؟',`تم التحقق من ${next.transactions.length} حركة. ستُستبدل البيانات الحالية بهذه النسخة. احفظ نسخة من سجلك الحالي قبل التأكيد.`,()=>{try{save(next,'تمت الاستعادة والتحقق من توازن الأرصدة',true)}catch(ex){toast(ex.message)}},'استعادة البيانات')}catch(ex){toast('تعذرت الاستعادة: '+ex.message)}finally{e.target.value=''}});
+$('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;if(next.backupIntegrity){
+ const x=next.backupIntegrity;
+ if(x.algorithm!=='SHA-256'||typeof x.digest!=='string')throw Error('بيانات سلامة النسخة غير صالحة.');
+ const stripped={...next};delete stripped.backupIntegrity;
+ const actual=await digestFinance(JSON.stringify(stripped));
+ if(actual!==x.digest)throw Error('ملف النسخة الاحتياطية تغيّر أو تضرر؛ الاستعادة مرفوضة.');
+ }
+ E.validate(next);if(!currencies[next.settings.currency])throw Error('عملة الملف غير مدعومة في هذه الواجهة.');confirmModal('استعادة النسخة الاحتياطية؟',`تم التحقق من ${next.transactions.length} حركة. ستُستبدل البيانات الحالية بهذه النسخة. احفظ نسخة من سجلك الحالي قبل التأكيد.`,()=>{try{save(next,'تمت الاستعادة والتحقق من توازن الأرصدة',true)}catch(ex){toast(ex.message)}},'استعادة البيانات')}catch(ex){toast('تعذرت الاستعادة: '+ex.message)}finally{e.target.value=''}});
 let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('installBtn'))$('installBtn').hidden=false});document.addEventListener('click',async e=>{if(e.target.id==='installBtn'&&installPrompt){await installPrompt.prompt();installPrompt=null;e.target.hidden=true}});
 window.addEventListener('hashchange',()=>{render();window.scrollTo({top:0,behavior:'instant'})});window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const next=JSON.parse(e.newValue);E.validate(next);state=next;applySettings();render();toast('تم تحديث البيانات من تبويب آخر')}catch{toast('تعذر قراءة تحديث التبويب الآخر')}}});window.addEventListener('focus',()=>{if(!$('modal').open)render()});
 $('modal').addEventListener('click',e=>{if(e.target===$('modal')){const r=$('modal').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeModal()}});
