@@ -109,7 +109,7 @@ function blankRows(ctx,y){
   rect(ctx,69,y,1103,100,C.soft,C.line);
   rtl(ctx,'لا توجد حركات مالية ضمن الفترة المحددة.',1150,y+51,24,C.gray);
 }
-function renderPage(data,rows,firstPage,pageNo,totalPages){
+function renderPage(data,rows,firstPage,pageNo,totalPages,walletRows=null){
   const canvas=document.createElement('canvas');canvas.width=PAGE_W;canvas.height=PAGE_H;
   const ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx)throw Error('المتصفح لا يدعم إنشاء صفحات الكشف المالي.');
@@ -127,11 +127,16 @@ function renderPage(data,rows,firstPage,pageNo,totalPages){
     ];
     const width=355,start=69,gap=19;
     cards.forEach((v,i)=>kpi(ctx,start+(i%3)*(width+gap),253+Math.floor(i/3)*133,width,v[0],v[1]));
-    y=walletTable(ctx,data,560);
+    y=walletTable(ctx,{...data,wallets:data.wallets.slice(0,12)},560);
     y=transactionsHeader(ctx,y+40,data.entries.length,false);
+  }else if(walletRows){
+    walletTable(ctx,{...data,wallets:walletRows},190);
+    y=-1;
   }else y=transactionsHeader(ctx,190,data.entries.length,true);
-  if(!rows.length)blankRows(ctx,y);
-  else rows.forEach((entry,i)=>txRow(ctx,entry,y+i*76,firstPage?i:pageNo*1000+i));
+  if(y>=0){
+    if(!rows.length)blankRows(ctx,y);
+    else rows.forEach((entry,i)=>txRow(ctx,entry,y+i*76,firstPage?i:pageNo*1000+i));
+  }
   footer(ctx,data,pageNo,totalPages);
   const url=canvas.toDataURL('image/jpeg',.88);
   canvas.width=1;canvas.height=1;
@@ -172,13 +177,18 @@ async function download(report){
     ]);
   }
   const rows=report.entries;
-  // The first A4 page also contains a wallet table whose row count is user-configurable.
-  const firstCount=Math.min(6,Math.max(0,Math.floor((1635-797-report.wallets.length*58)/76))),nextCount=17;
-  const sets=[rows.slice(0,firstCount)];
-  for(let i=firstCount;i<rows.length;i+=nextCount)sets.push(rows.slice(i,i+nextCount));
-  if(sets.length>100)throw Error('الكشف كبير جداً؛ قسّم الفترة إلى أشهر أصغر.');
+  // Extra hidden wallets need their own A4 pages, not a clipped summary.
+  const firstWalletCount=Math.min(12,report.wallets.length);
+  const firstCount=Math.min(6,Math.max(0,Math.floor((1635-797-firstWalletCount*58)/76))),nextCount=17;
+  const pages=[{rows:rows.slice(0,firstCount)}];
+  for(let i=12;i<report.wallets.length;i+=12)
+    pages.push({rows:[],walletRows:report.wallets.slice(i,i+12)});
+  for(let i=firstCount;i<rows.length;i+=nextCount)
+    pages.push({rows:rows.slice(i,i+nextCount)});
+  if(pages.length>100)throw Error('الكشف كبير جداً؛ قسّم الفترة إلى أشهر أصغر.');
   const jpegs=[];
-  for(let i=0;i<sets.length;i++)jpegs.push(renderPage(report,sets[i],i===0,i+1,sets.length));
+  for(let i=0;i<pages.length;i++)
+    jpegs.push(renderPage(report,pages[i].rows,i===0,i+1,pages.length,pages[i].walletRows||null));
   const blob=buildPDF(jpegs);
   if(blob.size<3000)throw Error('لم يكتمل توليد ملف PDF.');
   const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,13);
@@ -186,7 +196,7 @@ async function download(report){
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=filename;a.style.display='none';document.body.appendChild(a);
   try{a.click();}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-  return {filename,bytes:blob.size,pages:sets.length};
+  return {filename,bytes:blob.size,pages:pages.length};
 }
 root.ThukhrPDF={download,buildPDF};
 })(window);
