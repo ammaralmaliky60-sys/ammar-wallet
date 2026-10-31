@@ -118,11 +118,11 @@ function renderPage(data,rows,firstPage,pageNo,totalPages,walletRows=null){
   let y;
   if(firstPage){
     const cards=[
+      ['الرصيد الافتتاحي',data.stats.opening||'0'],
       ['الدخل المستلم',data.stats.income],
       ['المصاريف الفعلية',data.stats.expenses],
       ['الالتزامات المدفوعة',data.stats.paid],
       ['رصيد إغلاق الشهر',data.stats.total],
-      ['المتاح للتوزيع',data.stats.available],
       ['استقطاع قبل الإيداع',data.stats.withheld||'0']
     ];
     const width=355,start=69,gap=19;
