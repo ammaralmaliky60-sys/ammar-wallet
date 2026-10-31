@@ -322,3 +322,7 @@ body:not(.dark) .wf-other-line b{color:#765321}
  background:transparent;color:#cf7777;font-weight:650;font-size:12px;border-radius:11px}
 .wf-category-clear:focus-visible{outline:2px solid #db9292;outline-offset:3px}
 @media(max-width:760px){.wf-category-clear{min-height:47px}}
+
+/* Monthly item editor */
+[data-action="wf-fields-manage"]{display:inline-flex;align-items:center;justify-content:center;min-height:45px}
+@media(max-width:760px){[data-action="wf-fields-manage"]{min-height:48px}}
