@@ -196,3 +196,17 @@ body[data-thukhr-theme] [data-settings-group][hidden],body[data-thukhr-theme] #t
  .smart-review-row{font-size:12px}
  .smart-review-row>strong{font-size:13px}
 }
+
+/* Obligation settlement: plain-language status and its live financial effect. */
+.thukhr-status-choice{display:grid;gap:6px;min-width:0}
+.thukhr-status-choice>.field{margin:0;min-width:0}
+.thukhr-status-choice .field select{width:100%;min-height:46px;font-size:13px;border-radius:11px}
+.thukhr-status-explain{margin:0;padding:9px 11px;border:1px solid var(--ui-line);
+ background:var(--ui-soft);border-radius:10px;color:var(--ui-dim);
+ font-size:12px;line-height:1.85;overflow-wrap:anywhere}
+.thukhr-status-explain[data-mode="withheld"]{border-inline-start:3px solid var(--ui-accent)}
+.thukhr-status-explain[data-mode="pay"]{border-inline-start:3px solid var(--ui-accent)}
+.thukhr-status-explain[data-mode="reserve"]{border-inline-start:3px solid var(--ui-line)}
+.smart-row .thukhr-status-choice{flex:0 1 260px;min-width:180px}
+.thukhr-settlement-row .thukhr-status-choice{width:100%}
+@media(max-width:760px){.smart-row .thukhr-status-choice{width:100%;min-width:0;flex:auto}}
