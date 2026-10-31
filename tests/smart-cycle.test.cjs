@@ -59,10 +59,10 @@ test('insufficient funding preserves full budget without inventing income or cas
  assert.equal(JSON.stringify(st),raw);
  assert.equal(result.totals.living,0);
  assert.equal(result.funding.pending,400000);
- assert.equal(result.funding.shortfall,130000);
+ assert.equal(result.funding.shortfall,30000);
  assert.equal(result.next.settings.livingTargets[month].home,400000);
  assert.equal(result.after.card,720000);
- assert.equal(result.after.unallocated,270000);
+ assert.equal(result.after.unallocated,370000);
  assert.equal(result.next.transactions.filter(t=>t.type==='allocate').length,0);
 });
 test('funding uses only confirmed available cash and does not duplicate allocation',()=>{
@@ -73,6 +73,24 @@ test('funding uses only confirmed available cash and does not duplicate allocati
  const funded=fixture(st).fundLivingTargets(out.next,{home:100000},month);
  assert.equal(funded.allocated,0);
  assert.equal(funded.next.transactions.length,out.next.transactions.length);
+});
+test('385000 budget with 70000 available waits for 315000 other income',()=>{
+ const st=base(),data=draft(st,{plan:{bankLoan:218000,housing:650000,split:0},targets:{home:385000}});
+ const result=fixture(st).smartBuild(st,data);
+ assert.equal(result.funding.shortfall,315000);
+ assert.equal(result.funding.pending,385000);
+ assert.equal(result.after.unallocated,70000);
+ assert.equal(result.next.settings.livingTargets[month].home,385000);
+ assert.equal(result.totals.living,0);
+ const withOther=E.commit(result.next,{type:'income',id:E.uid(),date:day,amount:315000,method:'card',note:'أخرى'});
+ const financed=fixture(withOther).fundLivingTargets(withOther,{home:385000},month);
+ assert.equal(financed.allocated,385000);
+ assert.equal(financed.pending,0);
+ const after=E.stats(financed.next);
+ assert.equal(after.unallocated,0);
+ assert.equal(after.wallets.home,385000);
+ assert.equal(after.card,1035000);
+ assert.equal(after.reserved['wf_housing_'+month.replace('-','_')],650000);
 });
 test('stale draft is rejected',()=>{
  const st=base(),d=draft(st);d.base='invalid';
