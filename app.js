@@ -290,7 +290,7 @@ function fixedCommitmentEdit(key=''){
  <div class="field full"><label><input type="checkbox" name="autoDeduct" value="yes" ${item?.autoDeduct===false?'':'checked'}> خصم تلقائي عند تسجيل استلام الدفعة، بدون تأكيد سداد إضافي</label></div>
  </div>
  <div class="notice warn">الخصم التلقائي يُسجّل سداداً في دفتر فِرزة ويخفض رصيد الحساب المحدد؛ لا يجري تحويلاً مصرفياً. إذا كان القسط مستقطعاً من الراتب قبل إيداع الصافي، أوقف الخصم الآلي حتى لا يُحسب مرتين.</div>
- <div class="notice">إذا كان الرصيد غير كافٍ، يبقى الالتزام غير مغطى دون أن يصبح الحساب سالباً.</div>`,
+ <div class="notice">إذا كانت الدفعة المستهدفة مسجلة سابقاً لهذا الشهر، يُنفّذ الخصم الآلي عند حفظ هذا الالتزام إن كان الرصيد يكفي. وإلا يبقى المبلغ غير مغطى، دون حساب سالب.</div>`,
  f=>act(n=>{
   const label=String(f.fixedName||'').trim().replace(/\s+/g,' ');
   if(label.length<2||label.length>45||/[<>]/.test(label))throw Error('اسم الالتزام غير صالح.');
@@ -313,7 +313,15 @@ function fixedCommitmentEdit(key=''){
   const wf=wfData(n);
   n.settings.twoStageWorkflow={...wf,plans:{...wf.plans,
    [wfMonth]:{...(wf.plans?.[wfMonth]||{}),[field.key]:value}},completed:{...wf.completed}};
-  return wfFreezeIncomeMode(n,wfMonth);
+  wfFreezeIncomeMode(n,wfMonth);
+  if(field.autoDeduct===true){
+   for(const stageName of ['incentives','salary']){
+    const rec=S.receipts(n,stageName,wfMonth);
+    if(rec.length===1&&!wfData(n).completed?.[wfMonth]?.[stageName])
+     n=autoFixedSettlement(n,stageName,wfMonth,rec[0].method,rec[0].date).next;
+   }
+  }
+  return n;
  },'تم حفظ الالتزام وتوجيه الخصم الآلي إلى الدفعة المحددة.'),'حفظ الالتزام');
 }
 function monthlyFieldsManage(){
