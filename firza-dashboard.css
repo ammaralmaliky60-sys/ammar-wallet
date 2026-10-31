@@ -157,3 +157,17 @@
  body[data-thukhr-theme] .sidebar-bottom{margin-top:15px}
 }
 body[data-thukhr-theme] .thukhr-more-sheet{max-height:min(68dvh,540px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+
+/* Fixed commitments: distinct routing and automated on-receipt settlement. */
+.fz-auto-toggle{display:flex;align-items:flex-start;gap:11px;line-height:1.9;font-size:13px;font-weight:750;cursor:pointer}
+.fz-auto-toggle input{flex:0 0 19px;width:19px;height:19px;margin-top:5px;accent-color:var(--th-accent,#0fa9a7)}
+.fz-fixed-item>div:first-child{min-width:0;flex:1;align-items:start}
+.fz-fixed-item>div:first-child small{display:block;line-height:1.75;max-width:100%;color:var(--th-muted,#697f90)}
+.fz-fixed-item>div:first-child button{margin-top:6px;min-height:36px;font-size:11px;white-space:normal;text-align:center}
+.fz-fixed-actions .btn{white-space:normal}
+@media(max-width:600px){
+ .fz-fixed-item>div:first-child{flex-basis:62%}
+ .fz-fixed-item-amount{flex:1}
+ .fz-fixed-item>div:first-child button{width:100%;justify-content:center}
+ .fz-auto-toggle{font-size:12px}
+}
