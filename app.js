@@ -539,7 +539,7 @@ function smartOpen(){
  const draft={base:JSON.stringify(state),month:wfMonth,stage,mode:wfIncomeMode(),existing:!!rec.length,
   income:rec[0]?.amount||0,date:rec[0]?.date||today(),method:rec[0]?.method||last?.method||'card',
   payMethod:last?.method||'card',
-  plan:{...smartPrior(wfData().plans),...(wfPlan()||{})},
+  plan:wfPlan()?{...wfPlan()}:{...smartPrior(wfData().plans)},
   targets:{...smartPrior(state.settings.livingTargets),...livingTargets()},choices:{}};
  smartIncome(draft);
 }
