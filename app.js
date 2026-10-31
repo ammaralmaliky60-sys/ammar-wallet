@@ -753,7 +753,7 @@ function wfLivingPanel(){
     <div class="wf-living-amount">${money(balance)}</div>
     <div class="wf-living-spent">المصروف هذا الشهر: ${money(spent)}</div>
     <div class="wf-living-target">ميزانية الشهر: <b>${hasTarget?money(target):'لم تُحدد'}</b></div>
-    <button type="button" class="btn small secondary" data-action="wf-living-direct" data-id="${w.id}">صرف الآن</button>
+    ${(state.wallets.find(x=>x.id===w.id)?.kind||w.kind)==='emergency'?'<button type="button" class="btn small secondary" data-action="emergency-open">خزنة محمية</button>':`<button type="button" class="btn small secondary" data-action="wf-living-direct" data-id="${safe(w.id)}">صرف الآن</button>`}
   </article>`;
  }).join('');
  return `<section id="wf-living" class="wf-stage wf-living">
@@ -835,6 +835,7 @@ function wfLivingReport(){
        rows=state.transactions.filter(t=>t.date>=first&&t.date<=now).slice().sort((a,b)=>a.date.localeCompare(b.date)),
        stats=currentStats();
  const total=kind=>rows.filter(t=>t.type===kind).reduce((a,t)=>a+t.amount,0);
+ const emergencyCorrections=(Array.isArray(state.settings.emergencyCorrections)?state.settings.emergencyCorrections:[]).filter(c=>c.correctedAt>=first&&c.correctedAt<=now);
  const types={income:'دخل مستلم',expense:'مصروف فعلي',pay:'سداد التزام',reserve:'حجز التزام',
     unreserve:'إلغاء حجز',allocate:'تخصيص للمعيشة',release:'إرجاع للمتاح',
     transfer:'تحويل',account:'نقل بين النقد والبطاقة'};
@@ -852,10 +853,14 @@ function wfLivingReport(){
    spent:fmt(rows.filter(t=>t.type==='expense'&&t.walletId===w.id).reduce((a,t)=>a+t.amount,0)),
    balance:fmt(stats.wallets[w.id]||0)
   })),
-  entries:rows.map(t=>({
+  entries:[...rows.map(t=>({
    date:t.date,type:types[t.type]||'حركة',category:nameOf(t),
    note:t.note||t.sourceName||nameOf(t)||'—',amount:fmt(t.amount)
-  }))
+  })),...emergencyCorrections.map(c=>({
+   date:c.correctedAt,type:'تصحيح طوارئ (لا يدخل بالإجمالي)',category:'خزنة الطوارئ',
+   note:'السبب: '+c.reason+' · العملية الأصلية '+c.original.type+' بتاريخ '+c.original.date,
+   amount:fmt(c.original.amount)
+  }))].sort((a,b)=>a.date.localeCompare(b.date))
  };
  toast('جاري تجهيز ملف PDF للتنزيل...');
  Promise.resolve(window.ThukhrPDF.download(report))
