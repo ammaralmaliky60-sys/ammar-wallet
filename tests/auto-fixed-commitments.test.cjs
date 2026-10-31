@@ -160,4 +160,15 @@ test('saving a new opted-in fixed commitment immediately settles an already reco
  assert.equal(E.stats(ctx.state).paid[Object.keys(E.stats(ctx.state).paid)[0]],218000);
  assert.equal(ctx.state.transactions.filter(t=>t.type==='pay').length,1);
  assert.equal(JSON.stringify(st),previous);
+ // Adding another obligation to an already received salary must remain possible.
+ edit();
+ ctx.submit({fixedName:'الإنترنت',fixedAmount:'30000',fixedStage:'salary',fixedMethod:'receipt',autoDeduct:'yes'});
+ assert.equal(E.stats(ctx.state).total,472000);
+ assert.equal(ctx.state.transactions.filter(t=>t.type==='pay').length,2);
+ assert.equal(ctx.state.settings.twoStageWorkflow.completed[month].salary.summary.paid,248000);
+ // A previously settled obligation cannot have its posted amount silently rewritten.
+ const posted=ctx.state.settings.wfFields[0].key;
+ edit(posted);
+ assert.throws(()=>ctx.submit({fixedName:'قسط جديد',fixedAmount:'219000',fixedMethod:'receipt',autoDeduct:'yes'}),/لا يمكن تغيير مبلغه/);
+ assert.equal(E.stats(ctx.state).total,472000);
 });
