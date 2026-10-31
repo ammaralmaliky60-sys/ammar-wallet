@@ -738,7 +738,10 @@ function smartReview(d){
  ${line('المحجوز بعد الاعتماد',Object.values(r.after.reserved).reduce((sum,v)=>sum+v,0))}
  ${line('المتبقي بعد التسوية والتخصيص',r.after.unallocated)}
  ${line('التزامات شهرية لم تُغطَّ بعد',projection.uncovered)}
- ${line('المتبقي التخطيطي بعد كامل الالتزامات',projection.grossAfterAll)}
+ ${line('مجموع الالتزامات الثابتة',projection.plannedTotal)}
+ ${line('مجموع ميزانية المعيشة',projection.livingTotal)}
+ ${line('إجمالي المطلوب لهذا الشهر',projection.combinedTotal)}
+ ${line('المتبقي التخطيطي بعد الثوابت والمعيشة',projection.grossAfterAll)}
  ${line('الحر بعد تغطية غير المغطى فقط',projection.remainingAfter)}
  </div>
  <p class="wf-help">${r.funding.shortfall?'ستُحفظ سقوف المعيشة كاملة دون تخصيصها الآن. بعد استلام مصدر آخر من صفحة المعيشة، اضغط «استكمال التمويل».':'خطة المعيشة قابلة للتمويل الآن. لا يُخصم التخصيص من البطاقة أو النقد.'} عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
@@ -786,11 +789,13 @@ function monthlyCommitmentProjection(st=state,month=wfMonth){
   add(o.id,o.name,o.amount);
  }
  const uncovered=entries.reduce((sum,o)=>sum+o.uncovered,0);
- const plannedTotal=entries.reduce((sum,o)=>sum+o.amount,0);
- // A nominal planning comparison, never a spendable cash balance:
- // amounts already paid or withheld may already be reflected in stats.total.
+ const plannedTotal=entries.reduce((sum,o)=>sum+o.amount,0),living=livingBudgetSummary(month,st);
+ const combinedTotal=plannedTotal+living.total;
+ // Nominal comparison, not available cash. Already paid/withheld amounts may
+ // already be absent from the current account balance. No journal is modified.
  return {remainingAfter:stats.unallocated-uncovered,uncovered,
-  plannedTotal,grossAfterAll:stats.total-plannedTotal,
+  plannedTotal,livingTotal:living.total,livingRows:living.rows,
+  combinedTotal,grossAfterAll:stats.total-combinedTotal,
   count:entries.length,hasPlan:plan!==null,entries};
 }
 function workflowPage(){
@@ -806,15 +811,17 @@ function workflowPage(){
    ${state.demo?'':btn('wf-income-mode','تغيير نوع الدخل','settings','secondary')}</div>
   ${wfMonth===today().slice(0,7)?`<div class="wf-settlement-result ${projection.grossAfterAll<0?'wf-gross-deficit':''}" aria-label="المتبقي التخطيطي بعد الالتزامات الشهرية">
    <div class="wf-settlement-result-head">
-    <span>المتبقي بعد طرح جميع الالتزامات الشهرية</span>
+    <span>المتبقي التخطيطي بعد الثوابت وميزانية المعيشة</span>
     <span class="wf-settlement-result-state ${projection.grossAfterAll<0?'is-pending':'is-complete'}">${projection.grossAfterAll<0?'عجز تخطيطي':'حساب تخطيطي'}</span>
    </div>
    <strong class="wf-settlement-result-value">${money(projection.grossAfterAll)}</strong>
    <div class="wf-gross-equation">
     <span>رصيد الحساب الكلي <b>${money(settlement.total)}</b></span>
-    <span>ناقص مجموع الالتزامات <b>− ${money(projection.plannedTotal)}</b></span>
+    <span>الالتزامات الثابتة <b>− ${money(projection.plannedTotal)}</b></span>
+    <span>ميزانية المعيشة المحددة <b>− ${money(projection.livingTotal)}</b></span>
+    <span>مجموع المطلوب للشهر <b>${money(projection.combinedTotal)}</b></span>
    </div>
-   <p>هذا ناتج طرح كامل الالتزامات المسجلة من رصيد الحساب الحالي، حسب طلبك. للمقارنة والتخطيط فقط، وليس رصيداً مصرفياً أو مبلغاً متاحاً للصرف؛ قد تتضمن الالتزامات مبالغ سُددت أو استُقطعت مسبقاً.</p>
+   <p>هذا ناتج طرح إجمالي التزامات الشهر الثابتة وميزانية المعيشة التي حددتها من الرصيد الحالي. هو حساب تخطيطي فقط، وليس المبلغ القابل للصرف؛ فقد تكون بعض المصروفات أو الأقساط مسجلة ضمن الرصيد الفعلي مسبقاً.</p>
    ${projection.count?`<details class="wf-commitment-projection-details">
     <summary>تفاصيل الالتزامات الشهرية (${projection.count})</summary>
     <div class="wf-commitment-projection-list">${projection.entries.map(o=>`<div class="wf-commitment-projection-item">
@@ -822,7 +829,11 @@ function workflowPage(){
      <small>قيمة الالتزام ${money(o.amount)} · مسوّى أو محجوز ${money(o.covered)}</small>
      <b>غير مغطى ${money(o.uncovered)}</b>
     </div>`).join('')}</div>
-   </details>`:'<small class="wf-commitment-projection-disclaimer">لا توجد التزامات مدخلة لهذا الشهر؛ لا يمكن احتساب التزامات غير مسجلة.</small>'}
+   </details>`:'<small class="wf-commitment-projection-disclaimer">لا توجد التزامات ثابتة مدخلة لهذا الشهر.</small>'}
+   ${projection.livingRows.length?`<details class="wf-commitment-projection-details"><summary>تفاصيل ميزانية المعيشة (${projection.livingRows.length})</summary>
+    <div class="wf-commitment-projection-list">${projection.livingRows.map(o=>`<div class="wf-commitment-projection-item">
+     <span>${safe(o.label)}</span><b>السقف المحدد ${money(o.amount)}</b></div>`).join('')}</div></details>`:
+    '<small class="wf-commitment-projection-disclaimer">لم تُحدد ميزانية معيشة لهذا الشهر بعد.</small>'}
   </div>`:'<div class="notice">مقارنة الرصيد الحالي مع التزامات شهر سابق غير متاحة؛ راجع كشف الشهر المؤرّخ بدلاً من ذلك.</div>'}
   <div class="wf-commitment-projection" aria-label="الرصيد الحر الفعلي في السجل">
    <div class="wf-commitment-projection-head">
@@ -1082,6 +1093,12 @@ function livingSpent(walletId,month=wfMonth){
 function livingTargets(month=wfMonth,st=state){
  return st.settings.livingTargets?.[month]||{};
 }
+function livingBudgetSummary(month=wfMonth,st=state){
+ const targets=livingTargets(month,st),known=new Map(livingAllCategories(st).map(w=>[w.id,w.label]));
+ const rows=Object.entries(targets).filter(([,raw])=>Number.isSafeInteger(raw)&&raw>0)
+  .map(([id,amount])=>({id,label:known.get(id)||'قسم محفوظ سابقاً',amount}));
+ return {total:rows.reduce((n,r)=>n+r.amount,0),rows,hasPlan:Object.keys(targets).length>0};
+}
 function livingNeeds(targets,st=state,month=wfMonth){
  const stats=E.stats(st);
  const result=livingCategories(st).map(w=>{
@@ -1311,6 +1328,7 @@ function wfLivingPanel(){
   <div class="wf-stage-top"><div><span class="wf-kicker">ميزانية شهر ${wfMonth}</span>
    <h2>أقسام مصاريف المعيشة</h2></div><span class="chip">${livingCategories().length} قسم</span></div>
   <div class="wf-living-overview">
+   <div><span>إجمالي ميزانية المعيشة لهذا الشهر</span><strong>${money(livingBudgetSummary().total)}</strong></div>
    <div><span>المتاح للتوزيع</span><strong>${money(stats.unallocated)}</strong></div>
    <div><span>الموزّع على الأقسام</span><strong>${money(livingAllCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
   </div>
@@ -1476,10 +1494,140 @@ function wfLivingDirect(initialId='',quick=false){
    },'تم تسجيل المصروف من المتبقي واحتسابه ضمن ميزانية الشهر');
   },'تأكيد صرف المبلغ');
 }
+function quickExpenseBuild(original,draft){
+ if(JSON.stringify(original)!==draft.base)throw Error('تغيّرت بياناتك أثناء إعداد السلة؛ أعد فتح الصرف السريع.');
+ if(original.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
+ if(draft.date!==today()||draft.date<original.cycle.start||
+    original.settings.closedMonths?.[draft.date.slice(0,7)])
+  throw Error('تاريخ الصرف خارج الدورة الحالية المفتوحة.');
+ if(!['card','cash'].includes(draft.method))throw Error('اختر طريقة دفع صحيحة.');
+ if(!Array.isArray(draft.items)||!draft.items.length||draft.items.length>20)
+  throw Error('عدد البنود يجب أن يكون بين 1 و20 بنداً.');
+ const available=livingCategories(original).filter(w=>(original.wallets.find(x=>x.id===w.id)?.kind||w.kind)==='spend');
+ const wallets=new Map(available.map(w=>[w.id,w]));
+ const items=draft.items.map(row=>{
+  const wallet=wallets.get(row.walletId),value=Number(row.amount),note=String(row.note||'').trim();
+  if(!wallet)throw Error('القسم غير صالح أو محمي من الصرف السريع.');
+  if(!Number.isSafeInteger(value)||value<=0)throw Error('أدخل مبلغاً صحيحاً موجباً لكل بند.');
+  if(note.length>120)throw Error('وصف البند يجب ألا يتجاوز 120 حرفاً.');
+  return {walletId:wallet.id,label:wallet.label,amount:value,note:note||'صرف سريع'};
+ });
+ const total=items.reduce((n,row)=>n+row.amount,0),availableCash=E.stats(original)[draft.method];
+ if(!Number.isSafeInteger(total)||total>availableCash)
+  throw Error('مجموع البنود أكبر من رصيد '+(draft.method==='cash'?'النقد':'البطاقة')+' المتوفر.');
+ let next=structuredClone(original),funded=0,duplicates=0;
+ for(const row of items){
+  if(duplicateExpense(next,{...row,date:draft.date,method:draft.method})){
+   duplicates++;
+   if(!draft.duplicateApproved)throw Error('يوجد بند مطابق في السجل أو داخل السلة. أكّد أن البنود المتشابهة عمليات مستقلة.');
+  }
+  const stats=E.stats(next),wallet=wallets.get(row.walletId);
+  const current=stats.wallets[row.walletId]||0,required=Math.max(0,row.amount-current);
+  if(required>stats.unallocated)throw Error('رصيد المعيشة غير المحجوز لا يكفي لبند '+wallet.label+'؛ المتاح '+stats.unallocated+'.');
+  if(row.amount>stats[draft.method])throw Error('رصيد طريقة الدفع غير كافٍ لبند '+wallet.label+'.');
+  if(!next.wallets.some(w=>w.id===wallet.id))
+   next.wallets.push({id:wallet.id,name:wallet.label,kind:wallet.kind,color:wallet.color,weight:0});
+  if(required){
+   next=event(next,{type:'allocate',date:draft.date,walletId:wallet.id,amount:required,
+    note:'تمويل الصرف السريع المجمع · '+wallet.label});
+   funded+=required;
+  }
+  next=event(next,{type:'expense',walletId:wallet.id,amount:row.amount,
+   method:draft.method,date:draft.date,note:row.note});
+ }
+ E.validate(next);
+ return {next,total,items,funded,duplicates,before:E.stats(original),after:E.stats(next)};
+}
+function quickExpenseItemHtml(row,index,options){
+ return `<div class="thukhr-quick-item" data-quick-item="${index}">
+ <div class="thukhr-quick-item-head"><strong>البند <span data-quick-number>${index+1}</span></strong>
+ <button type="button" class="btn small secondary" data-quick-remove aria-label="حذف البند">حذف</button></div>
+ <div class="thukhr-quick-item-grid">
+ ${select('القسم','quick-wallet-'+index,options,row.walletId).replace('<select ','<select data-quick-wallet ')}
+ ${moneyField('المبلغ','quick-amount-'+index,row.amount?inputMoney(row.amount):'','required').replace('<input ','<input data-quick-amount ')}
+ <div class="thukhr-quick-note">${field('تفاصيل البند (اختياري)','quick-note-'+index,'text',row.note||'','maxlength="120" placeholder="مثلاً: خضروات أو قهوة"').replace('<input ','<input data-quick-note ')}</div>
+ </div></div>`;
+}
+function quickExpenseEditor(draft){
+ if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
+ const options=livingCategories().filter(w=>(state.wallets.find(x=>x.id===w.id)?.kind||w.kind)==='spend').map(w=>[w.id,w.label]);
+ if(!options.length)throw Error('أضف قسماً للصرف اليومي أولاً؛ الطوارئ خارج الصرف السريع.');
+ let counter=0;
+ const rowHtml=(row)=>quickExpenseItemHtml(row,counter++,options);
+ const monthly=livingBudgetSummary(today().slice(0,7));
+ const stats=currentStats();
+ modal('صرف سريع · عدة بنود','سجّل عدة مشتريات دفعة واحدة، ثم راجع المجموع قبل اعتماد أي حركة.',
+ `<div class="thukhr-quick-month">
+  <span>ميزانية المعيشة المحددة للشهر <b>${money(monthly.total)}</b></span>
+  <small>سقف تخطيطي؛ ليس رصيداً إضافياً للإنفاق</small></div>
+  <div id="quickItems" class="thukhr-quick-items">${draft.items.map(rowHtml).join('')}</div>
+  <button type="button" id="quickAddItem" class="btn secondary thukhr-quick-add">+ إضافة بند آخر</button>
+  <div class="thukhr-quick-paymethod">${select('طريقة الدفع لجميع البنود','method',methodOptions,draft.method)}</div>
+  <div class="thukhr-quick-total"><span>مجموع سلة الصرف</span><strong id="quickTotal" aria-live="polite">0</strong></div>
+  <div class="notice">المتاح غير المحجوز: <b>${money(stats.unallocated)}</b> · رصيد طريقة الدفع يُراجع عند التأكيد. لا يُسحب من خزنة الطوارئ.</div>
+  <div class="field"><label><input type="checkbox" name="duplicateApproved" value="yes" ${draft.duplicateApproved?'checked':''}> أؤكد أن البنود المتشابهة، إن وجدت، مصروفات منفصلة فعلاً</label></div>`,
+ (f,form)=>{
+  const nodes=[...form.querySelectorAll('.thukhr-quick-item')];
+  const items=nodes.map(node=>({
+   walletId:node.querySelector('[data-quick-wallet]').value,
+   amount:amount(node.querySelector('[data-quick-amount]').value),
+   note:node.querySelector('[data-quick-note]').value.trim()
+  }));
+  const nextDraft={...draft,items,method:f.method,duplicateApproved:f.duplicateApproved==='yes'};
+  const result=quickExpenseBuild(state,nextDraft);
+  quickExpenseReview(nextDraft,result);
+ },'مراجعة مجموع الصرف');
+ const root=$('modalForm'),itemsRoot=$('quickItems'),addButton=$('quickAddItem'),totalNode=$('quickTotal');
+ const refresh=()=>{
+  const nodes=[...itemsRoot.querySelectorAll('.thukhr-quick-item')];let sum=0;
+  nodes.forEach((node,i)=>{
+   node.querySelector('[data-quick-number]').textContent=i+1;
+   const input=node.querySelector('[data-quick-amount]');
+   try{sum+=amount(input.value,true)}catch{}
+  });
+  totalNode.textContent=fmt(sum)+' '+unit();
+  addButton.disabled=nodes.length>=20;
+  for(const remove of itemsRoot.querySelectorAll('[data-quick-remove]'))remove.disabled=nodes.length===1;
+ };
+ itemsRoot.addEventListener('input',refresh);
+ itemsRoot.addEventListener('change',refresh);
+ itemsRoot.addEventListener('click',e=>{
+  const remove=e.target.closest('[data-quick-remove]');
+  if(!remove)return;
+  if(itemsRoot.querySelectorAll('.thukhr-quick-item').length<=1)return;
+  remove.closest('.thukhr-quick-item').remove();refresh();
+ });
+ addButton.onclick=()=>{
+  if(itemsRoot.querySelectorAll('.thukhr-quick-item').length>=20)return;
+  const markup=rowHtml({walletId:options[0][0],amount:0,note:''});
+  itemsRoot.insertAdjacentHTML('beforeend',markup);
+  wireMoneyInputs(itemsRoot);
+  refresh();
+  itemsRoot.lastElementChild?.querySelector('[data-quick-amount]')?.focus({preventScroll:true});
+ };
+ wireMoneyInputs(itemsRoot);refresh();
+}
+function quickExpenseReview(draft,result){
+ const monthly=livingBudgetSummary(draft.date.slice(0,7)),method=draft.method==='cash'?'النقد':'البطاقة';
+ modal('مراجعة سلة الصرف','لن تُحفظ أي حركة قبل موافقتك النهائية.',
+ `<div class="thukhr-quick-review">${result.items.map((item,i)=>`<div class="thukhr-quick-review-line">
+  <span>${i+1}. ${safe(item.label)}<small>${safe(item.note)}</small></span><b>${money(item.amount)}</b></div>`).join('')}</div>
+ <div class="thukhr-quick-total"><span>إجمالي الصرف من ${method}</span><strong>${money(result.total)}</strong></div>
+ <p class="wf-help">ميزانية المعيشة الشهرية: ${money(monthly.total)} · التمويل الإضافي من المتاح: ${money(result.funded)}. التمويل الداخلي ليس مصروفاً ثانياً.</p>
+ <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> أوافق على تسجيل ${result.items.length} بنداً وإجمالي ${fmt(result.total)} ${unit()} مرة واحدة</label></div>`,
+ f=>{
+  if(f.confirm!=='yes')throw Error('الموافقة على سلة الصرف إلزامية.');
+  act(n=>quickExpenseBuild(n,draft).next,'تم تسجيل '+result.items.length+' مصروفات بمجموع '+fmt(result.total)+' '+unit());
+ },'تأكيد صرف المجموع');
+ $('modalForm').insertAdjacentHTML('beforeend','<button type="button" class="btn secondary thukhr-quick-back" id="quickBack">الرجوع لتعديل البنود</button>');
+ $('quickBack').onclick=()=>quickExpenseEditor(draft);
+}
 function wfLivingQuick(){
- wfLivingDirect('',true);
- const moneyInput=$('modalForm')?.elements?.amount;
- if(moneyInput)moneyInput.focus({preventScroll:true});
+ const spend=livingCategories().filter(w=>(state.wallets.find(x=>x.id===w.id)?.kind||w.kind)==='spend');
+ if(!spend.length)throw Error('أضف قسماً للصرف اليومي أولاً.');
+ const last=state.transactions.filter(t=>t.type==='expense'&&['cash','card'].includes(t.method)).slice(-1)[0];
+ quickExpenseEditor({base:JSON.stringify(state),date:today(),method:last?.method||'card',
+  items:[{walletId:spend[0].id,amount:0,note:''}],duplicateApproved:false});
 }
 function wfLivingExpense(id){
  if(!livingCategories().some(w=>w.id===id))throw Error('اختر قسماً من أقسام المعيشة.');
