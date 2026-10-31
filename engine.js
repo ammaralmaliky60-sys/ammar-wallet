@@ -342,7 +342,7 @@ function correctEmergency(state,eventId,reason){
   }
   function startCycle(state, options) {
     validate(state);
-    const { start, days, income, method = 'card', policy = 'same' } = options || {};
+    const { start, days, income, method = 'card', policy = 'same', sourceId = '', incomePeriod = '' } = options || {};
     date(start);
     if (start <= state.cycle.start) fail('تاريخ الدورة الجديدة يجب أن يلي بداية الدورة الحالية.');
     if (!Number.isInteger(days) || days < 1 || days > 366) fail('مدة الدورة يجب أن تكون بين يوم واحد و366 يوماً.');
@@ -365,7 +365,13 @@ function correctEmergency(state,eventId,reason){
       if (spending.length && !reserveWallet) fail('أضف محفظة طوارئ لاستقبال الفائض المرحّل.');
       for (const w of spending) next = commit(next, { type: 'transfer', date: start, amount: closing.wallets[w.id], from: w.id, to: reserveWallet.id, note: 'ترحيل فائض الدورة السابقة إلى الطوارئ' });
     }
-    if (income > 0) next = commit(next, { type: 'income', date: start, amount: income, method, note: 'الدخل المستلم للدورة الجديدة' });
+    if(income>0){
+      const source=sourceId?S.sources(next).find(s=>s.id===sourceId):null;
+      if(sourceId&&!source)fail('مصدر دخل الدورة الجديدة غير موجود.');
+      if(source&&!/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(incomePeriod))fail('فترة استحقاق دخل الدورة غير صحيحة.');
+      next=commit(next,{type:'income',date:start,amount:income,method,note:source?.name||'دخل الدورة الجديدة',
+       ...(source?{sourceId:source.id,sourceName:source.name,incomePeriod}:{})});
+    }
     validate(next);
     return next;
   }
