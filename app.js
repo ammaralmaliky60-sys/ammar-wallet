@@ -626,7 +626,7 @@ function smartAllocate(d){
  const planRows=visible.map(o=>locked?`<div class="smart-row"><b>${safe(o.label)}</b><b>${money(d.plan[o.key]||0)}</b></div>`:
  moneyField(o.label,'plan-'+o.key,inputMoney(d.plan[o.key]||0),'required')).join('');
  const seed=Object.fromEntries(all.map(o=>[o.key,Math.max(2,d.plan[o.key]||0)]));
- const potential=wfAmount(seed,d.stage);
+ const potential=wfAmount(seed,d.stage).filter(o=>!all.some(f=>f.key===o.key&&f.autoDeduct===true));
  const earlier=Object.entries(wfData().completed||{}).filter(([m])=>m<d.month).sort((a,b)=>b[0].localeCompare(a[0]));
  const previous=earlier.find(([,st])=>st?.[d.stage]?.decisions)?.[1]?.[d.stage]?.decisions||{};
  const settlement=potential.map(o=>`<div class="smart-row"><div><b>${safe(o.label)}</b><small>المبلغ يُحسب من خطة الشهر عند المراجعة النهائية</small></div>
@@ -635,7 +635,7 @@ function smartAllocate(d){
  modal('الدورة الذكية · 2 من 3','يمكن تغيير المقترحات؛ كل مبلغ يبقى تحت مراجعتك.',
  `<div class="smart-steps"><b>1 · الدخل</b><b>2 · التسوية والميزانية</b><span>3 · المراجعة</span></div>
  <h3>الالتزامات الشهرية</h3><div class="smart-grid">${planRows||'<p class="wf-help">لا توجد بنود حالياً؛ لا تُنشأ حجوزات.</p>'}</div>
- <h3>حالة الالتزام</h3><p class="wf-help">«دفعته فعلياً» هي الحالة الافتراضية الثابتة عند فتح النموذج، ولا تعني أن الدفع حدث مسبقاً. إذا لم تدفع البند فغيّر حالته إلى الحجز أو الاستقطاع قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
+ <h3>حالة الالتزام (للبنود اليدوية فقط)</h3><p class="wf-help">«دفعته فعلياً» هي الحالة الافتراضية الثابتة عند فتح النموذج، ولا تعني أن الدفع حدث مسبقاً. إذا لم تدفع البند فغيّر حالته إلى الحجز أو الاستقطاع قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
  ${select('دفعت فعلياً من','payMethod',methodOptions,d.payMethod)}
  <h3>ميزانية المعيشة</h3><p class="wf-help">حدد السقوف الثابتة التي تحتاجها، حتى لو تجاوزت المتاح. سيحفظها فِرزة دون إنشاء رصيد وهمي؛ ويمكن تمويل النقص لاحقاً عبر «أخرى» في المعيشة.</p>
  <div class="smart-grid">${budget||'<p class="wf-help">لا توجد أقسام معيشة.</p>'}</div>`,
@@ -644,7 +644,7 @@ function smartAllocate(d){
   d.payMethod=f.payMethod;if(!['cash','card'].includes(d.payMethod))throw Error('طريقة السداد غير صالحة.');
   for(const w of livingCategories())d.targets[w.id]=amount(f['living-'+w.id],true);
   const valid=new Set(['reserve','pay','withheld']);
-  for(const o of wfAmount(d.plan,d.stage).filter(o=>o.amount>0)){
+  for(const o of wfAmount(d.plan,d.stage).filter(o=>o.amount>0&&!monthlyAllFields().some(f=>f.key===o.key&&f.autoDeduct===true))){
    const mode=f['mode-'+o.key]||d.choices[o.key]||DEFAULT_OBLIGATION_STATUS;
    if(!valid.has(mode))throw Error('اختر حالة كل استقطاع.');
    d.choices[o.key]=mode;
@@ -673,6 +673,71 @@ function fundLivingTargets(n,targets,month,notePrefix='ميزانية المعي
  }
  return {next,allocated:needs.additional,pending:0,shortfall:0};
 }
+function autoFixedPlanShare(field,stage,month,st){
+ const mode=wfIncomeMode(month,st),plan=wfData(st).plans?.[month]||{};
+ const full=Number(plan[field.key]||0);
+ if(!Number.isSafeInteger(full)||full<=0)return 0;
+ if(mode==='salary-only')return stage==='salary'?full:0;
+ if(field.stage==='split')return stage==='incentives'?Math.floor(full/2):full-Math.floor(full/2);
+ return field.stage===stage?full:0;
+}
+function autoFixedSettlement(original,stage,month,method,date){
+ if(!['salary','incentives'].includes(stage))return {next:original,paid:0,skipped:[]};
+ if(!['card','cash'].includes(method))throw Error('حساب خصم الالتزامات غير صالح.');
+ if(original.settings.closedMonths?.[month])return {next:original,paid:0,skipped:[]};
+ if(wfData(original).completed?.[month]?.[stage])return {next:original,paid:0,skipped:[]};
+ if(wfIncomeMode(month,original)==='salary-only'&&stage==='incentives')
+  return {next:original,paid:0,skipped:[]};
+ // Only fields explicitly enabled by their owner are ever automatically settled.
+ const all=monthlyAllFields(original).filter(f=>f.autoDeduct===true);
+ let next=original,paid=0;
+ const skipped=[],processed=[];
+ for(const field of all){
+  const part=autoFixedPlanShare(field,stage,month,next);
+  if(part<=0)continue;
+  const id=wfObId(month,field.key),plan=wfData(next).plans?.[month]||{},full=Number(plan[field.key]||0);
+  const o=next.obligations.find(x=>x.id===id);
+  if(o?.archived||o&&o.amount!==full){skipped.push({label:field.label,reason:'سجل الالتزام مختلف أو مؤرشف'});continue}
+  const stats=E.stats(next);
+  const paidSoFar=(stats.paid[id]||0)+(stats.withheld?.[id]||0);
+  const target=wfIncomeMode(month,next)==='both'&&field.stage==='split'&&stage==='incentives'
+   ?Math.floor(full/2):full;
+  const due=Math.max(0,Math.min(part,target-paidSoFar));
+  if(!due)continue;
+  const reserved=stats.reserved[id]||0;
+  const extra=Math.max(0,due-reserved);
+  if(extra>stats.unallocated||due>stats[method]){
+   skipped.push({label:field.label,amount:due,reason:'الرصيد غير المحجوز أو حساب الدفع لا يكفي'});
+   continue;
+  }
+  if(!o)next.obligations.push({id,name:field.label,amount:full,due:date,recurring:false});
+  if(extra)next=event(next,{type:'reserve',date,obligationId:id,amount:extra,
+   note:'حجز آلي تمهيداً لسداد '+field.label+' · '+month});
+  next=event(next,{type:'pay',date,obligationId:id,amount:due,method,
+   note:'خصم تلقائي من '+(stage==='salary'?'الراتب':'الحوافز')+' · '+month+' · '+field.label});
+  paid+=due;processed.push({key:field.key,amount:due});
+ }
+ // Do not auto-mark a stage completed when other manually settled fields remain.
+ const fields=monthlyAllFields(next).filter(f=>autoFixedPlanShare(f,stage,month,next)>0);
+ const allAuto=fields.length>0&&fields.every(f=>f.autoDeduct===true);
+ const allCovered=fields.every(f=>{
+  const id=wfObId(month,f.key),stat=E.stats(next);
+  const paid= (stat.paid[id]||0)+(stat.withheld?.[id]||0);
+  const target=wfIncomeMode(month,next)==='both'&&f.stage==='split'&&stage==='incentives'
+    ?Math.floor(Number(wfData(next).plans[month][f.key]||0)/2):Number(wfData(next).plans[month][f.key]||0);
+  return paid>=target;
+ });
+ if(allAuto&&allCovered&&processed.length){
+  const wf=wfData(next);
+  next.settings.twoStageWorkflow={...wf,completed:{...wf.completed,
+   [month]:{...wf.completed?.[month],[stage]:{mode:'automatic',at:date,
+    total:processed.reduce((sum,p)=>sum+p.amount,0),
+    summary:{withheld:0,reserved:0,paid},decisions:Object.fromEntries(processed.map(p=>[p.key,'pay']))}}}};
+ }
+ E.validate(next);
+ return {next,paid,skipped,processed};
+}
+
 function smartBuild(original,d){
  if(JSON.stringify(original)!==d.base)throw Error('تغيّرت البيانات أثناء إعداد الدورة. أغلق المعالج وافتحه من جديد.');
  if(original.demo||original.settings.closedMonths?.[d.month]||d.month!==today().slice(0,7)||
@@ -695,7 +760,9 @@ function smartBuild(original,d){
   n.settings.twoStageWorkflow={...wf,plans:{...wf.plans,[d.month]:{...d.plan}},completed:{...wf.completed}};
   n.settings.wfIncomeModes={...(n.settings.wfIncomeModes||{}),[d.month]:d.mode};
  }
- const rows=wfAmount(d.plan,d.stage).filter(o=>o.amount>0);
+ const auto=autoFixedSettlement(n,d.stage,d.month,d.payMethod,d.date);
+ n=auto.next;totals.paid+=auto.paid;
+ const rows=wfAmount(d.plan,d.stage).filter(o=>o.amount>0&&!monthlyAllFields().some(f=>f.key===o.key&&f.autoDeduct===true));
  for(const o of rows){
   const mode=d.choices[o.key],id=wfObId(d.month,o.key);
   if(!['withheld','reserve','pay'].includes(mode))throw Error('حالة التزام غير محددة.');
@@ -881,7 +948,7 @@ function wfApply(stage){
  if(!S.receipts(state,stage,wfMonth).length)throw Error('يجب تأكيد الاستلام أولاً.');
  if(stage==='salary'&&wfIncomeMode()==='both'&&!wfDone('incentives'))
   throw Error('أكمل مرحلة الحوافز أولاً.');
- const ops=wfAmount(plan,stage).filter(x=>x.amount>0);
+ const ops=wfAmount(plan,stage).filter(x=>x.amount>0&&!monthlyAllFields().some(f=>f.key===x.key&&f.autoDeduct===true));
  const rows=ops.map(o=>`<div class="wf-step thukhr-settlement-row">
   <div><strong>${safe(o.label)}</strong><b>${money(o.amount)}</b></div>
   ${obligationStatusSelect('settle-'+o.key,DEFAULT_OBLIGATION_STATUS,stage)}
@@ -2004,7 +2071,11 @@ function openIncome(sourceId='',requestedPeriod=''){const source=S.sources(state
  const mode=selected?wfIncomeMode(f.incomePeriod,s):null;
  const next=event(s,{type:'income',amount:newAmount,method:f.method,date:f.date,note:f.note.trim(),...(selected?{sourceId:selected.id,sourceName:selected.name,incomePeriod:f.incomePeriod}:{})});
  if(selected)next.settings.wfIncomeModes={...(next.settings.wfIncomeModes||{}),[f.incomePeriod]:mode};
- return next},'تم تأكيد الاستلام وإضافته للخطة الحالية'),'تأكيد الاستلام');const form=$('modalForm');const update=()=>{const selected=S.sources(state).find(x=>x.id===form.elements.sourceId.value);form.elements.incomePeriod.disabled=!selected;form.elements.incomePeriod.required=!!selected;if(selected)form.elements.note.value=selected.name};form.elements.sourceId.addEventListener('change',update);update();}
+ if(selected&&['salary','incentives'].includes(selected.id)){
+  const result=autoFixedSettlement(next,selected.id,f.incomePeriod,f.method,f.date);
+  return result.next;
+ }
+ return next},'تم تأكيد الاستلام والخصم التلقائي للبنود المفعّلة'),'تأكيد الاستلام');const form=$('modalForm');const update=()=>{const selected=S.sources(state).find(x=>x.id===form.elements.sourceId.value);form.elements.incomePeriod.disabled=!selected;form.elements.incomePeriod.required=!!selected;if(selected)form.elements.note.value=selected.name};form.elements.sourceId.addEventListener('change',update);update();}
 
 function duplicateExpense(st,operation){
  return st.transactions.some(t=>t.type==='expense'&&t.walletId===operation.walletId&&t.date===operation.date&&
