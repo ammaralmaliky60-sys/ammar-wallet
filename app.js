@@ -21,7 +21,7 @@ const diff=(a,b)=>Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/8
 const date=(s,long=false)=>new Intl.DateTimeFormat('ar-IQ',{day:'numeric',month:long?'long':'short',...(long?{year:'numeric'}:{})}).format(new Date(s+'T12:00:00'));
 const uid=()=>crypto.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2);
 const currencies={IQD:{label:'دينار عراقي',unit:'د.ع',dec:0},USD:{label:'دولار أمريكي',unit:'$',dec:2},SAR:{label:'ريال سعودي',unit:'ر.س',dec:2},AED:{label:'درهم إماراتي',unit:'د.إ',dec:2},EUR:{label:'يورو',unit:'€',dec:2}};
-let state,storageError='',brokenRaw='',page='workflow',wizard={},wizardStep=0,schedulePeriod=today().slice(0,7);
+let state,storageError='',brokenRaw='',page='dashboard',wizard={},wizardStep=0,schedulePeriod=today().slice(0,7);
 function load(){try{const raw=localStorage.getItem(KEY);if(raw){try{const s=JSON.parse(raw);E.validate(s);return s}catch(e){brokenRaw=raw;storageError='تعذر قراءة البيانات المحفوظة. احتفظ بنسخة منها قبل بدء خطة جديدة.';return E.initial()}}return makeDemo()}catch(e){storageError='الحفظ المحلي غير متاح في هذا المتصفح. صدّر نسخة قبل المغادرة.';return E.initial()}}
 function ccy(){return currencies[state.settings.currency]||currencies.IQD}const unit=()=>ccy().unit;
 function inputMoney(n,dec=ccy().dec){const b=BigInt(n||0),neg=b<0n,a=neg?-b:b,p=10n**BigInt(dec);return (neg?'-':'')+(a/p).toString()+(dec?'.'+(a%p).toString().padStart(dec,'0'):'')}
@@ -117,7 +117,7 @@ try {
     localStorage.setItem(skinKey,'1');
   }
 }catch(e){/* Visual preferences cannot alter financial state when storage fails. */}
-const navs=[['workflow','calendar','خطة الدخل'],['living','wallet','المصروف'],['emergency','shield','الطوارئ'],['reports','chart','التقارير'],['ledger','ledger','سجل الحركات'],['settings','settings','الإعدادات']];
+const navs=[['dashboard','grid','لوحة التحكم'],['salary','wallet','الراتب'],['incentives','income','الحوافز'],['fixed','calendar','الالتزامات الثابتة'],['workflow','check','الدورة الذكية'],['living','wallet','المصروف'],['emergency','shield','الطوارئ'],['reports','chart','التقارير'],['ledger','ledger','سجل الحركات'],['settings','settings','الإعدادات']];
 let settingsTab='account';
 const arabicMonth=period=>new Intl.DateTimeFormat('ar-IQ',{month:'long',year:'numeric'}).format(new Date(period+'-01T12:00:00'));
 const THUKHR_THEME_KEY='thukhr-appearance-v1';
@@ -1754,6 +1754,168 @@ function emergencyCorrection(id){
  },'تأكيد التصحيح');
 }
 
+function dashboardFinancialSummary(st=state,month=today().slice(0,7)){
+ const stats=E.stats(st),projection=monthlyCommitmentProjection(st,month),living=livingBudgetSummary(month,st);
+ const receipts={salary:S.receipts(st,'salary',month),incentives:S.receipts(st,'incentives',month)};
+ const income={salary:receipts.salary.reduce((n,t)=>n+t.amount,0),
+  incentives:receipts.incentives.reduce((n,t)=>n+t.amount,0)};
+ const spent=st.transactions.filter(t=>t.type==='expense'&&t.date?.slice(0,7)===month)
+  .reduce((n,t)=>n+t.amount,0);
+ const livingSpent=st.transactions.filter(t=>t.type==='expense'&&t.date?.slice(0,7)===month&&
+  living.rows.some(r=>r.id===t.walletId)).reduce((n,t)=>n+t.amount,0);
+ const reserved=Object.values(stats.reserved).reduce((n,v)=>n+v,0);
+ const allocated=Object.values(stats.wallets).reduce((n,v)=>n+v,0);
+ const covered=projection.entries.reduce((n,o)=>n+o.covered,0);
+ const isSalaryOnly=wfIncomeMode(month,st)==='salary-only';
+ const monthRows=living.rows.map(row=>{
+  const actual=st.transactions.filter(t=>t.type==='expense'&&t.walletId===row.id&&t.date?.slice(0,7)===month).reduce((n,t)=>n+t.amount,0);
+  return {...row,spent:actual,remaining:Math.max(0,row.amount-actual),pct:row.amount?Math.min(100,Math.round(actual/row.amount*100)):0};
+ });
+ return {month,stats,projection,living,receipts,income,spent,livingSpent,
+  reserved,allocated,covered,monthRows,isSalaryOnly,
+  coveragePct:projection.plannedTotal?Math.min(100,Math.round(covered/projection.plannedTotal*100)):0,
+  livingPct:living.total?Math.min(100,Math.round(livingSpent/living.total*100)):0};
+}
+function firzaMonthSelector(month=wfMonth){
+ return `<div class="fz-month-select"><label for="wfMonth">شهر المتابعة</label><input type="month" id="wfMonth" value="${safe(month)}" max="${today().slice(0,7)}"><small>${safe(arabicMonth(month))}</small></div>`;
+}
+function dashboardPage(){
+ const m=dashboardFinancialSummary(),s=m.stats,p=m.projection;
+ const moneyState=p.grossAfterAll<0?'fz-negative':'fz-positive';
+ const monthlyTx=state.transactions.filter(t=>t.date?.slice(0,7)===m.month).slice().reverse().slice(0,5);
+ const incomeCard=(stage,title,description,ic)=>{
+  const disabled=stage==='incentives'&&m.isSalaryOnly,got=m.income[stage],rec=m.receipts[stage];
+  return `<a class="fz-stream-card ${disabled?'fz-stream-muted':''}" href="#${stage}" aria-label="فتح صفحة ${title}">
+   <div class="fz-stream-top"><span class="fz-stream-icon" aria-hidden="true">${icon(ic)}</span>
+    <span class="fz-status ${disabled?'fz-neutral':rec.length?'fz-success':'fz-warning'}">${disabled?'غير معتمد':rec.length?'تم الاستلام':'بانتظار الاستلام'}</span></div>
+   <h3>${title}</h3><strong>${disabled?'غير مشمول':rec.length?money(got):'لم يسجل'}</strong>
+   <p>${description}</p><span class="fz-card-link">فتح تفاصيل ${title} <span aria-hidden="true">←</span></span>
+   </a>`;
+ };
+ return head('لوحة التحكم','كل الأرقام المهمة في مكان واحد، مع فصل الدخل والالتزامات والمصروفات.',
+  `<a class="btn secondary" href="#workflow">${icon('calendar')}الدورة الذكية</a>${state.demo?'':btn('wf-living-quick','صرف سريع','plus')}`,'fz-dashboard-heading')+
+ `<div class="fz-dashboard">
+ <section class="fz-dashboard-hero" aria-label="الملخص المالي الحالي">
+  <div class="fz-hero-main"><span class="fz-hero-eyebrow">${icon('wallet')} الرصيد الفعلي الحالي</span>
+   <strong class="fz-hero-number">${money(s.total)}</strong>
+   <span class="fz-hero-caption">${safe(arabicMonth(m.month))} · الرصيد المحسوب من سجل الحركات، وليس دخلاً متوقعاً</span></div>
+  <div class="fz-hero-balances"><div><span>البطاقة</span><strong>${money(s.card)}</strong></div>
+   <div><span>النقد</span><strong>${money(s.cash)}</strong></div>
+   <div><span>الحر غير الموزع</span><strong>${money(s.unallocated)}</strong></div></div>
+  <div class="fz-hero-decoration" aria-hidden="true"></div>
+ </section>
+ <section class="fz-dashboard-kpis" aria-label="مؤشرات المال">
+  <article class="fz-kpi"><span>${icon('wallet')} المتاح غير الموزع</span><strong>${money(s.unallocated)}</strong><small>بعد التخصيص والحجز، وليس صافي الخطة</small></article>
+  <article class="fz-kpi"><span>${icon('shield')} محجوز للالتزامات</span><strong>${money(m.reserved)}</strong><small>محجوز فقط، لم يُسدد بعد</small></article>
+  <article class="fz-kpi"><span>${icon('chart')} مصروفات هذا الشهر</span><strong>${money(m.spent)}</strong><small>صرف فعلي مسجل، دون الحجز</small></article>
+  <article class="fz-kpi ${moneyState}"><span>${icon('calendar')} المتبقي التخطيطي</span>
+   <strong>${money(p.grossAfterAll)}</strong><small>الرصيد الحالي − الثوابت − سقف المصروف</small></article>
+ </section>
+ <div class="fz-dashboard-section-head"><div><span class="fz-eyebrow">مراكز مستقلة</span><h2>إدارة الدخل والالتزامات</h2></div><a href="#workflow">مراجعة الدورة الذكية ←</a></div>
+ <section class="fz-dashboard-streams" aria-label="الراتب والحافز والالتزامات">
+  ${incomeCard('salary','الراتب','مبلغ الراتب المستلم وحالة التسوية الخاصة به.','wallet')}
+  ${incomeCard('incentives','الحوافز','تُحسب فقط عند اعتماد نمط الراتب والحوافز.','income')}
+  <a href="#fixed" class="fz-stream-card fz-fixed-stream" aria-label="فتح الالتزامات الثابتة">
+   <div class="fz-stream-top"><span class="fz-stream-icon" aria-hidden="true">${icon('calendar')}</span>
+    <span class="fz-status ${p.uncovered?'fz-warning':'fz-success'}">${p.uncovered?'توجد مبالغ غير مغطاة':'المغطى محسوب'}</span></div>
+   <h3>الالتزامات الثابتة</h3><strong>${money(p.plannedTotal)}</strong>
+   <p>${p.count} بنود لهذا الشهر · المغطى ${money(m.covered)}</p>
+   <span class="fz-card-link">تفاصيل الالتزامات ←</span></a>
+ </section>
+ <div class="fz-dashboard-section-head"><div><span class="fz-eyebrow">التخطيط الشهري</span><h2>الميزانية والإنفاق</h2></div><a href="#living">إدارة سقوف المصروف ←</a></div>
+ <section class="fz-dashboard-budget">
+  <div class="fz-budget-overview">
+   <div class="fz-budget-figures"><div><span>سقف المصروف المحدد</span><strong>${money(m.living.total)}</strong></div>
+    <div><span>المصروف المسجل من الأقسام</span><strong>${money(m.livingSpent)}</strong></div>
+    <div><span>المتبقي من السقوف</span><strong>${money(Math.max(0,m.living.total-m.livingSpent))}</strong></div></div>
+   <div class="fz-track" role="progressbar" aria-valuenow="${m.livingPct}" aria-valuemin="0" aria-valuemax="100" aria-label="نسبة استخدام سقوف المصروف"><i style="width:${m.livingPct}%"></i></div>
+   <p>${m.living.total?`استُخدم ${m.livingPct}% من الميزانية المدخلة. السقف ليس رصيداً مودعاً.`:'لم تُحفظ ميزانية المصروف لهذا الشهر بعد. حدّد الأقسام والمبالغ من صفحة المصروف.'}</p>
+  </div>
+  <div class="fz-budget-breakdown"><strong>توزيع الميزانية على الأقسام</strong>
+   ${m.monthRows.length?m.monthRows.map(row=>`<div class="fz-budget-line">
+    <div class="fz-budget-line-head"><span>${safe(row.label)}</span><b>${money(row.spent)} <small>من ${money(row.amount)}</small></b></div>
+    <div class="fz-track"><i style="width:${row.pct}%"></i></div></div>`).join(''):'<p class="fz-empty-note">لم تُحدد أي مبالغ للأقسام بعد.</p>'}</div>
+ </section>
+ <section class="fz-dashboard-bottom">
+  <article class="fz-glance">
+   <div class="fz-dashboard-section-head"><div><span class="fz-eyebrow">الالتزامات والاحتياجات</span><h2>موقف الشهر</h2></div><a href="#fixed">التفاصيل ←</a></div>
+   <div class="fz-glance-row"><span>الثوابت الشهرية</span><strong>${money(p.plannedTotal)}</strong></div>
+   <div class="fz-glance-row"><span>ميزانية المصروف</span><strong>${money(p.livingTotal)}</strong></div>
+   <div class="fz-glance-row"><span>إجمالي المطلوب للشهر</span><strong>${money(p.combinedTotal)}</strong></div>
+   <div class="fz-glance-row fz-glance-total ${moneyState}"><span>المتبقي التخطيطي</span><strong>${money(p.grossAfterAll)}</strong></div>
+   <small>المتبقي التخطيطي للمقارنة فقط؛ لا يُطرح من الرصيد الفعلي مرة ثانية ولا يُسمح بصرفه كرصيد جديد.</small>
+  </article>
+  <article class="fz-glance">
+   <div class="fz-dashboard-section-head"><div><span class="fz-eyebrow">الحركات المسجلة</span><h2>آخر العمليات</h2></div><a href="#ledger">السجل الكامل ←</a></div>
+   ${monthlyTx.length?monthlyTx.map(t=>{const label=txLabel(t);return `<div class="fz-movement"><span><b>${safe(label[0])}</b><small>${date(t.date,true)} · ${safe(t.note||label[1])}</small></span>
+    <strong class="${t.type==='income'?'fz-inflow':t.type==='expense'||t.type==='pay'?'fz-outflow':''}">${money(t.amount)}</strong></div>`}).join(''):
+    '<p class="fz-empty-note">لا توجد عمليات مسجلة لهذا الشهر بعد.</p>'}
+  </article>
+ </section>
+ </div>`;
+}
+function incomeStagePage(stage){
+ const salary=stage==='salary',label=salary?'الراتب':'الحوافز',month=wfMonth,mode=wfIncomeMode(month);
+ const disabled=!salary&&mode==='salary-only';
+ const receipts=disabled?[]:S.receipts(state,stage,month),received=receipts.reduce((n,t)=>n+t.amount,0);
+ const plan=wfPlan(),steps=disabled?[]:plan?wfAmount(plan,stage):[],amountDue=steps.reduce((n,r)=>n+r.amount,0);
+ const done=wfDone(stage),readonly=month<today().slice(0,7)||!!state.settings.closedMonths?.[month],summary=done?.summary||{};
+ const headerActions=btn('wf-income-mode','نوع الدخل','settings','secondary')+
+  (!disabled&&!receipts.length&&!readonly?btn(salary?'wf-salary-receipt':'wf-incentives-receipt','تأكيد الاستلام','income'):'' );
+ return head(salary?'الراتب الشهري':'الحوافز الشهرية',
+  'مساحة مستقلة لعرض الاستلام والاستقطاعات والحجوزات، دون تكرار الدخل أو تسجيله تلقائياً.',headerActions)+
+ `<div class="fz-finance-page">${firzaMonthSelector()}
+  <div class="fz-stage-summary">
+   <article class="fz-stage-primary"><span>${salary?'الراتب المستلم فعلياً':'الحوافز المستلمة فعلياً'}</span>
+    <strong>${disabled?'غير معتمد لهذا الشهر':receipts.length?money(received):'لم يُسجَّل بعد'}</strong>
+    <small>${disabled?'نمط هذا الشهر راتب فقط. لا تُحتسب حوافز افتراضية.':receipts.length?'المبلغ مأخوذ من قيود الدخل الموثقة':'لا يضاف المبلغ المتوقع إلى الحساب'}</small></article>
+   <article class="fz-stage-minor"><span>البنود المرتبطة بهذه الدفعة</span><strong>${money(amountDue)}</strong><small>قيمة البنود المخطط تسويتها من هذه الدفعة</small></article>
+   <article class="fz-stage-minor"><span>حالة التسوية</span><strong>${done?'معتمدة':'لم تعتمد'}</strong>
+    <small>مستقطع ${money(summary.withheld||0)} · مدفوع ${money(summary.paid||0)} · محجوز ${money(summary.reserved||0)}</small></article>
+  </div>
+  ${disabled?`<section class="fz-income-notice"><h2>الحوافز غير مفعلة</h2><p>أنت اخترت خطة «راتب فقط». تقدر تغيّر نوع الدخل للشهر المفتوح قبل اعتماد التسوية، وما راح ينشئ التطبيق أي دخل وهمي.</p>${btn('wf-income-mode','تغيير نوع الدخل','settings')}</section>`:
+   `<div class="fz-dashboard-section-head"><div><h2>الاستلام والتسوية</h2><p>الإجراءات تعتمد على حالة الدفعة الفعلية.</p></div>
+    <a href="#workflow">فتح الدورة الذكية ←</a></div>${wfStageSummary(stage)}
+    <section class="fz-finance-info">${section('بنود هذه الدفعة','قيم خطة الشهر للراتب والحوافز حسب توزيعها المقرر.')}
+    ${steps.length?steps.map(row=>`<div class="fz-glance-row"><span>${safe(row.label)}</span><strong>${money(row.amount)}</strong></div>`).join(''):
+     '<p class="fz-empty-note">لا توجد بنود محددة لهذه الدفعة بعد.</p>'}
+    <div class="fz-finance-footer"><a class="btn secondary" href="#fixed">إدارة الالتزامات الثابتة</a>
+    <button class="btn secondary" type="button" data-action="wf-config">تعديل مبالغ الشهر</button></div></section>`}
+  ${readonly?'<div class="notice">هذا شهر سابق أو مغلق؛ لا يمكن إعادة تسجيل الدخل أو تغيير تسويته من الواجهة الحالية.</div>':''}
+ </div>`;
+}
+function fixedCommitmentsPage(){
+ const month=wfMonth,projection=monthlyCommitmentProjection(state,month),total=projection.plannedTotal;
+ const covered=projection.entries.reduce((n,x)=>n+x.covered,0),pct=total?Math.min(100,Math.round(covered/total*100)):0;
+ const editable=month===today().slice(0,7)&&!state.settings.closedMonths?.[month]&&!state.demo&&!wfDone('salary')&&!wfDone('incentives');
+ return head('الالتزامات الثابتة','خطة مستقلة للأقساط والمصاريف الثابتة؛ التسجيل والتسوية ليسا خصماً جديداً حتى اعتماد الحركة.',
+  btn('wf-fields-manage','إدارة البنود','settings','secondary')+(editable?btn('wf-config','تحديد مبالغ الشهر','wallet'):'') )+
+ `<div class="fz-finance-page">${firzaMonthSelector()}
+ <section class="fz-fixed-overview">
+  <article class="fz-stage-primary"><span>إجمالي الالتزامات الثابتة لهذا الشهر</span><strong>${money(total)}</strong>
+   <small>${projection.count} بنود مثبتة في خطة الشهر أو مستحقة ضمن سجل الالتزامات</small></article>
+  <div class="fz-fixed-stats"><div><span>مسوّى أو محجوز</span><strong>${money(covered)}</strong></div>
+   <div><span>غير مغطى بعد</span><strong>${money(projection.uncovered)}</strong></div></div>
+  <div class="fz-track" role="progressbar" aria-label="تغطية الالتزامات الثابتة" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+  <p>نسبة التغطية ${pct}%، وتشمل السداد والحجز والاستقطاع الموثق. الحجز ليس سداداً.</p>
+ </section>
+ <section class="fz-finance-info">
+  ${section('بنود الالتزامات الشهرية','يعرض المبلغ الأصلي وما غُطّي منه وما بقي دون احتساب مزدوج.')}
+  ${projection.entries.length?projection.entries.map(item=>`<article class="fz-fixed-item">
+   <div><strong>${safe(item.label)}</strong><span>المبلغ الكامل ${money(item.amount)}</span></div>
+   <div class="fz-fixed-item-amount"><b>${money(item.uncovered)}</b><small>غير مغطى</small></div>
+   <div class="fz-fixed-item-meta">مغطى بالسداد أو الحجز أو الاستقطاع: ${money(item.covered)}</div></article>`).join(''):
+    '<p class="fz-empty-note">ماكو بنود ثابتة مسجلة لهذا الشهر. أضف البنود وحدد قيمها.</p>'}
+ </section>
+ <div class="fz-fixed-actions">
+  <a class="btn secondary" href="#salary">الراتب</a>
+  ${wfIncomeMode(month)==='salary-only'?'':`<a class="btn secondary" href="#incentives">الحوافز</a>`}
+  <a class="btn secondary" href="#workflow">الدورة الذكية</a>
+  <a class="btn secondary" href="#obligations">الالتزامات العامة</a>
+ </div>
+ <div class="notice">الالتزامات الثابتة منفصلة عن ميزانية المصروف. لا يخصم التطبيق مبالغ الخطة من البطاقة أو النقد إلا عند تسجيل دفع فعلي، ولا يكرر خصم الاستقطاع قبل الإيداع.</div>
+ </div>`;
+}
 function overview(){const s=currentStats(),sum=summary(),days=left(),elapsed=state.cycle.days-days,end=addDays(state.cycle.start,state.cycle.days-1);return head(overviewIdentity()+'ملخص أموالك',state.settings.name?`مرحباً ${safe(state.settings.name)}، هذه نظرتك المالية اليوم`:'رصيدك ومصروفاتك في مكان واحد.',btn('new-cycle','دورة جديدة','calendar','secondary')+btn('expense','إضافة مصروف'),'neo-overview-heading')+`<div class="dashboard-top"><section class="hero"><div class="hero-badge">${state.demo?'خطة توضيحية':'أموالك تحت السيطرة'}</div><div><div class="hero-label">${icon('wallet')}إجمالي رصيدك الحالي</div><div class="hero-total">${money(s.total)}</div><div class="hero-sub">${icon('shield')}يشمل المحافظ والالتزامات المحجوزة والمبلغ غير الموزع</div></div><div class="hero-bottom"><div><span>رصيد البطاقة</span><b>${money(s.card)}</b></div><div><span>النقد المتوفر</span><b>${money(s.cash)}</b></div><div><span>متاح للتوزيع</span><b>${money(s.unallocated)}</b></div></div></section><div class="neo-snapshot" aria-label="ملخص المصروف والمتاح"><article class="neo-snapshot-item expense"><span class="neo-snapshot-label">${icon('chart')} المصروف الفعلي</span><strong>${money(sum.expenses+sum.paid)}</strong></article><article class="neo-snapshot-item available"><span class="neo-snapshot-label">${icon('saving')} المتاح الآمن اليوم</span><strong>${money(cap())}</strong></article></div><section class="cycle-card"><div class="card-top"><span class="eyebrow">دورة دخلك الحالية</span><span class="chip">${days?'دورة نشطة':'اكتملت الدورة'}</span></div><h2>كل يوم بخطة أوضح</h2><div class="cycle-range">${date(state.cycle.start)} — ${date(end,true)}</div><div class="cycle-progress"><div class="progress"><i style="width:${Math.min(100,elapsed/state.cycle.days*100)}%"></i></div><div class="progress-meta"><span>مضى ${elapsed} من ${state.cycle.days} يوماً</span><span>${Math.round(elapsed/state.cycle.days*100)}%</span></div></div><div class="cycle-footer"><span>${icon('clock')} <b class="num">${days}</b> يوماً متبقياً</span><button class="text-btn" data-action="new-cycle">إدارة الدورة ${icon('chevron')}</button></div></section></div>${neoOverviewBudget()}${schedulePanel(true)}<div class="stat-grid">${stat(state.migration?'الدخل والرصيد الافتتاحي':'الدخل المستلم',sum.income,'income','من بداية الدورة الحالية')}${stat('الالتزامات المتبقية',Object.values(s.reserved).reduce((a,n)=>a+n,0),'calendar',`${state.obligations.filter(o=>(s.reserved[o.id]||0)>0).length} التزامات محجوزة`,'gold')}${stat('المصروف الفعلي',sum.expenses+sum.paid,'chart','يشمل المصروفات والالتزامات المدفوعة','blue')}${stat('المتاح الآمن اليوم',cap(),'saving','يستثني الادخار والطوارئ والالتزامات','purple')}</div>${section('محافظك، لكل غرض مساحة','قسّم أموالك بوعي، وأنفق بطمأنينة.',`<a class="text-btn" href="#plan">إدارة المحافظ ${icon('arrow')}</a>`)}<div class="wallet-grid">${walletCards()}</div><div class="bottom-grid"><section class="panel">${section('آخر الحركات','خطواتك المالية، أولاً بأول',`<a class="text-btn" href="#ledger">عرض السجل ${icon('arrow')}</a>`)}${ledgerRows([...state.transactions].reverse().slice(0,4),true)}</section><section class="panel">${section('كيف تتوزّع أموالك؟','توزيع الرصيد الحالي بحسب الغرض')}${donut()}</section></div>`}
 function incomePage(){const s=currentStats(),txs=[...state.transactions].reverse().filter(t=>t.type==='income');return head('الدخل والاستلام','ابدأ بما استلمته فعلياً، ثم امنح كل مبلغ غرضاً.',btn('income-sources','مواعيد الدخل','calendar','secondary')+btn('income','تسجيل دخل'))+schedulePanel()+`<div class="flow"><div class="flow-step"><span>01 / استلم</span><h3>سجّل دخلك الفعلي</h3><p>راتب، عمل حر، أو دخل إضافي. لا يُحتسب الدخل قبل استلامه.</p></div><div class="flow-step"><span>02 / احجز</span><h3>قدّم التزاماتك</h3><p>سجّل الالتزامات وحدد أنت متى وكم تحجز لها دون حجز تلقائي.</p></div><div class="flow-step"><span>03 / وزّع</span><h3>خطّط لما تبقّى</h3><p>وزّع الباقي على محافظك واحتياطي الطوارئ وأهدافك.</p></div></div><div class="stat-grid">${stat('إجمالي الدخل المسجل',s.income,'income','كل الدورات')}${stat('متاح للتوزيع',s.unallocated,'wallet','بعد الحجز والتخصيص','blue')}${stat('رصيد البطاقة',s.card,'card','الرصيد المحسوب من السجل','gold')}${stat('رصيد النقد',s.cash,'cash','النقد المتوفر فعلياً','purple')}</div><section class="panel">${section('سجل الدخل','يمكنك إدخال عدة مصادر دخل في الدورة نفسها.')}${ledgerRows(txs)}</section><div class="notice">لديك أموال سابقة؟ سجّلها مرة واحدة كـ «رصيد افتتاحي» من زر تسجيل الدخل. السحب من البطاقة حركة بين حساباتك، ويسجّل من «حركة نقد وبطاقة» في السجل.</div>`}
 function obligationsPage(){const s=currentStats(),activeObligations=state.obligations.filter(o=>!o.archived),archivedObligations=state.obligations.filter(o=>o.archived),total=activeObligations.reduce((a,o)=>a+o.amount,0),res=activeObligations.reduce((a,o)=>a+(s.reserved[o.id]||0),0),paid=activeObligations.reduce((a,o)=>a+(s.paid[o.id]||0),0);return head('الالتزامات الثابتة','تسجيل الالتزام لا يحجز أي مبلغ، إلا إذا وافقت أنت على الحجز لاحقاً.',btn('obligation','إضافة التزام'))+`<div class="stat-grid">${stat('إجمالي الالتزامات النشطة',total,'calendar','المبالغ المستحقة غير المؤرشفة')}${stat('محجوز ولم يُدفع',res,'shield','يبقى ضمن الرصيد حتى السداد','gold')}${stat('تم سداده',paid,'check','مدفوعات الالتزامات المسجلة','blue')}${stat('غير مغطّى بعد',Math.max(0,total-res-paid),'clock','يحتاج إلى حجز من المتاح','purple')}</div><div class="obligation-list">${activeObligations.length?activeObligations.map(o=>{const p=s.paid[o.id]||0,r=s.reserved[o.id]||0,missing=o.amount-r-p,isPaid=p===o.amount,late=o.due<today()&&!isPaid;return `<article class="ob-card"><div class="card-top"><h3>${safe(o.name)}</h3><span class="chip ${late?'red':missing?'amber':''}">${isPaid?'مدفوع بالكامل':late?'متأخر':missing?'يحتاج حجزاً':'محجوز'}</span></div><div class="ob-detail"><span>الاستحقاق ${date(o.due,true)}${o.recurring?' · متكرر':''}</span><b>${money(o.amount)}</b></div><div class="progress"><i style="width:${(p+r)/o.amount*100}%"></i></div><div class="progress-meta"><span>مدفوع ${fmt(p)} · محجوز ${fmt(r)}</span><span>غير مغطى ${fmt(missing)}</span></div><div class="ob-actions">${r>0?`<button class="btn small" data-action="pay" data-id="${safe(o.id)}">${icon('check')}سداد الالتزام</button>`:''}${missing>0?`<button class="btn small soft" data-action="reserve" data-id="${safe(o.id)}">حجز مبلغ</button>`:''}${r>0?`<button class="btn small secondary" data-action="unreserve" data-id="${safe(o.id)}">إلغاء حجز</button>`:''}${o.recurring?`<button class="text-btn" data-action="renew" data-id="${safe(o.id)}">تجديد الاستحقاق</button>`:''}${state.transactions.some(t=>t.obligationId===o.id)?`<button class="btn small secondary" data-action="archive-obligation" data-id="${safe(o.id)}"${r>0?' title="ألغِ الحجز أولاً"':''}>أرشفة</button>`:`<button class="btn small danger" data-action="delete-obligation" data-id="${safe(o.id)}">${icon('trash')}حذف الالتزام</button>`}</div></article>`}).join(''):empty('مساحة خالية من الالتزامات','أضف الإيجار أو الأقساط أو الخدمات وحدد تاريخ الاستحقاق.')}</div>${archivedObligations.length?`<section class="panel"><div class="section-heading"><div><h2>الالتزامات المؤرشفة (${archivedObligations.length})</h2><p>محفوظة مع حركاتها المالية ولا تدخل في مجموع الالتزامات النشطة.</p></div></div><div class="obligation-list">${archivedObligations.map(o=>`<article class="ob-card"><div class="card-top"><h3>${safe(o.name)}</h3><span class="chip">مؤرشف</span></div><div class="ob-detail"><span>الاستحقاق ${date(o.due,true)}</span><b>${money(o.amount)}</b></div><div class="progress-meta"><span>مدفوع ${fmt(s.paid[o.id]||0)}</span><span>محجوز ${fmt(s.reserved[o.id]||0)}</span></div><div class="ob-actions"><button class="btn small secondary" data-action="restore-obligation" data-id="${safe(o.id)}">إعادة للقائمة النشطة</button></div></article>`).join('')}</div></section>`:''}<div class="notice">تسجيل أي التزام لا يخصم شيئاً من البطاقة أو النقد أو المحافظ أو المتاح للتوزيع. يمكنك الحجز فقط بعد اختيار المبلغ والموافقة عليه. الحجز ينقل من «المتاح للتوزيع» إلى الالتزام، والسداد الفعلي وحده يخفض رصيد البطاقة أو النقد.</div>`}
@@ -1793,7 +1955,7 @@ function settingsPage(){const html= head('الإعدادات','الحساب وا
   <p class="help-text">يُحفظ اختيار المظهر على هذا الجهاز فقط. الألوان المالية والأرصدة لا تتغير.</p></section>`;
  return tagged.replace('<div class="two-col">',tabs+'<div class="two-col">')+appearance+(settingsTab==='account'?profilesPanel():'')+(settingsTab==='backup'?localSnapshotsPanel():'');
 }
-function render(){page=location.hash.slice(1)||page;if(!navs.some(n=>n[0]===page))page='workflow';$('nav').innerHTML=navs.map(([p,ic,label])=>`<a class="nav-link ${page===p?'active':''}" href="#${p}" data-page="${p}">${icon(ic)}<span>${label}</span>${page===p?'<i class="nav-dot"></i>':''}</a>`).join('');$('breadcrumb').textContent=navs.find(n=>n[0]===page)[2];let banner=state.demo?`<div class="demo-banner"><span><b>أنت تتصفح خطة توضيحية</b> · الأرقام مثال للتجربة، ابدأ بخطة تحمل أرقامك.</span><button class="text-btn" data-action="setup">ابدأ خطتك ${icon('arrow')}</button></div>`:'';if(storageError)banner+=`<div class="notice warn">${safe(storageError)} ${brokenRaw?'<button class="text-btn" data-action="rescue">تنزيل البيانات الأصلية</button>':''}</div>`;const renders={workflow:workflowPage,living:livingPage,emergency:emergencyPage,reports:statementPage,overview,income:incomePage,obligations:obligationsPage,plan:planPage,ledger:ledgerPage,settings:settingsPage};const mobile='';$('main').innerHTML=mobile+banner+renders[page]();paintIcons();window.ThukhrFamily?.sync();document.querySelectorAll('[data-neo-page]').forEach(a=>{const active=a.dataset.neoPage===page;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});const more=$('thukhrMoreButton'),moreMenu=$('thukhrMoreMenu');
+function render(){page=location.hash.slice(1)||page;if(!navs.some(n=>n[0]===page))page='dashboard';$('nav').innerHTML=navs.map(([p,ic,label])=>`<a class="nav-link ${page===p?'active':''}" href="#${p}" data-page="${p}">${icon(ic)}<span>${label}</span>${page===p?'<i class="nav-dot"></i>':''}</a>`).join('');$('breadcrumb').textContent=navs.find(n=>n[0]===page)[2];let banner=state.demo?`<div class="demo-banner"><span><b>أنت تتصفح خطة توضيحية</b> · الأرقام مثال للتجربة، ابدأ بخطة تحمل أرقامك.</span><button class="text-btn" data-action="setup">ابدأ خطتك ${icon('arrow')}</button></div>`:'';if(storageError)banner+=`<div class="notice warn">${safe(storageError)} ${brokenRaw?'<button class="text-btn" data-action="rescue">تنزيل البيانات الأصلية</button>':''}</div>`;const renders={dashboard:dashboardPage,salary:()=>incomeStagePage('salary'),incentives:()=>incomeStagePage('incentives'),fixed:fixedCommitmentsPage,workflow:workflowPage,living:livingPage,emergency:emergencyPage,reports:statementPage,overview,income:incomePage,obligations:obligationsPage,plan:planPage,ledger:ledgerPage,settings:settingsPage};const mobile='';$('main').innerHTML=mobile+banner+renders[page]();paintIcons();window.ThukhrFamily?.sync();document.querySelectorAll('[data-neo-page]').forEach(a=>{const active=a.dataset.neoPage===page;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});const more=$('thukhrMoreButton'),moreMenu=$('thukhrMoreMenu');
  if(more){const active=['ledger','emergency','settings'].includes(page);more.classList.toggle('active',active);
  more.setAttribute('aria-expanded','false');more.setAttribute('aria-current',active?'page':'false');}
  if(moreMenu)moreMenu.hidden=true;bindPage();}
