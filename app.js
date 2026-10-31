@@ -583,6 +583,36 @@ function smartIncome(d){
  },'التالي · الالتزامات');
 }
 
+function obligationStatusOptions(stage='salary'){
+ return [
+  ['reserve','راح أدفعه لاحقاً'],
+  ['withheld',stage==='incentives'?'انخصم من حوافزي':'انخصم من راتبي'],
+  ['pay','دفعته فعلياً']
+ ];
+}
+function obligationStatusExplanation(mode){
+ if(mode==='withheld')return 'انخصم قبل الإيداع: نوثّق التسوية فقط، وما نخصمه مرة ثانية من البطاقة أو النقد.';
+ if(mode==='pay')return 'تم الدفع بعد الاستلام: ينقص رصيد البطاقة أو النقد حسب حساب الدفع المحدد.';
+ return 'بعده ما اندفع: نحجزه من المتاح للصرف، ويبقى رصيد البطاقة والنقد دون تغيير.';
+}
+function obligationStatusSelect(name,value,stage){
+ return `<div class="thukhr-status-choice">
+  ${select('حالة الالتزام',name,obligationStatusOptions(stage),value)}
+  <p class="thukhr-status-explain" data-mode="${safe(value)}" role="status" aria-live="polite">${safe(obligationStatusExplanation(value))}</p>
+ </div>`;
+}
+function wireObligationStatusExplanations(){
+ const root=$('modalContent');
+ if(!root)return;
+ for(const node of root.querySelectorAll('.thukhr-status-choice')){
+  const selectNode=node.querySelector('select'),hint=node.querySelector('.thukhr-status-explain');
+  if(!selectNode||!hint)continue;
+  const refresh=()=>{hint.textContent=obligationStatusExplanation(selectNode.value);hint.dataset.mode=selectNode.value;};
+  selectNode.addEventListener('change',refresh);
+  refresh();
+ }
+}
+
 function smartAllocate(d){
  const all=monthlyAllFields(),visible=monthlyFields(),locked=Boolean(wfDone('incentives')||wfDone('salary'));
  const planRows=visible.map(o=>locked?`<div class="smart-row"><b>${safe(o.label)}</b><b>${money(d.plan[o.key]||0)}</b></div>`:
@@ -592,13 +622,13 @@ function smartAllocate(d){
  const earlier=Object.entries(wfData().completed||{}).filter(([m])=>m<d.month).sort((a,b)=>b[0].localeCompare(a[0]));
  const previous=earlier.find(([,st])=>st?.[d.stage]?.decisions)?.[1]?.[d.stage]?.decisions||{};
  const settlement=potential.map(o=>`<div class="smart-row"><div><b>${safe(o.label)}</b><small>المبلغ يُحسب من خطة الشهر عند المراجعة النهائية</small></div>
- ${select('حالة الالتزام','mode-'+o.key,[['reserve','محجوز لاحقاً'],['withheld','مستقطع قبل الإيداع'],['pay','مدفوع فعلياً']],d.choices[o.key]||previous[o.key]||'reserve')}</div>`).join('');
+ ${obligationStatusSelect('mode-'+o.key,d.choices[o.key]||previous[o.key]||'reserve',d.stage)}</div>`).join('');
  const budget=livingCategories().map(w=>moneyField(w.label,'living-'+w.id,inputMoney(d.targets[w.id]||0),'required')).join('');
  modal('الدورة الذكية · 2 من 3','يمكن تغيير المقترحات؛ كل مبلغ يبقى تحت مراجعتك.',
  `<div class="smart-steps"><b>1 · الدخل</b><b>2 · التسوية والميزانية</b><span>3 · المراجعة</span></div>
  <h3>الالتزامات الشهرية</h3><div class="smart-grid">${planRows||'<p class="wf-help">لا توجد بنود حالياً؛ لا تُنشأ حجوزات.</p>'}</div>
  <h3>حالة الاستقطاعات</h3><p class="wf-help">اقتراح الشهر السابق لا يعني السداد. راجع حالة كل بند قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
- ${select('طريقة دفع البنود المدفوعة فعلياً','payMethod',methodOptions,d.payMethod)}
+ ${select('دفعت فعلياً من','payMethod',methodOptions,d.payMethod)}
  <h3>ميزانية المعيشة</h3><p class="wf-help">مقترحة من آخر شهر؛ غيّرها كما تريد، والصفر يعني عدم إضافة تخصيص.</p>
  <div class="smart-grid">${budget||'<p class="wf-help">لا توجد أقسام معيشة.</p>'}</div>`,
  f=>{
@@ -613,6 +643,7 @@ function smartAllocate(d){
   }
   smartReview(d);
  },'التالي · عرض النتيجة');
+ wireObligationStatusExplanations();
  $('modalForm').insertAdjacentHTML('beforeend','<button type="button" class="btn secondary smart-back" id="smartBack">السابق · الدخل</button>');
  $('smartBack').onclick=()=>smartIncome(d);
 }
@@ -746,15 +777,12 @@ function wfApply(stage){
  const ops=wfAmount(plan,stage).filter(x=>x.amount>0);
  const rows=ops.map(o=>`<div class="wf-step thukhr-settlement-row">
   <div><strong>${safe(o.label)}</strong><b>${money(o.amount)}</b></div>
-  ${select('حالة الاستقطاع','settle-'+o.key,[
-    ['reserve','محجوز للسداد لاحقاً'],
-    ['withheld','مستقطع قبل وصول المبلغ الصافي'],
-    ['pay','مدفوع فعلياً بعد الاستلام']], 'reserve')}
+  ${obligationStatusSelect('settle-'+o.key,'reserve',stage)}
   </div>`).join('');
  modal('تسوية استقطاعات '+(stage==='salary'?'الراتب':'الحوافز'),
   'حدّد حالة كل بند على حدة. لا يُخصم الاستقطاع السابق للإيداع من الرصيد الصافي.',
   `<div class="wf-steps">${rows||'<div class="notice">لا توجد استقطاعات لهذه الدفعة.</div>'}</div>
-  ${select('طريقة دفع البنود المدفوعة فعلياً','method',methodOptions)}
+  ${select('دفعت فعلياً من','method',methodOptions)}
   <div class="notice">المستقطع من المصدر يُوثّق كتسوية غير نقدية؛ المدفوع فعلياً يخفض البطاقة أو النقد؛ والمحجوز يقلل المتاح فقط.</div>
   <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أراجع حالات كل بند وأوافق على تنفيذها مرة واحدة</label></div>`,
   f=>{
@@ -792,6 +820,7 @@ function wfApply(stage){
     return next;
    },'تمت تسوية الاستقطاعات وتوثيق حالة كل بند');
   },'اعتماد التسوية');
+ wireObligationStatusExplanations();
 }
 
 const WF_LIVING=[
