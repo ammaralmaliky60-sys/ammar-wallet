@@ -181,14 +181,158 @@ function neoOverviewBudget(){
 }
 let wfMonth=today().slice(0,7);
 const WF_FIELDS=[
- {key:'hyper',label:'الهايبر ماركت'},
- {key:'housing',label:'الإسكان'},
- {key:'workLoan',label:'سلفة الدوام (كامل القسط الشهري)'},
- {key:'internet',label:'الإنترنت'},
- {key:'generator',label:'المولّدة'},
- {key:'bankLoan',label:'سلفة المصرف'}
+ {key:'hyper',label:'الهايبر ماركت',stage:'incentives',reserveOnly:false},
+ {key:'housing',label:'الإسكان',stage:'incentives',reserveOnly:false},
+ {key:'workLoan',label:'سلفة الدوام (كامل القسط الشهري)',stage:'split',reserveOnly:false},
+ {key:'internet',label:'الإنترنت',stage:'incentives',reserveOnly:true},
+ {key:'generator',label:'المولّدة',stage:'salary',reserveOnly:true},
+ {key:'bankLoan',label:'سلفة المصرف',stage:'salary',reserveOnly:true}
 ];
-const wfEmpty=()=>Object.fromEntries(WF_FIELDS.map(o=>[o.key,0]));
+function monthlyFields(st=state){return Array.isArray(st.settings.wfFields)?st.settings.wfFields:WF_FIELDS;}
+function monthlyHiddenFields(st=state){return Array.isArray(st.settings.wfHiddenFields)?st.settings.wfHiddenFields:[];}
+function monthlyAllFields(st=state){return [...monthlyFields(st),...monthlyHiddenFields(st)];}
+function monthlyFieldUsed(st,key){
+ const w=wfData(st);
+ return Object.values(w.plans||{}).some(p=>(p[key]||0)>0)||
+ st.obligations.some(o=>o.id.startsWith('wf_'+key+'_'))||
+ st.history.some(h=>JSON.stringify(h).includes('"wf_'+key+'_'));
+}
+function monthlyFieldStageLabel(f){
+ return f.stage==='split'?'نصف من الحوافز ونصف من الراتب':f.stage==='incentives'?'الحوافز':'الراتب';
+}
+function monthlyFieldsManage(){
+ const active=monthlyFields(),hidden=monthlyHiddenFields();
+ const rows=active.map(o=>{
+  const used=monthlyFieldUsed(state,o.key);
+  return `<div class="wf-category-row"><div class="wf-category-info">
+    <strong>${safe(o.label)}</strong>
+    <small>${monthlyFieldStageLabel(o)}${o.reserveOnly&&o.stage==='incentives'?' · حجز فقط':''}
+    ${used?' · مرتبط بمبالغ سابقة':''}</small></div>
+    <button type="button" class="btn small secondary" data-action="wf-field-edit" data-id="${safe(o.key)}">تعديل</button>
+    <button type="button" class="btn small ${used?'secondary':'danger'}" data-action="${used?'wf-field-hide':'wf-field-delete'}" data-id="${safe(o.key)}">${used?'إخفاء':'حذف'}</button>
+   </div>`;
+ }).join('');
+ const hrows=hidden.map(o=>`<div class="wf-category-row wf-category-hidden-row">
+   <div class="wf-category-info"><strong>${safe(o.label)}</strong>
+   <small>${monthlyFieldStageLabel(o)} · مخفي، وتبقى مبالغه القديمة محفوظة</small></div>
+   <button type="button" class="btn small secondary" data-action="wf-field-restore" data-id="${safe(o.key)}">إظهار</button></div>`).join('');
+ modal('إدارة بنود مبالغ الشهر','حدد البنود بنفسك. تگدر تحذف حتى آخر بند غير مستخدم، أو تخفي البنود المرتبطة بمبالغ سابقة.',
+ `<div class="wf-category-list">${rows||'<div class="wf-category-empty"><strong>لا توجد بنود شهرية</strong><p>أضف أول بند وحدّد هل يُحسب من الحوافز، أو الراتب، أو بالنصف بينهما.</p></div>'}</div>
+  <button type="button" class="btn wf-category-add" data-action="wf-field-add">إضافة بند جديد</button>
+  ${active.length?'<button type="button" class="btn small danger wf-category-clear" data-action="wf-fields-clear">إفراغ بنود الشهر</button>':''}
+  ${hidden.length?`<section class="wf-category-hidden-section"><h3>بنود مخفية (${hidden.length})</h3>
+    <div class="wf-category-list">${hrows}</div></section>`:''}
+  <p class="wf-help">الإخفاء لا يلغّي أي مبلغ سبق اعتماده أو حجْزه. والمبالغ لا تُحجز أو تُسدّد بمجرد تحديدها.</p>`);
+}
+function monthlyFieldEdit(key=''){
+ const old=key?monthlyFields().find(x=>x.key===key):null;
+ if(key&&!old)throw Error('هذا البند غير موجود.');
+ if(!old&&monthlyFields().length>=16)throw Error('الحد الأقصى 16 بنداً ظاهراً.');
+ const isUsed=!!(old&&monthlyFieldUsed(state,key));
+ const stageOptions=[['incentives','من الحوافز'],['salary','من الراتب'],['split','نصف من الحوافز ونصف من الراتب']];
+ modal(old?'تعديل بند الشهر':'إضافة بند للشهر',
+ 'يتكرر هذا البند في الأشهر القادمة، وتحدد مبلغ كل شهر لوحده.',
+ `<div class="form-grid">
+   ${field('اسم البند','fieldName','text',old?.label||'','required maxlength="45" placeholder="مثلاً إيجار أو قسط سيارة"')}
+   ${isUsed?`<div class="field"><label>مرحلة البند</label><p class="wf-help">${monthlyFieldStageLabel(old)} (ثابتة لأن للبند مبالغ سابقة)</p></div>`:
+     select('وقت اقتطاع المبلغ','fieldStage',stageOptions,old?.stage||'incentives')}
+   ${isUsed?'':select('آلية الحوافز','fieldReserve',[['normal','يمكن الحجز أو السداد أو الاستقطاع قبل الإيداع'],['reserve','حجز فقط'] ],old?.reserveOnly?'reserve':'normal')}
+  </div>
+  <p class="wf-help">إذا اخترت «النصفين»، أدخل المبلغ الشهري كاملاً، ويقسمه البرنامج بين الدفعتين تلقائياً.</p>`,
+ f=>{
+  const name=String(f.fieldName||'').trim().replace(/\s+/g,' ');
+  if(name.length<2||name.length>45||/[<>]/.test(name))throw Error('اسم البند يجب أن يكون من حرفين إلى 45 حرفاً.');
+  if(monthlyAllFields().some(o=>o.key!==key&&o.label.toLowerCase()===name.toLowerCase()))
+   throw Error('يوجد بند بنفس الاسم، بما في ذلك البنود المخفية.');
+  if(!isUsed&&!['salary','incentives','split'].includes(f.fieldStage))
+   throw Error('اختر دفعة صحيحة.');
+  if(!isUsed&&!['normal','reserve'].includes(f.fieldReserve))throw Error('اختر آلية الحوافز.');
+  act(n=>{
+   const items=monthlyFields(n).map(o=>({...o}));
+   if(old){
+    const cur=items.find(o=>o.key===key);
+    if(!cur)throw Error('البند غير موجود.');
+    cur.label=name;
+    if(!monthlyFieldUsed(n,key)){
+      cur.stage=f.fieldStage;cur.reserveOnly=f.fieldStage==='salary'||f.fieldReserve==='reserve';
+    }
+   }else{
+    if(items.length>=16)throw Error('وصلت الحد الأقصى للبنود.');
+    const id='item_'+uid().replace(/[^A-Za-z0-9_-]/g,'').slice(0,30);
+    if(monthlyAllFields(n).some(o=>o.key===id))throw Error('تعذر توليد معرف البند. حاول مرة أخرى.');
+    items.push({key:id,label:name,stage:f.fieldStage,
+     reserveOnly:f.fieldStage==='salary'||f.fieldReserve==='reserve'});
+   }
+   n.settings.wfFields=items;
+   return n;
+  },old?'تم تعديل البند الشهري':'تمت إضافة البند. حدد مبلغه من «تحديد مبالغ الشهر»');
+ },old?'حفظ التعديل':'إضافة البند');
+}
+function monthlyFieldHide(key){
+ const item=monthlyFields().find(o=>o.key===key);
+ if(!item)throw Error('البند غير موجود.');
+ confirmModal('إخفاء البند؟','سيختفي «'+item.label+'» من بنود الأشهر الجديدة، لكن أي مبالغ محددة للأشهر السابقة أو الحالية تبقى محفوظة حتى تُحسم.',
+ ()=>{
+  act(n=>{
+   const item=monthlyFields(n).find(o=>o.key===key);if(!item)throw Error('البند غير موجود.');
+   n.settings.wfFields=monthlyFields(n).filter(o=>o.key!==key).map(o=>({...o}));
+   n.settings.wfHiddenFields=[...monthlyHiddenFields(n).map(o=>({...o})),{...item}];
+   return n;
+  },'تم إخفاء البند مع الحفاظ على مبالغه السابقة');
+ },'إخفاء البند');
+}
+function monthlyFieldRestore(key){
+ const item=monthlyHiddenFields().find(o=>o.key===key);
+ if(!item)throw Error('البند غير موجود ضمن البنود المخفية.');
+ if(monthlyFields().length>=16)throw Error('لا يمكن إظهار أكثر من 16 بنداً.');
+ if(monthlyFields().some(o=>o.label.toLowerCase()===item.label.toLowerCase()))
+  throw Error('يوجد بند ظاهر بنفس الاسم. غيّر اسمه أولاً.');
+ act(n=>{
+  const h=monthlyHiddenFields(n).find(o=>o.key===key);if(!h)throw Error('البند غير موجود.');
+  n.settings.wfHiddenFields=monthlyHiddenFields(n).filter(o=>o.key!==key).map(o=>({...o}));
+  n.settings.wfFields=[...monthlyFields(n).map(o=>({...o})),{...h}];
+  return n;
+ },'تم إظهار البند مرة أخرى');
+}
+function monthlyFieldDelete(key){
+ const item=monthlyFields().find(o=>o.key===key);
+ if(!item)throw Error('البند غير موجود.');
+ if(monthlyFieldUsed(state,key))throw Error('البند مرتبط بمبالغ أو حركات سابقة؛ استخدم «إخفاء».');
+ confirmModal('حذف بند غير مستخدم؟','سيُحذف «'+item.label+'» من تحديد مبالغ الشهر، حتى لو كان آخر بند متبقٍ.',
+ ()=>{
+  act(n=>{
+   if(monthlyFieldUsed(n,key))throw Error('البند مستخدم الآن، أخفِه بدلاً من حذفه.');
+   n.settings.wfFields=monthlyFields(n).filter(o=>o.key!==key).map(o=>({...o}));
+   const w=wfData(n);
+   const plans=Object.fromEntries(Object.entries(w.plans||{}).map(([m,p])=>{
+    const copy={...p};delete copy[key];return [m,copy];
+   }));
+   n.settings.twoStageWorkflow={...w,plans};
+   return n;
+  },'تم حذف البند غير المستخدم');
+ },'نعم، احذف البند');
+}
+function monthlyFieldsClear(){
+ const all=monthlyFields();if(!all.length)throw Error('قائمة مبالغ الشهر فارغة أصلاً.');
+ const used=all.filter(o=>monthlyFieldUsed(state,o.key)).length;
+ confirmModal('إفراغ بنود الشهر؟',
+  'ستصير القائمة فارغة: البنود المرتبطة بمبالغ سابقة ('+used+') راح تنخفي بدون إلغاء حجز أو دين أو مبلغ محدد، والباقي يُحذف. أرصدة حسابك ما تتغير.',
+ ()=>{
+  act(n=>{
+   const list=monthlyFields(n),keep=[],remove=new Set();
+   for(const o of list){if(monthlyFieldUsed(n,o.key))keep.push({...o});else remove.add(o.key);}
+   n.settings.wfFields=[];
+   n.settings.wfHiddenFields=[...monthlyHiddenFields(n).map(o=>({...o})),...keep];
+   const wf=wfData(n);
+   const plans=Object.fromEntries(Object.entries(wf.plans||{}).map(([m,p])=>{
+    const copy={...p};for(const k of remove)delete copy[k];return[m,copy];
+   }));
+   n.settings.twoStageWorkflow={...wf,plans};
+   return n;
+  },'صارت قائمة البنود فارغة. أضف البنود التي تحتاجها.');
+ },'نعم، أفرغ البنود');
+}
+const wfEmpty=()=>Object.fromEntries(monthlyFields().map(o=>[o.key,0]));
 function wfData(st=state){const d=st.settings.twoStageWorkflow;return d&&typeof d==='object'?d:{plans:{},completed:{}}}
 function wfPlan(month=wfMonth){return wfData().plans?.[month]||null}
 function wfDone(stage,month=wfMonth){return wfData().completed?.[month]?.[stage]||null}
@@ -214,31 +358,46 @@ function wfActivate(){
  },'أوافق وأبدأ بدون رصيد');
 }
 function wfConfig(){
- if(state.demo)throw Error('اضغط «بدء خطتي الفعلية» أولاً.');
- if(wfDone('incentives')||wfDone('salary'))throw Error('لا يمكن تعديل مبالغ شهر بدأ تسجيل استقطاعاته. انتقل إلى شهر جديد أو راجع السجل.');
- const p=wfPlan()||wfEmpty();
- const fields=WF_FIELDS.map(o=>moneyField(o.label,o.key,inputMoney(p[o.key]||0),
-  'required',ccy().dec)).join('');
- modal('مبالغ دورة '+wfMonth,'أدخل قيمة كل بند، وسلفة الدوام كاملة حتى نقسمها تلقائياً إلى نصفين.',
-  `<div class="wf-form-grid">${fields}</div>
-   <div class="notice">الصفر يعني عدم وجود هذا الالتزام هذا الشهر. حفظ الأرقام لا يحجز ولا يسدّد أي مبلغ. كل بند يُنفّذ لاحقاً فقط بعد استلام الدفعة وموافقتك.</div>`,
-  f=>act(n=>{
-   const values={};
-   for(const o of WF_FIELDS)values[o.key]=amount(f[o.key],true);
-   const w=wfData(n);
-   n.settings.twoStageWorkflow={plans:{...w.plans,[wfMonth]:values},completed:{...w.completed}};
-   return n;
-  },'تم حفظ مبالغ الدورة دون خصم أو حجز'), 'حفظ المبالغ فقط');
+ if(state.demo)throw Error('ابدأ خطتك الفعلية أولاً.');
+ if(wfDone('incentives')||wfDone('salary'))throw Error('لا يمكن تعديل مبالغ شهر تم تنفيذ إحدى دفعاته. البنود قابلة للإدارة للمستقبل دون تغيير الحركات الماضية.');
+ const selected=monthlyFields();if(!selected.length)throw Error('قائمة البنود فارغة. اضغط «إدارة البنود» لإضافة أول بند.');
+ const current=wfPlan()||{};
+ const inputs=selected.map(o=>`<div class="wf-budget-field">
+ ${moneyField(o.label,'monthly-'+o.key,inputMoney(current[o.key]||0),'required',ccy().dec)}
+ <small>${monthlyFieldStageLabel(o)}${o.stage==='split'?' · أدخل المبلغ كاملاً':''}</small></div>`).join('');
+ const hiddenWithValues=monthlyHiddenFields().filter(o=>(current[o.key]||0)>0);
+ modal('تحديد مبالغ الشهر · '+wfMonth,
+ 'حدد مبلغ كل بند من البنود التي اخترتها. الحفظ لا يحجز أموالاً ولا يسدد شيئاً.',
+ `<div class="wf-form-grid">${inputs}</div>
+  ${hiddenWithValues.length?`<div class="notice warn">يوجد ${hiddenWithValues.length} بند مخفي له مبالغ محددة في هذه الدورة. تبقى مبالغه دون تغيير. أظهِره من إدارة البنود إذا تحتاج تعديله.</div>`:''}
+  <div class="notice">البند المقسّم بين الدفعتين يُدخل كاملاً. الصفر يعني عدم وجود مبلغ مستحق.</div>`,
+ form=>act(n=>{
+  const values={...(wfData(n).plans?.[wfMonth]||{})};
+  for(const o of monthlyFields(n))values[o.key]=amount(form['monthly-'+o.key],true);
+  const w=wfData(n);
+  n.settings.twoStageWorkflow={...w,plans:{...w.plans,[wfMonth]:values},completed:{...w.completed}};
+  return n;
+ },'تم حفظ مبالغ الشهر دون حجز أو خصم'),'حفظ مبالغ الشهر');
 }
 function wfObId(month,key){return 'wf_'+key+'_'+month.replace('-','_')}
-function wfAmount(p,stage){
- const first=Math.floor((p.workLoan||0)/2),second=(p.workLoan||0)-first;
- return stage==='incentives'
-  ?[{key:'hyper',amount:p.hyper||0,label:'الهايبر ماركت'},{key:'housing',amount:p.housing||0,label:'الإسكان'},
-    {key:'workLoan',amount:first,label:'نصف سلفة الدوام'},{key:'internet',amount:p.internet||0,label:'الإنترنت'}]
-  :[{key:'workLoan',amount:second,label:'النصف المتبقي من سلفة الدوام'},
-    {key:'generator',amount:p.generator||0,label:'المولّدة'},
-    {key:'bankLoan',amount:p.bankLoan||0,label:'سلفة المصرف'}];
+function wfAmount(plan,stage){
+ const rows=[];
+ for(const o of monthlyAllFields()){
+  const amountFull=plan[o.key]||0;
+  const which=o.stage||(['generator','bankLoan'].includes(o.key)?'salary':o.key==='workLoan'?'split':'incentives');
+  const hidden=monthlyHiddenFields().some(h=>h.key===o.key);
+  if(hidden&&!amountFull)continue;
+  if(which==='split'){
+   const half=Math.floor(amountFull/2),remaining=amountFull-half;
+   rows.push({key:o.key,amount:stage==='incentives'?half:remaining,
+     label:(stage==='incentives'?'نصف ':'النصف المتبقي من ')+o.label+(hidden?' (مخفي)':''),
+     fullAmount:amountFull,reserveOnly:false,hidden});
+  }else if(which===stage){
+   rows.push({key:o.key,amount:amountFull,label:o.label+(hidden?' (مخفي)':''),
+     fullAmount:amountFull,reserveOnly:!!o.reserveOnly,hidden});
+  }
+ }
+ return rows;
 }
 function wfStageSummary(stage){
  const plan=wfPlan(),done=wfDone(stage),rec=S.receipts(state,stage,wfMonth),
@@ -254,8 +413,8 @@ function wfStageSummary(stage){
   </div>
   <div class="wf-steps">${steps.map(item=>`<div class="wf-step"><span>${safe(item.label)}</span><b>${money(item.amount)}</b></div>`).join('')||'<p>حدّد مبالغ الالتزامات أولاً.</p>'}</div>
   ${plan?`<div class="wf-stage-footer"><span>إجمالي مبالغ هذه المرحلة</span><strong>${money(total)}</strong></div>`:''}
-  ${first?'<p class="wf-help">الهايبر ماركت والإسكان ونصف سلفة الدوام: تُحدد عند التأكيد هل دُفعت فعلياً، أم تُحجز فقط، أم انخصمت قبل وصول الحوافز. الإنترنت حجز فقط.</p>':
-    '<p class="wf-help">النصف الثاني من سلفة الدوام والمولّدة وسلفة المصرف تُحجز بعد وصول الراتب، ولا تُحتسب مدفوعة إلا عند تسجيل السداد.</p>'}
+  ${first?'<p class="wf-help">بنود الحوافز القابلة للسداد يمكن حجزها أو دفعها أو توثيق استقطاعها قبل الإيداع. أما بنود «الحجز فقط» فلا تُسدد تلقائياً.</p>':
+    '<p class="wf-help">بنود الراتب وأنصاف البنود المقسّمة تُحجز بعد الاستلام، ولا تُحتسب مدفوعة إلا بعد السداد الفعلي.</p>'}
   ${done?`<div class="wf-done">${icon('check')} ${done.mode==='withheld'?'استقطاعات الحوافز قبل الإيداع موثقة دون خصم مكرر':'تم تنفيذ التخصيص بعد موافقتك'}</div>`:
     (plan&&rec.length&&(!first?!!wfDone('incentives'):true)
      ?btn(first?'wf-incentives-apply':'wf-salary-apply',total?first?'مراجعة الاستقطاعات والحجز':'مراجعة حجوزات الراتب':'تأكيد عدم وجود استقطاعات','check')
@@ -264,11 +423,11 @@ function wfStageSummary(stage){
 }
 function workflowPage(){
  const plan=wfPlan(),stats=currentStats();
- const workPart=plan?Math.floor((plan.workLoan||0)/2):0;
- const wfIds=plan?WF_FIELDS.map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
+ const splitFields=monthlyAllFields().filter(o=>o.stage==='split'&&plan&&(plan[o.key]||0)>0);
+ const wfIds=plan?monthlyAllFields().map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
   settled=wfIds.filter(o=>(stats.reserved[o.id]||0)>0);
  return head('ذُخر | دورة الحوافز والراتب','خطة شهرية من دفعتين، على ترتيب استلامك الحقيقي. لا يتم الحجز أو السداد تلقائياً.',
-   state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):btn('wf-config','تحديد مبالغ الشهر','settings','secondary'))+thukhrFamilyWelcome()+
+   state.demo?btn('wf-activate','بدء خطتي الفعلية','check'):(btn('wf-config','تحديد مبالغ الشهر','settings','secondary')+btn('wf-fields-manage','إدارة البنود','settings','secondary')))+thukhrFamilyWelcome()+
  `<section class="wf-intro">
   <div class="wf-month"><label for="wfMonth">شهر الدفعتين</label><input id="wfMonth" type="month" value="${wfMonth}" max="${today().slice(0,7)}"></div>
   <div class="wf-snapshot">
@@ -278,8 +437,8 @@ function workflowPage(){
   </div>
  </section>
  ${state.demo?'<div class="notice warn">هذا سجل تجريبي. اضغط «بدء خطتي الفعلية» لتسجيل استلام الحوافز والراتب الحقيقيين. لا تُجرى أي حركة تلقائياً.</div>':''}
- ${!plan?'<div class="notice">ابدأ من «تحديد مبالغ الشهر». أدخل مبالغ الهايبر ماركت والإسكان وسلفة الدوام كاملة والإنترنت والمولدة وسلفة المصرف. اترك الحقول غير المطلوبة بصفر.</div>':
-  `<div class="wf-parts"><span>قسط سلفة الدوام الكامل <b>${money(plan.workLoan||0)}</b></span><span>من الحوافز <b>${money(workPart)}</b></span><span>من الراتب <b>${money((plan.workLoan||0)-workPart)}</b></span></div>`}
+ ${!plan?'<div class="notice">ابدأ من «إدارة البنود» حتى تختار بنود الشهر، ثم افتح «تحديد مبالغ الشهر» لإدخال المبالغ. لا يُحجز أو يُدفع أي مبلغ إلا بعد تأكيدك.</div>':
+  splitFields.map(o=>{const half=Math.floor(plan[o.key]/2);return `<div class="wf-parts"><span>${safe(o.label)} · المبلغ الكامل <b>${money(plan[o.key])}</b></span><span>من الحوافز <b>${money(half)}</b></span><span>من الراتب <b>${money(plan[o.key]-half)}</b></span></div>`;}).join('')}
  ${wfStageSummary('incentives')}
  ${wfStageSummary('salary')}
  <div class="wf-living-shortcut"><span>بعد حجز الالتزامات، افتح صفحة المعيشة المستقلة وقسّم الرصيد المتبقي على أقسام المعيشة التي تختارها.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
@@ -297,7 +456,7 @@ function wfApply(stage){
  const ops=wfAmount(p,stage).filter(x=>x.amount>0);
  const isIncentives=stage==='incentives';
  const options=isIncentives?
-  `<div class="field"><label>كيف تُعامل استقطاعات الهايبر ماركت والإسكان ونصف سلفة الدوام؟</label>
+  `<div class="field"><label>كيف تُعامل بنود الحوافز القابلة للسداد؟</label>
    <select name="mode" required><option value="reserve">حجزها من الحوافز الآن، والسداد لاحقاً</option>
    <option value="pay">دفعتها فعلياً بعد وصول الحوافز</option>
    <option value="withheld">انخصمت قبل وصول الحوافز للحساب (دخلي المدخل صافي)</option></select></div>
@@ -316,16 +475,16 @@ function wfApply(stage){
     if(wf.completed?.[wfMonth]?.[stage])throw Error('تم تنفيذ المرحلة بالفعل.');
     let next=n;
     for(const o of ops){
-     if(mode==='withheld'&&o.key!=='internet')continue;
+     if(mode==='withheld'&&!o.reserveOnly)continue;
      const id=wfObId(wfMonth,o.key);
      if(!next.obligations.some(q=>q.id===id)){
-      next.obligations.push({id,name:o.key==='workLoan'?'سلفة الدوام':o.label,
-       amount:p[o.key],due:today(),recurring:false});
-     }else if(next.obligations.find(q=>q.id===id).amount!==p[o.key])
+      next.obligations.push({id,name:o.key==='workLoan'?'سلفة الدوام':o.label.replace(' (مخفي)',''),
+       amount:o.fullAmount,due:today(),recurring:false});
+     }else if(next.obligations.find(q=>q.id===id).amount!==o.fullAmount)
        throw Error('قيمة الالتزام تغيّرت عن التسجيل السابق. راجع السجل.');
      const note='دورة '+wfMonth+' · '+(stage==='incentives'?'حوافز':'راتب')+' · '+o.label;
      next=event(next,{type:'reserve',obligationId:id,amount:o.amount,date:today(),note:'حجز: '+note});
-     if(mode==='pay'&&o.key!=='internet')
+     if(mode==='pay'&&!o.reserveOnly)
       next=event(next,{type:'pay',obligationId:id,amount:o.amount,method:f.method,date:today(),note:'سداد فعلي: '+note});
     }
     const prev=wfData(next);
@@ -747,7 +906,7 @@ function wfLivingExpense(id){
 }
 
 function wfPay(id){
- if(!WF_FIELDS.some(x=>id.startsWith('wf_'+x.key+'_')))throw Error('هذا الحجز ليس من دورة الدفعتين.');
+ if(!monthlyAllFields().some(x=>id===wfObId(wfMonth,x.key)))throw Error('هذا الحجز ليس ضمن دورة الشهر المعروضة.');
  obligationAction('pay',id);
 }
 
@@ -871,7 +1030,7 @@ function backup(){download(`mizan-backup-${today()}.json`,JSON.stringify(state,n
 function exportCsv(){const rows=[['التاريخ','العملية','التفاصيل','المبلغ','العملة','الحساب','الملاحظة','مصدر الدخل','شهر الاستحقاق'],...state.transactions.map(t=>[t.date,...txLabel(t).slice(0,2),inputMoney(t.amount),state.settings.currency,t.method||'داخلي',t.note||'',t.sourceName||'',t.incomePeriod||''])];const clean=v=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};download(`mizan-ledger-${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(clean).join(',')).join('\r\n'),'text/csv')}
 function help(){modal('كيف يعمل ذُخر؟','من أول استلام إلى آخر يوم في الدورة.',`<div class="help-text"><p><b>مواعيدك:</b> الحوافز بين 10 و12، والراتب بين 22 و24 من كل شهر. عدّل المواعيد من إعدادات الدخل. الدفعتان ضمن الخطة الحالية؛ لا يضاف المتوقع قبل تأكيد استلامه.</p><br><p><b>1. استلم:</b> سجّل الدخل الذي وصل فعلياً إلى البطاقة أو النقد.</p><br><p><b>2. أضف ثم وافق:</b> تسجيل الالتزام لا يحجز أموالاً. حدّد الحجز لاحقاً من زر «حجز مبلغ» ووافق عليه صراحةً. الحجز ليس دفعاً.</p><br><p><b>3. وزّع:</b> امنح ما تبقّى محافظ للصرف واحتياطي للطوارئ والادخار.</p><br><p><b>4. سجّل:</b> المصروف يخفض الحساب والمحفظة. سداد الالتزام يخفض الحساب وحجز الالتزام. السحب النقدي والتحويل لا يغيّران إجمالي المال.</p><br><p><b>5. راجع:</b> تابع السقف اليومي وطابق الرصيد من التقارير. احفظ نسخة احتياطية دورياً.</p><br><p>تُحفظ أموالك في هذا المتصفح فقط. لا توجد مزامنة بين الأجهزة أو اتصال مصرفي. المبلغ المقترح للصرف تنظيم حسابي حسب بياناتك، وليس توقعاً لدخل لم يُستلم.</p></div><div class="form-actions">${btn('close','فهمت','check')}</div>`)}
 function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports'&&$('reconcileForm'))$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
-const actions={'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة')};
+const actions={'wf-fields-manage':monthlyFieldsManage,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة')};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=actions[b.dataset.action];if(fn){e.preventDefault();try{fn(b.dataset.id,b.dataset.period)}catch(ex){showError(ex.message)}}});
 $('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;E.validate(next);if(!currencies[next.settings.currency])throw Error('عملة الملف غير مدعومة في هذه الواجهة.');confirmModal('استعادة النسخة الاحتياطية؟',`تم التحقق من ${next.transactions.length} حركة. ستُستبدل البيانات الحالية بهذه النسخة. احفظ نسخة من سجلك الحالي قبل التأكيد.`,()=>{try{save(next,'تمت الاستعادة والتحقق من توازن الأرصدة',true)}catch(ex){toast(ex.message)}},'استعادة البيانات')}catch(ex){toast('تعذرت الاستعادة: '+ex.message)}finally{e.target.value=''}});
 let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('installBtn'))$('installBtn').hidden=false});document.addEventListener('click',async e=>{if(e.target.id==='installBtn'&&installPrompt){await installPrompt.prompt();installPrompt=null;e.target.hidden=true}});
