@@ -719,7 +719,7 @@ function smartBuild(original,d){
 }
 
 function smartReview(d){
- const r=smartBuild(state,d),t=r.totals;
+ const r=smartBuild(state,d),t=r.totals,projection=monthlyCommitmentProjection(r.next,d.month);
  const line=(name,value)=>`<div class="smart-review-row"><span>${name}</span><strong>${money(value)}</strong></div>`;
  modal('الدورة الذكية · 3 من 3','مراجعة نهائية قبل أي حفظ.',
  `<div class="smart-steps"><b>1 · الدخل</b><b>2 · التسوية والميزانية</b><b>3 · المراجعة</b></div>
@@ -737,6 +737,8 @@ function smartReview(d){
  ${line('الرصيد الكلي بعد الاعتماد',r.after.total)}
  ${line('المحجوز بعد الاعتماد',Object.values(r.after.reserved).reduce((sum,v)=>sum+v,0))}
  ${line('المتبقي بعد التسوية والتخصيص',r.after.unallocated)}
+ ${line('التزامات شهرية لم تُغطَّ بعد',projection.uncovered)}
+ ${line('المتبقي المتوقع بعد جميع الالتزامات',projection.remainingAfter)}
  </div>
  <p class="wf-help">${r.funding.shortfall?'ستُحفظ سقوف المعيشة كاملة دون تخصيصها الآن. بعد استلام مصدر آخر من صفحة المعيشة، اضغط «استكمال التمويل».':'خطة المعيشة قابلة للتمويل الآن. لا يُخصم التخصيص من البطاقة أو النقد.'} عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
  <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> أوافق على الدخل والاستقطاعات وتوزيع المعيشة كما تظهر أعلاه.</label></div>`,
