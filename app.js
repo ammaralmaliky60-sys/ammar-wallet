@@ -1774,7 +1774,11 @@ function settingsPage(){const html= head('الإعدادات','الحساب وا
  <input type="file" id="thukhrFamilyFile" accept="image/jpeg,image/png,image/webp" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden">
  <button type="button" id="thukhrFamilyRemove" class="btn secondary" hidden>إزالة الصورة</button>
  </div><p id="thukhrFamilyStatus" class="thukhr-privacy" role="status">لم تُضف صورة.</p>
- </section><section class="panel">${section('بياناتك تحت سيطرتك','تخزين محلي، دون مزامنة تلقائية.')}<p class="help-text">البيانات المالية محفوظة داخل هذا المتصفح. كل جهاز له سجل مستقل. نزّل نسخة JSON دورياً وقبل الانتقال إلى جهاز آخر. الاستعادة تستبدل السجل بعد التحقق منه.</p><div class="settings-actions">${btn('backup','نسخة احتياطية JSON','download')}${btn('restore','استعادة نسخة','upload','secondary')}${btn('csv','تصدير CSV','ledger','secondary')}</div><div class="notice">يمكن استيراد نسخة JSON من تطبيق «محافظ عمار» القديم. تبقى الأرصدة والحركات، وتُحفظ الدورات القديمة ضمن ملف النسخة الاحتياطية.</div></section><section class="panel">${section('دورة الدخل','ابدأ من يوم الاستلام الفعلي.')}<div class="keyval"><span>بداية الدورة</span><b>${date(state.cycle.start,true)}</b></div><div class="keyval"><span>المدة</span><b>${state.cycle.days} يوماً</b></div><div class="settings-actions">${btn('income-sources','مواعيد الدخل الشهري','calendar','soft')}${btn('new-cycle','بدء دورة تخطيط جديدة','calendar','secondary')}</div><p class="help-text" style="margin-top:14px">حدد نوع الدخل من «خطة الدخل» (راتب فقط أو راتب وحوافز)، وسجّل المبالغ التي استلمتها فعلياً. بدء دورة تخطيط جديدة إجراء مستقل، وتُرحّل فيه كل الأرصدة والالتزامات غير المدفوعة. تجديد الالتزام المتكرر متاح من بطاقته، مع منع تكرار الاستحقاق نفسه.</p></section><section class="panel">${section('التثبيت والاستخدام','واجهة متجاوبة على الهاتف والحاسوب.')}<p class="help-text">على iPhone: افتح Safari ثم مشاركة ← إضافة إلى الشاشة الرئيسية.<br>على Android أو Windows: قائمة المتصفح ← تثبيت التطبيق.<br>يتوفر العمل دون اتصال بعد اكتمال حفظ ملفات التطبيق، بحسب دعم المتصفح.</p><div class="settings-actions">${btn('help','دليل الحسابات','help','secondary')}<button class="btn secondary" id="installBtn" hidden>تثبيت ميزان</button></div></section></div><section class="panel">${section('بداية جديدة','صدّر بياناتك أولاً، ثم أنشئ خطة جديدة عند الحاجة.')}<div class="settings-actions">${btn('setup','إنشاء خطة جديدة','plus','danger')}${!state.demo?btn('demo','عرض مثال توضيحي','grid','secondary'):''}</div></section>`;
+ </section><section class="panel">${section('بياناتك تحت سيطرتك','تخزين محلي، دون مزامنة تلقائية.')}<p class="help-text">البيانات المالية محفوظة داخل هذا المتصفح. كل جهاز له سجل مستقل. نزّل نسخة JSON دورياً وقبل الانتقال إلى جهاز آخر. الاستعادة تستبدل السجل بعد التحقق منه.</p><div class="settings-actions">${btn('backup','نسخة احتياطية JSON','download')}${btn('restore','استعادة نسخة','upload','secondary')}${btn('csv','تصدير CSV','ledger','secondary')}</div><div class="notice">يمكن استيراد نسخة JSON من تطبيق «محافظ عمار» القديم. تبقى الأرصدة والحركات، وتُحفظ الدورات القديمة ضمن ملف النسخة الاحتياطية.</div></section><section class="panel">${section('دورة الدخل','ابدأ من يوم الاستلام الفعلي.')}<div class="keyval"><span>بداية الدورة</span><b>${date(state.cycle.start,true)}</b></div><div class="keyval"><span>المدة</span><b>${state.cycle.days} يوماً</b></div><div class="settings-actions">${btn('income-sources','مواعيد الدخل الشهري','calendar','soft')}${btn('new-cycle','بدء دورة تخطيط جديدة','calendar','secondary')}</div><p class="help-text" style="margin-top:14px">حدد نوع الدخل من «خطة الدخل» (راتب فقط أو راتب وحوافز)، وسجّل المبالغ التي استلمتها فعلياً. بدء دورة تخطيط جديدة إجراء مستقل، وتُرحّل فيه كل الأرصدة والالتزامات غير المدفوعة. تجديد الالتزام المتكرر متاح من بطاقته، مع منع تكرار الاستحقاق نفسه.</p></section><section class="panel">${section('التثبيت والاستخدام','واجهة متجاوبة على الهاتف والحاسوب.')}<p class="help-text">على iPhone: افتح Safari ثم مشاركة ← إضافة إلى الشاشة الرئيسية.<br>على Android أو Windows: قائمة المتصفح ← تثبيت التطبيق.<br>يتوفر العمل دون اتصال بعد اكتمال حفظ ملفات التطبيق، بحسب دعم المتصفح.</p><div class="settings-actions">${btn('help','دليل الحسابات','help','secondary')}<button class="btn secondary" id="installBtn" hidden>تثبيت ميزان</button></div></section></div><section class="panel">${section('بداية جديدة','الدورة الجديدة تختلف عن التهيئة الكاملة للسجل.')}<div class="settings-actions">${btn('setup','إنشاء خطة جديدة','plus','secondary')}${!state.demo?btn('demo','عرض مثال توضيحي','grid','secondary'):''}</div>
+ <div class="thukhr-reset-section"><strong>تهيئة البيانات والبدء من جديد</strong>
+ <p class="help-text">تصفير جميع الحركات والأرصدة والخطط المالية في الملف الحالي فقط. يلزم تنزيل نسخة احتياطية وتأكيدان. الملفات الأخرى تبقى محفوظة.</p>
+ ${btn('financial-reset','تهيئة البيانات والبدء من الصفر','trash','danger')}
+ </div></section>`;
  const sections=['account','account','backup','income','account','income'];let i=0;
  const tagged=html.replace(/<section class="panel"/g,m=>{
   const key=sections[i++]||'account';
@@ -1943,6 +1947,87 @@ function openCycle(){
  },'تأكيد الدخل وبدء الدورة');
 }
 
+let resetProof=null,resetAttempt=0;
+function freshFinancialState(){
+ const clean=E.initial();
+ clean.demo=false;
+ E.validate(clean);
+ return clean;
+}
+function requireResetBackup(proof,source=state,profileKey=KEY){
+ if(!proof||proof.profileKey!==profileKey||proof.raw!==JSON.stringify(source))
+  throw Error('تغيّرت البيانات بعد تجهيز النسخة، أو لم تُحمّل نسخة احتياطية لهذا الملف. أعد المحاولة.');
+ return true;
+}
+async function resetDownloadBackup(attempt){
+ if(resetAttempt!==attempt)return;
+ const profileKey=KEY,raw=JSON.stringify(state);
+ try{
+  E.validate(state);
+  const snapshot=structuredClone(state);
+  delete snapshot.backupIntegrity;
+  const digest=await backupSha256(JSON.stringify(snapshot));
+  if(resetAttempt!==attempt||KEY!==profileKey||JSON.stringify(state)!==raw){
+   throw Error('تغيّرت البيانات أثناء تجهيز النسخة؛ أعد المحاولة.');
+  }
+  const filename='thukhr-before-reset-'+activeProfile+'-'+today()+'.json';
+  download(filename,JSON.stringify({...snapshot,backupIntegrity:{algorithm:'SHA-256',digest}},null,2));
+  resetProof={profileKey,raw,filename};
+  const note=$('resetBackupStatus');
+  if(note)note.textContent='بدأ تنزيل '+filename+'. تحقق من وجوده في مدير الملفات قبل المتابعة.';
+ }catch(e){showError('تعذر تجهيز النسخة الاحتياطية، ولن تتم التهيئة: '+e.message)}
+}
+function openFinancialReset(){
+ resetProof=null;
+ const attempt=++resetAttempt;
+ const profile=localProfiles().find(p=>p.id===activeProfile)?.name||'المساحة الحالية';
+ const stats=E.stats(state);
+ const summary='عدد الحركات '+state.transactions.length+' · الرصيد '+fmt(stats.total)+' '+unit();
+ modal('تهيئة بيانات ذُخر والبدء من جديد','تصفير السجل المالي الحالي فقط، وليس دورة مالية جديدة.',
+ `<section class="thukhr-reset-summary">
+   <strong>الملف المستهدف: ${safe(profile)}</strong>
+   <span>${safe(summary)}</span>
+   <p>سيتم تصفير الراتب والحوافز والحركات والالتزامات وميزانيات الأشهر والمحافظ والتقارير وسجل الدورات. ستعود الأقسام والإعدادات المالية إلى البداية.</p>
+   <p>تبقى الملفات المالية الأخرى والمظهر وصورة العائلة كما هي. لا تُحذف النسخ المحلية أو ملفات JSON المحفوظة خارج المتصفح.</p>
+  </section>
+  <button type="button" id="resetBackupDownload" class="btn secondary thukhr-reset-download">${icon('download')} تنزيل نسخة احتياطية قبل التهيئة</button>
+  <p id="resetBackupStatus" class="wf-help" role="status">نزّل نسخة احتياطية، ثم تحقق من وجود الملف في مدير الملفات.</p>
+  <div class="field"><label><input type="checkbox" name="downloadConfirmed" value="yes" required> تحققت من وجود ملف JSON في التنزيلات وأريد الاحتفاظ به.</label></div>
+  <div class="field"><label for="resetPhrase">اكتب كلمة تهيئة للتأكيد</label><input id="resetPhrase" name="phrase" type="text" autocomplete="off" required placeholder="تهيئة"></div>`,
+  f=>{
+   if(f.downloadConfirmed!=='yes'||String(f.phrase||'').trim()!=='تهيئة')
+    throw Error('تحقق من ملف النسخة الاحتياطية واكتب «تهيئة» تماماً.');
+   requireResetBackup(resetProof,state,KEY);
+   openFinancialResetFinal(attempt);
+  },'متابعة إلى التأكيد النهائي');
+ $('resetBackupDownload').onclick=()=>{resetDownloadBackup(attempt).catch(e=>showError(e.message))};
+}
+function openFinancialResetFinal(attempt){
+ if(attempt!==resetAttempt)throw Error('انتهت جلسة التأكيد. أعد فتح التهيئة.');
+ requireResetBackup(resetProof,state,KEY);
+ const profile=localProfiles().find(p=>p.id===activeProfile)?.name||'المساحة الحالية';
+ modal('التأكيد النهائي لتهيئة البيانات',
+  'سيُستبدل دفتر الملف الحالي بدفتر فارغ عند موافقتك، من دون مساس بالملفات الأخرى.',
+  `<div class="thukhr-reset-summary">
+   <strong>تصفير بيانات: ${safe(profile)}</strong>
+   <p>نسخة الإنقاذ التي طلبت تنزيلها: <b>${safe(resetProof.filename)}</b></p>
+   <p>ستختفي الأرصدة والحركات والميزانيات والالتزامات من الواجهة. استعادة السجل السابق تتطلب استيراد ملف JSON الذي احتفظت به.</p>
+   </div>
+   <div class="field"><label><input type="checkbox" name="finalApproval" value="yes" required> أوافق على تصفير بيانات هذا الملف الآن والبدء من الصفر</label></div>`,
+  f=>{
+   if(f.finalApproval!=='yes')throw Error('يلزم التأكيد النهائي.');
+   if(attempt!==resetAttempt)throw Error('انتهت صلاحية هذه المحاولة.');
+   requireResetBackup(resetProof,state,KEY);
+   const fresh=freshFinancialState();
+   save(fresh,'تمت تهيئة الملف الحالي. يمكنك إعداد خطتك الجديدة.');
+   resetProof=null;resetAttempt++;
+   closeModal();
+   wfMonth=today().slice(0,7);
+   schedulePeriod=wfMonth;
+   location.hash='workflow';
+   setupStart();
+  },'أوافق · تهيئة الملف');
+}
 function setupStart(){if(!state.demo&&state.transactions.length){confirmModal('إنشاء خطة جديدة؟','سيُستبدل السجل الحالي. نزّل نسخة احتياطية قبل المتابعة.',()=>{wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()},'متابعة وإنشاء خطة');return}wizard={name:state.settings.name,currency:state.settings.currency,start:today(),days:30,income:'',method:'card',obligations:[]};wizardStep=0;renderWizard()}
 function wizardBack(form){if(form){const f=Object.fromEntries(new FormData(form));if(wizardStep===1){wizard.obligations=wizardRows(form)}else Object.assign(wizard,f)}wizardStep=Math.max(0,wizardStep-1);renderWizard()}
 function wizardRows(form){return [...form.querySelectorAll('.setup-ob')].map(row=>({name:row.querySelector('[data-name]').value.trim(),amount:row.querySelector('[data-amount]').value,due:row.querySelector('[data-due]').value})).filter(o=>o.name||o.amount)}
@@ -2004,7 +2089,7 @@ function help(){modal('كيف يعمل فِرزة؟','من أول استلام �
 function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;for(const id of ['fromFilter','toFilter']){const element=$(id),readable=$(id+'Readable');
   if(readable)readable.textContent=element.value?date(element.value,true):'التاريخ اختياري';}
  const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs);$('ledgerMobileResults').innerHTML=ledgerMobileRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'&&$('settingsForm')){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports'&&$('reconcileForm'))$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
-const actions={'thukhr-more':()=>{const menu=$('thukhrMoreMenu'),button=$('thukhrMoreButton');if(!menu||!button)return;menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));},'ledger-detail':ledgerDetail,'settings-tab':id=>{if(['account','appearance','income','backup'].includes(id)){settingsTab=id;render()}},'smart-cycle-open':smartOpen,'wf-fields-manage':monthlyFieldsManage,'wf-income-mode':wfIncomeModePicker,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-fund':wfLivingFund,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'close-finance-month':wfCloseMonth,'finance-csv':exportFinanceCsv,'finance-reconcile':financeReconcile,'finance-resolve':financeResolve,'rolling-download':downloadRollingBackup,'profile-create':profileCreate,'profile-switch':profileSwitch,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
+const actions={'thukhr-more':()=>{const menu=$('thukhrMoreMenu'),button=$('thukhrMoreButton');if(!menu||!button)return;menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));},'ledger-detail':ledgerDetail,'settings-tab':id=>{if(['account','appearance','income','backup'].includes(id)){settingsTab=id;render()}},'financial-reset':openFinancialReset,'smart-cycle-open':smartOpen,'wf-fields-manage':monthlyFieldsManage,'wf-income-mode':wfIncomeModePicker,'wf-field-add':()=>monthlyFieldEdit(),'wf-field-edit':monthlyFieldEdit,'wf-field-hide':monthlyFieldHide,'wf-field-restore':monthlyFieldRestore,'wf-field-delete':monthlyFieldDelete,'wf-fields-clear':monthlyFieldsClear,'wf-category-hide':livingCategoryHide,'wf-category-restore':livingCategoryRestore,'wf-category-clear':livingCategoryClear,'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-fund':wfLivingFund,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'emergency-open':()=>location.hash='emergency','emergency-feed':emergencyFeed,'emergency-spend':emergencySpend,'emergency-move':emergencyMove,'emergency-correct':emergencyCorrection,'emergency-create':()=>openWallet(),'wf-living-quick':wfLivingQuick,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'close-finance-month':wfCloseMonth,'finance-csv':exportFinanceCsv,'finance-reconcile':financeReconcile,'finance-resolve':financeResolve,'rolling-download':downloadRollingBackup,'profile-create':profileCreate,'profile-switch':profileSwitch,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,'thukhr-appearance':id=>setThukhrTheme(id),theme:()=>setThukhrTheme(thukhrTheme()==='night'||thukhrTheme()==='modern'?'classic':'night'),rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>{const t=state.transactions.find(t=>t.id===id),w=state.wallets.find(w=>w.id===(t?.type==='transfer'?t.from:t?.walletId));if(t&&w?.kind==='emergency'&&['expense','release','transfer'].includes(t.type))return emergencyCorrection(id);return confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة');}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=actions[b.dataset.action];if(fn){e.preventDefault();try{fn(b.dataset.id,b.dataset.period)}catch(ex){showError(ex.message)}}});
 $('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;if(next.backupIntegrity){
  const info=next.backupIntegrity;
