@@ -736,7 +736,7 @@ function smartReview(d){
  ${line('النقد بعد الاعتماد',r.after.cash)}
  ${line('الرصيد الكلي بعد الاعتماد',r.after.total)}
  ${line('المحجوز بعد الاعتماد',Object.values(r.after.reserved).reduce((sum,v)=>sum+v,0))}
- ${line('المتاح بعد الاعتماد',r.after.unallocated)}
+ ${line('المتبقي بعد التسوية والتخصيص',r.after.unallocated)}
  </div>
  <p class="wf-help">${r.funding.shortfall?'ستُحفظ سقوف المعيشة كاملة دون تخصيصها الآن. بعد استلام مصدر آخر من صفحة المعيشة، اضغط «استكمال التمويل».':'خطة المعيشة قابلة للتمويل الآن. لا يُخصم التخصيص من البطاقة أو النقد.'} عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
  <div class="field"><label><input type="checkbox" name="confirm" value="yes" required> أوافق على الدخل والاستقطاعات وتوزيع المعيشة كما تظهر أعلاه.</label></div>`,
@@ -746,8 +746,17 @@ function smartReview(d){
  $('smartBack').onclick=()=>smartAllocate(d);
 }
 
+function workflowSettlementSnapshot(st=state,month=wfMonth){
+ const stats=E.stats(st);
+ const reserved=Object.values(stats.reserved).reduce((sum,value)=>sum+value,0);
+ const allocated=Object.values(stats.wallets).reduce((sum,value)=>sum+value,0);
+ const settlement=wfData(st).completed?.[month]||{};
+ const completed=wfIncomeMode(month,st)==='salary-only'?Boolean(settlement.salary):
+  Boolean(settlement.salary&&settlement.incentives);
+ return {total:stats.total,remaining:stats.unallocated,reserved,allocated,completed};
+}
 function workflowPage(){
- const plan=wfPlan(),stats=currentStats(),salaryOnly=wfIncomeMode()==='salary-only';
+ const plan=wfPlan(),stats=currentStats(),salaryOnly=wfIncomeMode()==='salary-only',settlement=workflowSettlementSnapshot();
  const splitFields=monthlyAllFields().filter(o=>o.stage==='split'&&plan&&(plan[o.key]||0)>0);
  const wfIds=plan?monthlyAllFields().map(o=>({key:o.key,id:wfObId(wfMonth,o.key),label:o.label})):[],
   settled=wfIds.filter(o=>(stats.reserved[o.id]||0)>0);
@@ -757,10 +766,18 @@ function workflowPage(){
   <div class="wf-month"><label for="wfMonth">شهر الخطة</label><input id="wfMonth" type="month" value="${wfMonth}" max="${today().slice(0,7)}"><span class="thukhr-readable-month">${arabicMonth(wfMonth)}</span></div>
   <div class="wf-income-mode-controls"><span>نوع الدخل: <b>${salaryOnly?'راتب فقط':'راتب وحوافز'}</b></span>
    ${state.demo?'':btn('wf-income-mode','تغيير نوع الدخل','settings','secondary')}</div>
+  <div class="wf-settlement-result" aria-label="المتبقي بعد التسوية المالية">
+   <div class="wf-settlement-result-head">
+    <span>المتبقي بعد التسوية والتخصيص</span>
+    <span class="wf-settlement-result-state ${settlement.completed?'is-complete':'is-pending'}">${settlement.completed?'التسوية معتمدة':'حتى الآن · التسوية غير مكتملة'}</span>
+   </div>
+   <strong class="wf-settlement-result-value">${money(settlement.remaining)}</strong>
+   <p>المبلغ الحر بعد الحجوزات والتخصيصات المسجلة؛ لا يشمل المخصص للمعيشة والطوارئ. ${settlement.completed?'لا تُخصم الاستقطاعات الموثقة قبل الإيداع مرتين.':'قد يتغير عند اعتماد التسويات المتبقية.'}</p>
+  </div>
   <div class="wf-snapshot">
-   <div><span>رصيد الحساب</span><strong>${money(stats.total)}</strong></div>
-   <div><span>المتاح بعد الحجز والتخصيص</span><strong>${money(stats.unallocated)}</strong></div>
-   <div><span>محجوز حالياً</span><strong>${money(Object.values(stats.reserved).reduce((a,n)=>a+n,0))}</strong></div>
+   <div><span>رصيد الحساب الحالي</span><strong>${money(settlement.total)}</strong></div>
+   <div><span>مخصص للأقسام</span><strong>${money(settlement.allocated)}</strong></div>
+   <div><span>محجوز للالتزامات</span><strong>${money(settlement.reserved)}</strong></div>
   </div>
  </section>
  ${state.demo?'<div class="notice warn">هذا سجل تجريبي. اضغط «بدء خطتي الفعلية» لتسجيل استلام الحوافز والراتب الحقيقيين. لا تُجرى أي حركة تلقائياً.</div>':''}
