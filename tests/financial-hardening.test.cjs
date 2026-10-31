@@ -60,6 +60,16 @@ test('legacy default key and per-person local isolation remain available',()=>{
  assert.match(family,/family-photo-/);
 });
 test('backups are validated and restored with account balance preview',()=>{
- assert.match(app,/function backup\(\)\{E\.validate\(state\)/);
+ assert.match(app,/async function backup\(\)/);
+ assert.match(app,/backupSha256/);
+ assert.match(app,/function keepLocalSnapshot/);
+ assert.match(app,/backupIntegrity/);
  assert.match(app,/E\.stats\(next\)\.total/);
+});
+
+test('PDF includes searchable transaction numbers without changing Arabic layout',()=>{
+ const pdf=fs.readFileSync(path.join(__dirname,'..','report-pdf.js'),'utf8');
+ assert.match(pdf,/searchableAscii/);
+ assert.match(pdf,/const layer=/);
+ assert.match(pdf,/Font << \/F1/);
 });
