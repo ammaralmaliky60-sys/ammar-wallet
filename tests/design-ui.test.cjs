@@ -39,7 +39,7 @@ test('settings expose four visual categories',()=>{
  assert.match(app,/thukhr-settings-tabs/);
 });
 test('accounting key and emergency authorization remain in application',()=>{
- assert.match(app,/KEY='mizan-finance-v2'/);
+ assert.match(app,/ROOT_KEY='mizan-finance-v2'/);
  assert.match(app,/emergencyAuthorization/);
  assert.match(app,/wfIncomeMode/);
 });

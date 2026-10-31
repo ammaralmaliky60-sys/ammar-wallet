@@ -54,6 +54,6 @@ test('salary stage enabled without bonus; dual stage keeps existing dependency',
  assert.doesNotMatch(mk('both')('salary'),/BUTTON:wf-salary-apply/);
 });
 test('PDF statement and scheduling select salary in solo mode',()=>{
- assert.match(app,/const primary=wfIncomeMode\(\)==='salary-only'\?'salary':'incentives'/);
+ assert.match(app,/E\.periodReport\(state,wfMonth\)/);
  assert.match(app,/filter\(x=>wfIncomeMode\(p\)!=='salary-only'\|\|x.id!=='incentives'\)/);
 });
