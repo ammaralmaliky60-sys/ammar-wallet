@@ -159,3 +159,40 @@ body[data-thukhr-theme] [data-settings-group][hidden],body[data-thukhr-theme] #t
 .thukhr-finance-loans .keyval,.thukhr-finance-center .keyval{align-items:start}
 .thukhr-finance-center .keyval b small{display:block;font-weight:400;line-height:1.8}
 @media(max-width:760px){.thukhr-settlement-row{grid-template-columns:1fr}.thukhr-settlement-row>.field{width:100%}}
+
+/* Three-phase financial wizard — relies on the current four theme palettes. */
+.smart-cycle-intro{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:17px 19px;
+ background:var(--ui-soft);border:1px solid var(--ui-line);border-radius:17px;margin:15px 0 18px}
+.smart-cycle-intro strong{font-size:16px;color:var(--ui-text)}
+.smart-cycle-intro p{font-size:13px;color:var(--ui-dim);margin:5px 0 0;line-height:1.7}
+.smart-cycle-intro .btn{flex-shrink:0}
+.smart-cycle-advanced{margin:12px 0 19px;border:1px solid var(--ui-line);border-radius:14px;padding:10px 15px}
+.smart-cycle-advanced>summary{cursor:pointer;font-size:13px;font-weight:650;color:var(--ui-text);padding:7px 0}
+.smart-cycle-advanced>summary:focus-visible,.smart-steps:focus-visible{outline:2px solid var(--ui-accent)}
+.smart-cycle-advanced[open]>.wf-stage{margin-top:12px}
+.smart-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 0 19px}
+.smart-steps>span,.smart-steps>b{font-size:11px;text-align:center;padding:10px 5px;line-height:1.5;
+ border-radius:10px;background:var(--ui-soft);color:var(--ui-dim);font-weight:550}
+.smart-steps>b{background:var(--ui-accent);color:white;font-weight:700}
+.smart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:19px}
+.smart-cycle-item,.smart-row{display:flex;justify-content:space-between;align-items:center;gap:14px;border-bottom:1px solid var(--ui-line);padding:12px 0}
+.smart-row>div:first-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.smart-row>div:first-child small{font-size:12px;color:var(--ui-dim)}
+.smart-row>.field{margin:0;min-width:175px}
+.smart-row strong,.smart-row b{font-size:13px;line-height:1.6}
+.smart-review{border:1px solid var(--ui-line);background:var(--ui-soft);border-radius:16px;padding:16px;margin-bottom:15px}
+.smart-review-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:8px 0;font-size:13px}
+.smart-review-row>span{color:var(--ui-dim);line-height:1.6}
+.smart-review-row>strong{color:var(--ui-text);font-size:14px;white-space:nowrap;direction:ltr;font-variant-numeric:tabular-nums}
+.smart-review hr{border:0;border-top:1px solid var(--ui-line);margin:12px 0}
+.smart-review-row:last-child>strong{color:var(--ui-accent);font-size:17px}
+@media(max-width:760px){
+ .smart-cycle-intro{align-items:flex-start;flex-direction:column;padding:15px}
+ .smart-cycle-intro>.btn{width:100%}
+ .smart-row{flex-direction:column;align-items:stretch}
+ .smart-row>.field{min-width:0;width:100%}
+ .smart-steps>span,.smart-steps>b{font-size:10px}
+ .smart-grid{grid-template-columns:1fr}
+ .smart-review-row{font-size:12px}
+ .smart-review-row>strong{font-size:13px}
+}
