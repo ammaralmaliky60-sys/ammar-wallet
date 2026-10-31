@@ -300,8 +300,12 @@ function fixedCommitmentEdit(key=''){
   if(!['receipt','cash','card'].includes(f.fixedMethod))throw Error('حساب الخصم غير صالح.');
   if(monthlyAllFields(n).some(o=>o.key!==key&&o.label.trim().toLowerCase()===label.toLowerCase()))
    throw Error('يوجد التزام بهذا الاسم.');
-  if(wfData(n).completed?.[wfMonth]?.salary||wfData(n).completed?.[wfMonth]?.incentives)
-   throw Error('بدأت تسوية هذا الشهر؛ لا يمكن تغيير التزامات الشهر الحالية.');
+  if(['salary','incentives'].some(stage=>
+   wfData(n).completed?.[wfMonth]?.[stage]&&wfData(n).completed[wfMonth][stage].mode!=='automatic'))
+   throw Error('تم اعتماد تسوية يدوية لهذا الشهر؛ لا يمكن تغيير بنوده.');
+  const registered=key?n.obligations.find(o=>o.id===wfObId(wfMonth,key)):null;
+  if(registered&&registered.amount!==value)
+   throw Error('لهذا الالتزام حركة سداد أو حجز سابقة؛ لا يمكن تغيير مبلغه الحالي. عدّل مبلغ الشهر التالي بدلاً من ذلك.');
   const fields=monthlyFields(n).map(o=>({...o}));
   let field=fields.find(o=>o.key===key);
   if(!field){
@@ -317,7 +321,7 @@ function fixedCommitmentEdit(key=''){
   if(field.autoDeduct===true){
    for(const stageName of ['incentives','salary']){
     const rec=S.receipts(n,stageName,wfMonth);
-    if(rec.length===1&&!wfData(n).completed?.[wfMonth]?.[stageName])
+    if(rec.length===1&&(!wfData(n).completed?.[wfMonth]?.[stageName]||wfData(n).completed[wfMonth][stageName].mode==='automatic'))
      n=autoFixedSettlement(n,stageName,wfMonth,rec[0].method,rec[0].date).next;
    }
   }
@@ -750,7 +754,7 @@ function autoFixedSettlement(original,stage,month,method,date){
  if(!['salary','incentives'].includes(stage))return {next:original,paid:0,skipped:[]};
  if(!['card','cash'].includes(method))throw Error('حساب خصم الالتزامات غير صالح.');
  if(original.settings.closedMonths?.[month])return {next:original,paid:0,skipped:[]};
- if(wfData(original).completed?.[month]?.[stage])return {next:original,paid:0,skipped:[]};
+ if(wfData(original).completed?.[month]?.[stage]&&wfData(original).completed[month][stage].mode!=='automatic')return {next:original,paid:0,skipped:[]};
  if(wfIncomeMode(month,original)==='salary-only'&&stage==='incentives')
   return {next:original,paid:0,skipped:[]};
  // Only opt-in fields are carried from a prior monthly plan and settled automatically.
@@ -801,8 +805,9 @@ function autoFixedSettlement(original,stage,month,method,date){
   const wf=wfData(next);
   next.settings.twoStageWorkflow={...wf,completed:{...wf.completed,
    [month]:{...wf.completed?.[month],[stage]:{mode:'automatic',at:date,
-    total:processed.reduce((sum,p)=>sum+p.amount,0),
-    summary:{withheld:0,reserved:0,paid},decisions:Object.fromEntries(processed.map(p=>[p.key,'pay']))}}}};
+    total:(wf.completed?.[month]?.[stage]?.total||0)+paid,
+    summary:{withheld:0,reserved:0,paid:(wf.completed?.[month]?.[stage]?.summary?.paid||0)+paid},
+    decisions:{...(wf.completed?.[month]?.[stage]?.decisions||{}),...Object.fromEntries(processed.map(p=>[p.key,'pay']))}}}}};
  }
  E.validate(next);
  return {next,paid,skipped,processed};
@@ -2040,7 +2045,9 @@ function incomeStagePage(stage){
 function fixedCommitmentsPage(){
  const month=wfMonth,projection=monthlyCommitmentProjection(state,month),total=projection.plannedTotal;
  const covered=projection.entries.reduce((n,x)=>n+x.covered,0),pct=total?Math.min(100,Math.round(covered/total*100)):0;
- const editable=month===today().slice(0,7)&&!state.settings.closedMonths?.[month]&&!state.demo&&!wfDone('salary')&&!wfDone('incentives');
+ const editable=month===today().slice(0,7)&&!state.settings.closedMonths?.[month]&&!state.demo&&
+  (!wfDone('salary')||wfDone('salary').mode==='automatic')&&
+  (!wfDone('incentives')||wfDone('incentives').mode==='automatic');
  return head('الثوابت والالتزامات','مساحة مستقلة لتحديد قيمة كل التزام ومصدر خصمه الآلي عند استلام الدفعة.',
   (editable?btn('fixed-entry','إضافة التزام ثابت','plus'):'')+btn('wf-fields-manage','إدارة البنود','settings','secondary')+(editable?btn('wf-config','تحديد مبالغ الشهر','wallet','secondary'):'') )+
  `<div class="fz-finance-page">${firzaMonthSelector()}
