@@ -21,13 +21,13 @@ function numbers(st,overrides={}){
  ';return simpleFinancialNumbers;}')(env)(st,month);
 }
 test('Lite is default; advanced selection is separate from the accounting state',()=>{
- const store={},v=prefs(store),raw=JSON.stringify(initial());
+ const store={},v=prefs(store),account=initial(),raw=JSON.stringify(account);
  assert.equal(v.firzaViewMode(),'simple');
  assert.deepEqual(v.SIMPLE_NAVS.map(x=>x[0]),['dashboard','fixed','living','reports']);
  v.setFirzaViewMode('advanced');
  assert.equal(store['firza-view-mode-v1'],'advanced');
  assert.equal(v.firzaViewMode(),'advanced');
- assert.equal(JSON.stringify(initial()),raw);
+ assert.equal(JSON.stringify(account),raw);
  v.setFirzaViewMode('simple');assert.equal(v.firzaViewMode(),'simple');
 });
 test('Lite free balance subtracts only unpaid/unreserved fixed obligations without changing cash',()=>{
