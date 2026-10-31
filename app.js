@@ -753,13 +753,13 @@ function livingPage(){
    extra=state.transactions.filter(t=>t.type==='income'&&t.note==='أخرى'&&t.date.slice(0,7)===wfMonth).reduce((a,t)=>a+t.amount,0),
    first=livingPeriodSummary('incentives'),second=livingPeriodSummary('salary');
  const sections=`<div class="wf-living-phases">
-   <article class="wf-phase">
+   <article class="wf-phase" ${wfIncomeMode()==='salary-only'?'hidden':''}>
     <div><span class="wf-kicker">القسم الأول</span><h2>المعيشة من الحوافز</h2></div>
     <span class="chip ${incentive?'':'amber'}">${incentive?'تم تسجيل الاستلام':'لم تسجل الحوافز'}</span>
     <div class="wf-phase-amounts"><span>مخصص أثناء الحوافز <b>${money(first.allocated)}</b></span><span>مصروف قبل الراتب <b>${money(first.spent)}</b></span></div>
    </article>
    <article class="wf-phase">
-    <div><span class="wf-kicker">القسم الثاني</span><h2>المعيشة من الراتب</h2></div>
+    <div><span class="wf-kicker">${wfIncomeMode()==='salary-only'?'الدخل الشهري':'القسم الثاني'}</span><h2>المعيشة من الراتب</h2></div>
     <span class="chip ${salary?'':'amber'}">${salary?'تم تسجيل الاستلام':'بانتظار الراتب'}</span>
     <div class="wf-phase-amounts"><span>مخصص بعد الراتب <b>${money(second.allocated)}</b></span><span>مصروف بعد الراتب <b>${money(second.spent)}</b></span></div>
    </article>
@@ -778,23 +778,24 @@ function livingPage(){
    </div>`+sections+wfLivingPanel();
 }
 function statementPage(){
- const r=S.receipts(state,'incentives',wfMonth).slice().sort((a,b)=>a.date.localeCompare(b.date)),
+ const primary=wfIncomeMode()==='salary-only'?'salary':'incentives';
+ const r=S.receipts(state,primary,wfMonth).slice().sort((a,b)=>a.date.localeCompare(b.date)),
     start=r[0]?.date||'لم يتم الاستلام',stats=currentStats(),
     entries=state.transactions.filter(t=>t.date>=start&&t.date<=today());
  return head('التقارير المالية','تنزيل كشف مالي مباشر بصيغة PDF، دون المرور بشاشة الطباعة.')+
  `<section class="wf-report-dashboard">
-     <div class="wf-report-eyebrow">كشف من أول استلام الحوافز</div>
+     <div class="wf-report-eyebrow">كشف من أول استلام ${primary==='salary'?'الراتب':'الحوافز'}</div>
      <h2>الكشف المالي المفصل</h2>
      <p>يشمل كل حركة من <b>${safe(start)}</b> إلى الآن، مع ملخص محافظ المعيشة والأرصدة والمبالغ المحجوزة والمدفوعة.</p>
      <div class="wf-report-metrics">
        <div><span>الرصيد الحالي</span><strong>${money(stats.total)}</strong></div>
        <div><span>المتاح بعد الحجوزات</span><strong>${money(stats.unallocated)}</strong></div>
-       <div><span>الحركات المسجلة منذ الحوافز</span><strong>${r.length?entries.length:'—'}</strong></div>
+       <div><span>الحركات المسجلة منذ ${primary==='salary'?'الراتب':'الحوافز'}</span><strong>${r.length?entries.length:'—'}</strong></div>
      </div>
-     <button type="button" class="btn wf-report-download" data-action="wf-living-pdf" ${r.length?'':'disabled title="سجل استلام الحوافز أولاً"'}>
+     <button type="button" class="btn wf-report-download" data-action="wf-living-pdf" ${r.length?'':'disabled title="سجل استلام الدخل أولاً"'}>
        ${icon('download')} تنزيل PDF
      </button>
-     ${r.length?'':'<p class="wf-report-hint">بعد تسجيل استلام الحوافز لهذا الشهر، يتفعّل زر تنزيل الكشف المالي.</p>'}
+     ${r.length?'':'<p class="wf-report-hint">بعد تسجيل استلام الدخل الشهري، يتفعّل زر تنزيل الكشف المالي.</p>'}
      <p class="wf-report-foot">يتكوّن الملف محلياً على جهازك؛ لا تُرسل معاملاتك إلى خادم خارجي، ويمكن تنزيله دون إنترنت بعد اكتمال تثبيت التطبيق.</p>
    </section>`;
 }
@@ -819,7 +820,7 @@ function wfLivingPanel(){
    <div><span>المتبقي بعد جميع الحجوزات والتخصيصات</span><strong>${money(stats.unallocated)}</strong></div>
    <div><span>المتوفر في الأقسام الظاهرة والمخفية</span><strong>${money(livingAllCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
   </div>
-  ${!wfDone('salary')?'<div class="notice warn">الراتب أو بعض حجوزاته لم يُعتمد بعد. يمكنك التصرف من الحوافز المستلمة، لكن احتفظ بما يلزم للالتزامات القادمة.</div>':''}
+  ${!wfDone('salary')?'<div class="notice warn">الراتب أو بعض حجوزاته لم يُعتمد بعد. احتفظ بما يلزم للالتزامات القادمة.</div>':''}
   <div class="wf-living-grid">${cards||`<div class="wf-category-empty"><strong>لا توجد أقسام معيشة حالياً</strong><p>اضغط «تحديد الأقسام» ثم «إضافة قسم جديد» حتى تبدأ بطريقتك.</p>${btn('wf-category-add','إضافة أول قسم','plus')}</div>`}</div>
   <div class="wf-living-actions">
    ${livingCategories().length?btn('wf-living-allocate','تحديد ميزانية المعيشة للشهر','wallet'):''}
@@ -883,8 +884,9 @@ function wfLivingExtra(){
   },'تأكيد استلام أخرى');
 }
 function wfLivingReport(){
- const receipts=S.receipts(state,'incentives',wfMonth).slice().sort((a,b)=>a.date.localeCompare(b.date));
- if(!receipts.length)throw Error('لا يمكن تنزيل الكشف قبل تسجيل استلام الحوافز للشهر المختار.');
+ const primary=wfIncomeMode()==='salary-only'?'salary':'incentives';
+ const receipts=S.receipts(state,primary,wfMonth).slice().sort((a,b)=>a.date.localeCompare(b.date));
+ if(!receipts.length)throw Error('لا يمكن تنزيل الكشف قبل تسجيل استلام '+(primary==='salary'?'الراتب':'الحوافز')+' للشهر المختار.');
  if(!window.ThukhrPDF||typeof window.ThukhrPDF.download!=='function')
   throw Error('ملف تنزيل PDF لم يكتمل تحميله. أعد فتح التطبيق وحاول مرة أخرى.');
  const first=receipts[0].date,now=today(),dateTime=new Date().toLocaleString('ar-IQ'),
