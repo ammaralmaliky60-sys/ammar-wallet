@@ -296,3 +296,29 @@ body:not(.dark) .wf-other-line b{color:#765321}
  .wf-living-top-actions .btn[data-action="wf-category-manage"]{min-height:47px;font-size:12px}
  .wf-living-actions .btn[data-action="wf-category-manage"]{width:100%}
 }
+
+
+/* Living management: truly empty state and financially safe hidden sections. */
+.wf-category-empty{display:flex;flex-direction:column;justify-content:center;align-items:center;
+ border:1px dashed #b69a65aa;border-radius:15px;background:var(--bg);
+ padding:24px 18px;text-align:center;gap:8px;width:100%;min-height:140px}
+.wf-category-empty>strong{font-size:15px;color:var(--ink);font-weight:700}
+.wf-category-empty>p{font-size:12px;color:var(--muted);line-height:1.9;max-width:350px;margin:0 0 10px}
+.wf-category-empty>.btn{display:inline-flex!important;min-height:44px;justify-content:center}
+.wf-category-list>.wf-category-empty{margin:2px auto}
+.wf-category-hidden-section{border-top:1px solid var(--line);margin-top:22px;padding-top:15px}
+.wf-category-hidden-section>h3{font-size:15px;font-weight:650;color:var(--ink);margin:0 0 7px}
+.wf-category-hidden-section>.wf-help{margin:0}
+.wf-category-hidden-row{opacity:.88;background:var(--bg)}
+.wf-living-grid>.wf-category-empty{grid-column:1/-1}
+@media(max-width:760px){
+ .wf-category-empty{padding:18px 12px;min-height:120px}
+ .wf-category-empty>strong{font-size:14px}
+ .wf-category-hidden-section{margin-top:18px}
+}
+
+.wf-category-clear{display:inline-flex!important;align-items:center;justify-content:center;
+ width:100%;min-height:43px;margin-top:9px;border:1px solid #ac5c5c;
+ background:transparent;color:#cf7777;font-weight:650;font-size:12px;border-radius:11px}
+.wf-category-clear:focus-visible{outline:2px solid #db9292;outline-offset:3px}
+@media(max-width:760px){.wf-category-clear{min-height:47px}}
