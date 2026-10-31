@@ -282,7 +282,7 @@ function workflowPage(){
   `<div class="wf-parts"><span>قسط سلفة الدوام الكامل <b>${money(plan.workLoan||0)}</b></span><span>من الحوافز <b>${money(workPart)}</b></span><span>من الراتب <b>${money((plan.workLoan||0)-workPart)}</b></span></div>`}
  ${wfStageSummary('incentives')}
  ${wfStageSummary('salary')}
- <div class="wf-living-shortcut"><span>بعد حجز الالتزامات، افتح صفحة المعيشة المستقلة وقسّم الرصيد المتبقي على محافظ المصاريف الخمس.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
+ <div class="wf-living-shortcut"><span>بعد حجز الالتزامات، افتح صفحة المعيشة المستقلة وقسّم الرصيد المتبقي على أقسام المعيشة التي تختارها.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
  ${Object.values(stats.wallets).some(v=>v>0)?'<div class="notice">إذا كانت عندك مبالغ موزعة سابقاً على محافظ قديمة، فهي لا تُحجز مرة ثانية. تكدر ترجع جزء منها إلى المتاح بعد موافقتك. <button type="button" class="btn small secondary" data-action="wf-release">إرجاع مبلغ من محفظة قديمة</button></div>':''}
  ${settled.length?`<section class="wf-stage"><h2>حجوزات جاهزة للسداد</h2><p class="wf-help">الحجز غير السداد. اضغط «سداد» فقط عند خروج المبلغ من البطاقة أو النقد فعلياً.</p>${settled.map(o=>`<div class="wf-step"><span>${safe(o.label)} · محجوز ${money(stats.reserved[o.id])}</span><button class="btn small secondary" data-action="wf-pay" data-id="${o.id}">سداد</button></div>`).join('')}</section>`:''}
  <div class="notice">الأرقام تنحفظ على جهازك داخل نفس السجل المالي السابق. سجل الحركات والنسخ الاحتياطية باقية. الدخل لا يُسجَّل إلا عند استلامه، والالتزامات لا تتحول إلى حجز أو سداد إلا بقرار منك.</div>`;
@@ -474,6 +474,7 @@ function livingPage(){
      <div class="wf-living-top-actions">
        ${btn('wf-living-direct','إضافة مصروف','wallet')}
        ${btn('wf-living-extra','أخرى','income','secondary')}
+       ${btn('wf-category-manage','تحديد الأقسام','settings','secondary')}
        ${btn('wf-living-pdf','تنزيل PDF','download','secondary')}
      </div>
    </div>`+sections+wfLivingPanel();
@@ -518,7 +519,7 @@ function wfLivingPanel(){
    <h2>أقسام مصاريف المعيشة</h2></div><span class="chip">${livingCategories().length} قسم</span></div>
   <div class="wf-living-overview">
    <div><span>المتبقي بعد جميع الحجوزات والتخصيصات</span><strong>${money(stats.unallocated)}</strong></div>
-   <div><span>المتوفر حالياً في المحافظ الخمس</span><strong>${money(livingCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
+   <div><span>المتوفر حالياً في أقسام المعيشة</span><strong>${money(livingCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
   </div>
   ${!wfDone('salary')?'<div class="notice warn">الراتب أو بعض حجوزاته لم يُعتمد بعد. يمكنك التصرف من الحوافز المستلمة، لكن احتفظ بما يلزم للالتزامات القادمة.</div>':''}
   <div class="wf-living-grid">${cards}</div>
