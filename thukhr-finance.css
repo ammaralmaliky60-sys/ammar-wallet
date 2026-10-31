@@ -1,0 +1,24 @@
+/* THUKHR 1.7 Accounting upgrade — retains the four established themes */
+.wf-settlements{display:grid;gap:11px;margin-block:14px}
+.wf-settlement-item{border:1px solid var(--th-line,var(--line));border-radius:13px;padding:13px;
+background:var(--th-panel2,var(--surface))}
+.wf-settlement-item .wf-step{padding:0 0 8px;margin-bottom:10px}
+.wf-settlement-item .field{margin-bottom:0}
+.thukhr-reconciliation-panel{margin:16px 0;padding:15px;border:1px solid var(--th-line,var(--line));border-radius:15px}
+.thukhr-reconciliation-panel h3{font-size:17px;margin:0 0 8px}
+.thukhr-reconciliation-panel .wf-step{padding:10px 0}
+.thukhr-installments{margin-block:14px}
+.thukhr-installments .table-wrap{max-width:100%;overflow-x:auto}
+.thukhr-installments table{min-width:720px;font-variant-numeric:tabular-nums}
+.thukhr-installments td,.thukhr-installments th{font-size:12px;white-space:nowrap;padding:11px}
+.wf-report-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.wf-report-metrics>div{min-width:0}
+.wf-report-metrics strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(max-width:760px){
+ .wf-settlement-item{padding:12px}
+ .wf-report-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .wf-report-metrics>div:first-child{grid-column:auto}
+ .thukhr-reconciliation-panel{padding:12px}
+ .thukhr-reconciliation-panel .form-grid{grid-template-columns:1fr}
+ .thukhr-installments table{min-width:710px}
+}
