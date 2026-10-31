@@ -51,9 +51,9 @@ test('status explanations update when a select changes',()=>{
 test('responsive styles and versioned deployment reference the update',()=>{
  assert.match(css,/thukhr-status-explain/);
  assert.match(css,/@media\(max-width:760px\)/);
- assert.match(index,/thukhr-obligation-status-20261031-r1/);
- assert.match(sw,/thukhr-obligation-status-20261031-r1/);
- assert.match(sw,/v1\.8\.2-obligation-status/);
+ assert.match(index,/thukhr-budget-plan-20261031-r1/);
+ assert.match(sw,/thukhr-budget-plan-20261031-r1/);
+ assert.match(sw,/v1\.8\.3-budget-planning/);
 });
 test('engine accounting remains independent of new UI words',()=>{
  const engine=get('engine.js');
