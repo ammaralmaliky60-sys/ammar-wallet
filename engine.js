@@ -313,6 +313,7 @@ function correctEmergency(state,eventId,reason){
  const target=state.transactions.find(t=>t.id===eventId);
  if(!target||!isEmergencyMovement(target,kinds))fail("هذه ليست عملية خروج محمية من الطوارئ.");
  if(state.history.some(h=>h.transactionIds.includes(eventId)))fail("هذه الحركة ضمن دورة مؤرشفة ولا يمكن تعديلها.");
+ if(state.settings.closedMonths?.[target.date.slice(0,7)])fail('عملية الطوارئ ضمن شهر مغلق مالياً.');
  const next=clone(state);
  ensureEmergencyProtection(next);
  const index=next.transactions.findIndex(t=>t.id===eventId);
