@@ -46,7 +46,7 @@ function pageHeader(ctx,data,isFirst){
   rtl(ctx,(data.brand||'ميزان')+'  |  التقرير المالي',1175,47,25,C.goldLight,600);
   if(isFirst){
     rtl(ctx,'الكشف المالي الشخصي',1175,110,44,C.white,700,1080,true);
-    rtl(ctx,'من '+data.from+' إلى '+data.issuedAt,1175,167,20,C.goldLight,400,1080);
+    rtl(ctx,'من '+data.from+' إلى '+(data.to||data.issuedAt),1175,167,20,C.goldLight,400,1080);
   }else{
     rtl(ctx,'سجل الحركات | متابعة الكشف',1175,99,30,C.white,600,1080,true);
   }
@@ -120,13 +120,15 @@ function renderPage(data,rows,firstPage,pageNo,totalPages,walletRows=null){
     const cards=[
       ['الدخل المستلم',data.stats.income],
       ['المصاريف الفعلية',data.stats.expenses],
-      ['الالتزامات المدفوعة',data.stats.paid],
-      ['الرصيد الحالي',data.stats.total],
+      ['السداد النقدي',data.stats.paid],
+      ['الرصيد الختامي',data.stats.total],
       ['المتاح للتوزيع',data.stats.available],
       ['المبالغ المحجوزة',data.stats.reserved]
     ];
     const width=355,start=69,gap=19;
     cards.forEach((v,i)=>kpi(ctx,start+(i%3)*(width+gap),253+Math.floor(i/3)*133,width,v[0],v[1]));
+    rtl(ctx,'رصيد افتتاح الشهر: '+fmt(data.stats.opening||'0')+'   |   استقطاع قبل الإيداع: '+fmt(data.stats.withheld||'0'),
+  1172,535,20,C.navy,600,1080);
     y=walletTable(ctx,{...data,wallets:data.wallets.slice(0,12)},560);
     y=transactionsHeader(ctx,y+40,data.entries.length,false);
   }else if(walletRows){
