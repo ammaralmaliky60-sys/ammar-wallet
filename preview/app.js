@@ -246,7 +246,7 @@ function workflowPage(){
   `<div class="wf-parts"><span>قسط سلفة الدوام الكامل <b>${money(plan.workLoan||0)}</b></span><span>من الحوافز <b>${money(workPart)}</b></span><span>من الراتب <b>${money((plan.workLoan||0)-workPart)}</b></span></div>`}
  ${wfStageSummary('incentives')}
  ${wfStageSummary('salary')}
- <div class="wf-living-shortcut"><span>بعد حجز الالتزامات، افتح صفحة المعيشة المستقلة وقسّم الرصيد المتبقي على محافظ المصاريف الخمس.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
+ <div class="wf-living-shortcut"><span>بعد حجز الالتزامات، افتح صفحة المعيشة المستقلة وقسّم الرصيد المتبقي على أقسام المعيشة التي تختارها.</span><button type="button" class="btn" data-action="wf-living-scroll">الانتقال إلى مصاريف المعيشة</button></div>
  ${Object.values(stats.wallets).some(v=>v>0)?'<div class="notice">إذا كانت عندك مبالغ موزعة سابقاً على محافظ قديمة، فهي لا تُحجز مرة ثانية. تكدر ترجع جزء منها إلى المتاح بعد موافقتك. <button type="button" class="btn small secondary" data-action="wf-release">إرجاع مبلغ من محفظة قديمة</button></div>':''}
  ${settled.length?`<section class="wf-stage"><h2>حجوزات جاهزة للسداد</h2><p class="wf-help">الحجز غير السداد. اضغط «سداد» فقط عند خروج المبلغ من البطاقة أو النقد فعلياً.</p>${settled.map(o=>`<div class="wf-step"><span>${safe(o.label)} · محجوز ${money(stats.reserved[o.id])}</span><button class="btn small secondary" data-action="wf-pay" data-id="${o.id}">سداد</button></div>`).join('')}</section>`:''}
  <div class="notice">الأرقام تنحفظ على جهازك داخل نفس السجل المالي السابق. سجل الحركات والنسخ الاحتياطية باقية. الدخل لا يُسجَّل إلا عند استلامه، والالتزامات لا تتحول إلى حجز أو سداد إلا بقرار منك.</div>`;
@@ -308,6 +308,78 @@ const WF_LIVING=[
  {id:'personal',label:'الشخصي',kind:'spend',color:'#ca8c6d'},
  {id:'emergency',label:'الطوارئ',kind:'emergency',color:'#c3a463'}
 ];
+function livingCategories(st=state){
+ const saved=st.settings.livingCategories;
+ return Array.isArray(saved)?saved:WF_LIVING;
+}
+function livingCategoryManage(){
+ const categories=livingCategories(),stats=currentStats();
+ modal('تحديد أقسام المعيشة','غيّر أسماء الأقسام أو أضف قسماً جديداً. الحذف مسموح فقط قبل استخدام القسم.',
+ `<div class="wf-category-list">${categories.map(c=>{
+  const inUse=state.transactions.some(t=>t.walletId===c.id||t.from===c.id||t.to===c.id);
+  const balance=stats.wallets[c.id]||0;
+  return `<div class="wf-category-row"><span class="wf-category-color" style="background:${c.color}"></span>
+  <div class="wf-category-info"><strong>${safe(c.label)}</strong><small>${inUse?'فيه حركات مالية':balance?'له رصيد':'يمكن تغييره أو حذفه'}</small></div>
+  <button class="btn small secondary" type="button" data-action="wf-category-edit" data-id="${c.id}">تعديل</button>
+  <button class="btn small danger" type="button" data-action="wf-category-delete" data-id="${c.id}" ${inUse||balance?'disabled':''}>حذف</button>
+  </div>`;
+ }).join('')}</div>
+ <p class="wf-help">تبقى الحسابات السابقة محفوظة. لا يخصم تعديل اسم القسم أي مبلغ من المحفظة.</p>
+ <button type="button" class="btn wf-category-add" data-action="wf-category-add">إضافة قسم جديد</button>`);
+}
+function livingCategoryEdit(id=''){
+ const old=id?livingCategories().find(x=>x.id===id):null;
+ if(id&&!old)throw Error('هذا القسم غير موجود.');
+ if(!old&&livingCategories().length>=12)throw Error('لا يمكن إضافة أكثر من 12 قسماً.');
+ modal(old?'تعديل اسم القسم':'إضافة قسم جديد','يظهر القسم فوراً في المعيشة والصرف المباشر والميزانية وPDF.',
+  `<div class="form-grid">${field('اسم القسم','categoryName','text',old?.label||'','required maxlength="35" placeholder="مثلاً الأدوية أو الوقود"')}
+   ${old?'':select('نوع القسم','categoryKind',[['spend','مصروف يومي'],['emergency','طوارئ']],'spend')}
+   </div>`,
+  f=>{
+   const name=String(f.categoryName||'').trim().replace(/\s+/g,' ');
+   if(name.length<2||name.length>35||/[<>]/.test(name))throw Error('اسم القسم يجب أن يكون من 2 إلى 35 حرفاً.');
+   if(livingCategories().some(c=>c.id!==id&&c.label.toLowerCase()===name.toLowerCase()))
+    throw Error('هذا الاسم مستخدم مسبقاً.');
+   if(!old&&!['spend','emergency'].includes(f.categoryKind))throw Error('نوع القسم غير صحيح.');
+   act(n=>{
+    const items=livingCategories(n).map(x=>({...x}));
+    if(old){
+     const item=items.find(x=>x.id===id);
+     if(!item)throw Error('القسم المطلوب غير موجود.');
+     item.label=name;
+     const wallet=n.wallets.find(x=>x.id===id);
+     if(wallet)wallet.name=name;
+    }else{
+     const code='living_'+uid().replace(/[^a-zA-Z0-9_-]/g,'').slice(0,35);
+     if(items.some(x=>x.id===code)||n.wallets.some(x=>x.id===code))throw Error('تعذر إنشاء معرف القسم. أعد المحاولة.');
+     const colors=['#5aa89d','#c1a06a','#9b95ca','#ce8d8d','#74a3c1','#ae9c76'];
+     const c={id:code,label:name,kind:f.categoryKind,color:colors[items.length%colors.length]};
+     items.push(c);
+     n.wallets.push({id:c.id,name:c.label,kind:c.kind,color:c.color,weight:0});
+    }
+    n.settings.livingCategories=items;
+    return n;
+   },old?'تم تحديث اسم القسم':'تمت إضافة القسم إلى المعيشة');
+  },old?'حفظ التعديل':'إضافة القسم');
+}
+function livingCategoryDelete(id){
+ const c=livingCategories().find(x=>x.id===id);
+ if(!c)throw Error('القسم غير موجود.');
+ if(livingCategories().length===1)throw Error('يجب إبقاء قسم واحد على الأقل.');
+ const used=n=>n.transactions.some(t=>t.walletId===id||t.from===id||t.to===id)||
+  n.history.some(h=>JSON.stringify(h).includes('"'+id+'"'))||
+  Object.values(n.settings.livingTargets||{}).some(t=>Object.prototype.hasOwnProperty.call(t,id));
+ if(used(state)||(currentStats().wallets[id]||0)!==0)throw Error('القسم مرتبط بمبلغ أو سجل سابق. يمكن تغيير اسمه بدلاً من حذفه.');
+ confirmModal('حذف القسم غير المستخدم؟','سيُزال «'+c.label+'» من أقسام المعيشة فقط.',
+ ()=>{
+  act(n=>{
+   if(used(n)||(E.stats(n).wallets[id]||0)!==0)throw Error('القسم لم يعد قابلاً للحذف.');
+   n.settings.livingCategories=livingCategories(n).filter(x=>x.id!==id).map(x=>({...x}));
+   n.wallets=n.wallets.filter(x=>x.id!==id);
+   return n;
+  },'تم حذف القسم غير المستخدم');
+ },'حذف القسم');
+}
 
 // تقرير المصروف الشهري يحسب المصروف السابق ورصيد المحفظة؛ تخصيص الفرق فقط.
 function livingSpent(walletId,month=wfMonth){
@@ -318,7 +390,7 @@ function livingTargets(month=wfMonth,st=state){
 }
 function livingNeeds(targets,st=state,month=wfMonth){
  const stats=E.stats(st);
- const result=WF_LIVING.map(w=>{
+ const result=livingCategories().map(w=>{
   const target=targets[w.id]||0;
   const spent=st.transactions.filter(t=>t.type==='expense'&&t.walletId===w.id&&t.date.slice(0,7)===month).reduce((sum,t)=>sum+t.amount,0);
   const balance=stats.wallets[w.id]||0;
@@ -335,7 +407,7 @@ function livingPeriodSummary(stage){
  const salary=S.receipts(state,'salary',wfMonth).sort((a,b)=>a.date.localeCompare(b.date))[0];
  const cutoff=salary?.date||null;
  const relevant=state.transactions.filter(t=>t.date.slice(0,7)===wfMonth&&
-   (t.type==='allocate'||t.type==='expense')&&WF_LIVING.some(w=>w.id===t.walletId));
+   (t.type==='allocate'||t.type==='expense')&&livingCategories().some(w=>w.id===t.walletId));
  const txs=relevant.filter(t=>livingStageName(t,cutoff)===stage);
  return {allocated:txs.filter(t=>t.type==='allocate').reduce((s,t)=>s+t.amount,0),
          spent:txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0)};
@@ -365,6 +437,7 @@ function livingPage(){
      <div class="wf-living-top-actions">
        ${btn('wf-living-direct','إضافة مصروف','wallet')}
        ${btn('wf-living-extra','أخرى','income','secondary')}
+       ${btn('wf-category-manage','تحديد الأقسام','settings','secondary')}
        ${btn('wf-living-pdf','تنزيل PDF','download','secondary')}
      </div>
    </div>`+sections+wfLivingPanel();
@@ -392,7 +465,7 @@ function statementPage(){
 }
 function wfLivingPanel(){
  const stats=currentStats(),targets=livingTargets(),covered=livingNeeds(targets);
- const cards=WF_LIVING.map(w=>{
+ const cards=livingCategories().map(w=>{
   const registered=state.wallets.some(x=>x.id===w.id),balance=stats.wallets[w.id]||0,
     spent=livingSpent(w.id),hasTarget=Object.prototype.hasOwnProperty.call(targets,w.id),
     target=targets[w.id]||0;
@@ -406,15 +479,16 @@ function wfLivingPanel(){
  }).join('');
  return `<section id="wf-living" class="wf-stage wf-living">
   <div class="wf-stage-top"><div><span class="wf-kicker">ميزانية شهر ${wfMonth}</span>
-   <h2>المنزل والخضروات والأطفال والشخصي والطوارئ</h2></div><span class="chip">5 محافظ</span></div>
+   <h2>أقسام مصاريف المعيشة</h2></div><span class="chip">${livingCategories().length} قسم</span></div>
   <div class="wf-living-overview">
    <div><span>المتبقي بعد جميع الحجوزات والتخصيصات</span><strong>${money(stats.unallocated)}</strong></div>
-   <div><span>المتوفر حالياً في المحافظ الخمس</span><strong>${money(WF_LIVING.reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
+   <div><span>المتوفر حالياً في أقسام المعيشة</span><strong>${money(livingCategories().reduce((n,w)=>n+(stats.wallets[w.id]||0),0))}</strong></div>
   </div>
   ${!wfDone('salary')?'<div class="notice warn">الراتب أو بعض حجوزاته لم يُعتمد بعد. يمكنك التصرف من الحوافز المستلمة، لكن احتفظ بما يلزم للالتزامات القادمة.</div>':''}
   <div class="wf-living-grid">${cards}</div>
   <div class="wf-living-actions">
    ${btn('wf-living-allocate','تحديد ميزانية المعيشة للشهر','wallet')}
+   ${btn('wf-category-manage','تحديد أقسام المعيشة','settings','secondary')}
    ${btn('wf-release','إرجاع مبلغ إلى المتاح','wallet','secondary')}
   </div>
   <p class="wf-help">تكتب الميزانية الإجمالية للشهر، وليس المبلغ الجديد فقط. يحسب ميزان ما صُرف مسبقاً وما بقي داخل كل محفظة، ثم يخصص الفرق إن توفر المال. تكرار الحفظ لا يكرر التخصيص.</p>
@@ -423,7 +497,7 @@ function wfLivingPanel(){
 function wfLivingAllocate(){
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً.');
  const preset=livingTargets(),available=currentStats().unallocated;
- const fields=WF_LIVING.map(w=>{
+ const fields=livingCategories().map(w=>{
   const spent=livingSpent(w.id),balance=currentStats().wallets[w.id]||0;
   const prefill=Object.prototype.hasOwnProperty.call(preset,w.id)?preset[w.id]:spent+balance;
   return `<div class="wf-budget-field">${moneyField(w.label,'living-'+w.id,inputMoney(prefill),'required')}
@@ -436,7 +510,7 @@ function wfLivingAllocate(){
   <div class="field"><label><input type="checkbox" name="approve" value="yes" required> أوافق على اعتماد الميزانية وتخصيص الفرق المطلوب فقط</label></div>`,
   f=>{
    if(f.approve!=='yes')throw Error('يجب تأكيد اعتماد الميزانية.');
-   const targets=Object.fromEntries(WF_LIVING.map(w=>[w.id,amount(f['living-'+w.id],true)]));
+   const targets=Object.fromEntries(livingCategories().map(w=>[w.id,amount(f['living-'+w.id],true)]));
    const required=livingNeeds(targets);
    if(required.additional>required.available)throw Error('المطلوب لإكمال الميزانية '+money(required.additional)+'، والمتاح '+money(required.available)+'. قلّل السقوف أو أضف مبلغاً عبر «أخرى».');
    act(n=>{
@@ -447,9 +521,9 @@ function wfLivingAllocate(){
     const label=stage==='salary'?'الراتب':'الحوافز';
     for(const row of fresh.rows){
      if(!row.additional)continue;
-     const w=WF_LIVING.find(w=>w.id===row.id);
+     const w=livingCategories().find(w=>w.id===row.id);
      if(!next.wallets.some(x=>x.id===row.id)){
-      if(row.id!=='vegetables')throw Error('محفظة '+row.label+' غير موجودة.');
+      if(!w)throw Error('قسم '+row.label+' غير موجود.');
       next.wallets.push({id:w.id,name:w.label,kind:w.kind,color:w.color,weight:0});
      }
      next=event(next,{type:'allocate',walletId:row.id,amount:row.additional,date:today(),
@@ -493,7 +567,7 @@ function wfLivingReport(){
    total:fmt(stats.total),available:fmt(stats.unallocated),
    reserved:fmt(Object.values(stats.reserved).reduce((a,b)=>a+b,0))
   },
-  wallets:WF_LIVING.map(w=>({
+  wallets:livingCategories().map(w=>({
    name:w.label,budget:fmt(livingTargets()[w.id]||0),
    spent:fmt(rows.filter(t=>t.type==='expense'&&t.walletId===w.id).reduce((a,t)=>a+t.amount,0)),
    balance:fmt(stats.wallets[w.id]||0)
@@ -510,9 +584,9 @@ function wfLivingReport(){
 }
 function wfLivingDirect(initialId=''){
  if(state.demo)throw Error('ابدأ الخطة الفعلية أولاً قبل تسجيل المصروف.');
- const stats=currentStats(),usable=WF_LIVING.reduce((sum,w)=>sum+(stats.wallets[w.id]||0),0)+stats.unallocated;
+ const stats=currentStats(),usable=livingCategories().reduce((sum,w)=>sum+(stats.wallets[w.id]||0),0)+stats.unallocated;
  if(usable<=0)throw Error('لا يوجد رصيد قابل للصرف. راجع حجوزاتك أو سجّل استلام مبلغ أولاً.');
- const options=WF_LIVING.map(w=>[w.id,w.label]);
+ const options=livingCategories().map(w=>[w.id,w.label]);
  modal('إضافة مصروف','لا تحتاج تحديد ميزانية الشهر أولاً. يُخصم المصروف من المتبقي غير المحجوز، ويُحتسب ضمن ميزانية الشهر لاحقاً.',
   `<div class="form-grid">
    ${select('نوع المصروف','walletId',options,options.some(x=>x[0]===initialId)?initialId:'home')}
@@ -522,7 +596,7 @@ function wfLivingDirect(initialId=''){
    <div class="full">${field('على ماذا صرفت؟','note','text','','required maxlength="120" placeholder="مثلاً شراء خضروات للمنزل"')}</div></div>
    <div class="notice">المتاح غير المحجوز: <b>${money(stats.unallocated)}</b>. إذا كانت المحفظة لا تكفي، يمول ميزان فقط مقدار النقص من المتبقي عند تأكيد الصرف، دون حجز إضافي أو خصم مزدوج.</div>`,
   f=>{
-   const wallet=WF_LIVING.find(w=>w.id===f.walletId);
+   const wallet=livingCategories().find(w=>w.id===f.walletId);
    if(!wallet)throw Error('اختر نوع المصروف الصحيح.');
    const value=amount(f.amount);
    if(!['cash','card'].includes(f.method))throw Error('اختر البطاقة أو النقد.');
@@ -544,7 +618,7 @@ function wfLivingDirect(initialId=''){
   },'تأكيد صرف المبلغ');
 }
 function wfLivingExpense(id){
- if(!WF_LIVING.some(w=>w.id===id))throw Error('اختر إحدى محافظ المعيشة الخمس.');
+ if(!livingCategories().some(w=>w.id===id))throw Error('اختر قسماً من أقسام المعيشة.');
  if(!state.wallets.some(w=>w.id===id))throw Error('المحفظة لم تُنشأ بعد؛ خصص لها مبلغاً أولاً.');
  if((currentStats().wallets[id]||0)<=0)throw Error('رصيد هذه المحفظة صفر؛ خصص مبلغاً قبل تسجيل مصروف.');
  openExpense(id);
@@ -565,7 +639,7 @@ function planPage(){const s=currentStats();return head('المحافظ والخ�
 function ledgerPage(){return head('سجل الحوافز والراتب','سجل الدخل والحجوزات والمدفوعات السابقة، مع المحافظة على كل الحركات المالية القديمة.')+`<section class="panel">${section('دفترك المالي',`${state.transactions.length} حركة مسجلة`,btn('csv','تصدير CSV','download','secondary small'))}<div class="filters"><input id="search" placeholder="ابحث بالوصف أو المحفظة…" aria-label="البحث في السجل"><select id="typeFilter" aria-label="نوع الحركة"><option value="all">جميع الحركات</option><option value="income">الدخل</option><option value="expense">المصروفات</option><option value="pay">سداد الالتزامات</option><option value="reserve">الحجز</option><option value="allocate">التخصيص</option><option value="transfer">التحويلات</option><option value="account">النقد والبطاقة</option></select><input type="date" id="fromFilter" aria-label="من تاريخ"><input type="date" id="toFilter" aria-label="إلى تاريخ"></div><div id="ledgerResults">${ledgerRows([...state.transactions].reverse())}</div></section><div class="notice">عند حذف عملية، تُفحص الحركات التي تليها. إذا كان الحذف يجعل أي حساب أو محفظة سالبة، يُرفض لحماية دقة السجل.</div>`}
 function reportsPage(){const s=currentStats(),sum=summary(),sp=state.wallets.map(w=>({name:w.name,value:cycleTx().filter(t=>t.type==='expense'&&t.walletId===w.id).reduce((a,t)=>a+t.amount,0),color:w.color})),max=Math.max(1,...sp.map(x=>x.value)),reserved=Object.values(s.reserved).reduce((a,n)=>a+n,0),walletTotal=Object.values(s.wallets).reduce((a,n)=>a+n,0);return head('التقارير والتحليل','افهم سلوك الصرف وراجع توازن أموالك.',btn('wf-living-pdf','تنزيل PDF','download','secondary'))+`<div class="stat-grid">${stat(state.migration?'الدخل والرصيد الافتتاحي':'دخل هذه الدورة',sum.income,'income',state.migration?'يشمل افتتاح النسخة السابقة':'دخل مستلم فقط')}${stat('صرف المحافظ',sum.expenses,'wallet','مشترياتك الفعلية','blue')}${stat('الالتزامات المدفوعة',sum.paid,'check','سداد من المحجوز','gold')}${stat('الادخار والطوارئ',state.wallets.filter(w=>w.kind!=='spend').reduce((a,w)=>a+s.wallets[w.id],0),'saving','الرصيد الحالي المحمي','purple')}</div><div class="two-col"><section class="panel">${section('أين تذهب مصروفاتك؟','مصروفات المحافظ خلال الدورة الحالية')}<div class="report-bars">${sp.map(x=>`<div class="report-col" style="height:${Math.max(2,x.value/max*90)}%;background:${safe(x.color)}"><b class="num">${fmt(x.value)}</b><span>${safe(x.name)}</span></div>`).join('')}</div></section><section class="panel">${section('معادلة التوازن','مكان المال يساوي مجموع الأغراض المخصصة له.')}<div class="keyval"><span>البطاقة + النقد</span><b>${money(s.total)}</b></div><div class="keyval"><span>المحافظ والادخار</span><b>${money(walletTotal)}</b></div><div class="keyval"><span>الالتزامات المحجوزة</span><b>${money(reserved)}</b></div><div class="keyval"><span>غير موزّع</span><b>${money(s.unallocated)}</b></div><div class="notice">${icon('check')} الحساب متوازن · الفرق ${fmt(s.total-walletTotal-reserved-s.unallocated)} ${unit()}</div></section></div><section class="panel">${section('مطابقة الرصيد الفعلي','المطابقة تكشف الفرق ولا تنشئ تسوية صامتة.')}<form id="reconcileForm" class="form-grid"><div class="field"><label for="reconMethod">الحساب</label><select id="reconMethod" name="method"><option value="card">البطاقة</option><option value="cash">النقد</option></select></div><div class="field"><label for="reconActual">الرصيد الفعلي الآن (${unit()})</label><input id="reconActual" name="actual" type="text" data-money inputmode="${ccy().dec?'decimal':'numeric'}" autocomplete="off" oninput="window.mizanFormatMoneyInput(this)" required></div><div class="full">${btn('submit-recon','مطابقة الرصيد','check')}</div></form><div id="reconResult"></div><p class="help-text">طابق فقط الأموال التي أدخلتها في ميزان، إذا كان حسابك يحوي أموالاً أخرى خارج الخطة.</p></section><section class="panel">${section('الدورات المؤرشفة','ملخص كل دورة عند استلام الدخل الجديد.')}${state.history.length?state.history.slice().reverse().map(h=>`<div class="keyval"><span>${date(h.start||h.cycle?.start||today(),true)}</span><b>${money(h.total??h.summary?.total??h.closingTotal??h.closing?.total??0)}</b></div>`).join(''):empty('ستجد دوراتك السابقة هنا','ابدأ دورة جديدة ليُحفظ ملخص الدورة الحالية.')}${state.legacyHistory?.length?'<div class="notice">أرشيف النسخة السابقة: '+state.legacyHistory.length+' دورات محفوظة في النسخة الاحتياطية، دون إضافتها إلى الرصيد الحالي.</div>':''}<div class="settings-actions">${btn('backup','تنزيل السجل الكامل','download','secondary')}</div></section>`}
 function settingsPage(){return head('إعدادات تناسبك','تفضيلات واضحة، ونسخ احتياطية تحفظ تعبك.')+`<div class="two-col"><section class="panel">${section('مساحتك الشخصية','خصّص تجربتك حسب احتياجك.')}<form id="settingsForm" class="form-grid"><div class="field full"><label for="userName">الاسم المفضل</label><input name="name" id="userName" maxlength="40" value="${safe(state.settings.name)}" placeholder="كيف تحب أن نناديك؟"></div><div class="field"><label for="currency">العملة الأساسية</label><select id="currency" name="currency" ${state.transactions.length?'disabled':''}>${Object.entries(currencies).map(([k,c])=>`<option value="${k}" ${k===state.settings.currency?'selected':''}>${c.label} (${k})</option>`).join('')}</select><small>لعملة جديدة، ابدأ خطة مستقلة. لا تُحوَّل الأرصدة بتغيير الاسم.</small></div><div class="field"><label for="digits">عرض الأرقام</label><select id="digits" name="digits"><option value="en" ${state.settings.digits==='en'?'selected':''}>123,456</option><option value="ar" ${state.settings.digits==='ar'?'selected':''}>١٢٣٬٤٥٦</option></select></div><div class="field full"><label for="theme">المظهر</label><select id="theme" name="theme"><option value="dark" ${state.settings.theme==='dark'?'selected':''}>فحمي ذهبي (الأساسي)</option><option value="light" ${state.settings.theme==='light'?'selected':''}>فاتح دافئ</option></select></div><div class="full"><button class="btn" type="submit">حفظ التفضيلات</button></div></form></section><section class="panel">${section('بياناتك تحت سيطرتك','تخزين محلي، دون مزامنة تلقائية.')}<p class="help-text">البيانات المالية محفوظة داخل هذا المتصفح. كل جهاز له سجل مستقل. نزّل نسخة JSON دورياً وقبل الانتقال إلى جهاز آخر. الاستعادة تستبدل السجل بعد التحقق منه.</p><div class="settings-actions">${btn('backup','نسخة احتياطية JSON','download')}${btn('restore','استعادة نسخة','upload','secondary')}${btn('csv','تصدير CSV','ledger','secondary')}</div><div class="notice">يمكن استيراد نسخة JSON من تطبيق «محافظ عمار» القديم. تبقى الأرصدة والحركات، وتُحفظ الدورات القديمة ضمن ملف النسخة الاحتياطية.</div></section><section class="panel">${section('دورة الدخل','ابدأ من يوم الاستلام الفعلي.')}<div class="keyval"><span>بداية الدورة</span><b>${date(state.cycle.start,true)}</b></div><div class="keyval"><span>المدة</span><b>${state.cycle.days} يوماً</b></div><div class="settings-actions">${btn('income-sources','مواعيد الدخل الشهري','calendar','soft')}${btn('new-cycle','بدء دورة تخطيط جديدة','calendar','secondary')}</div><p class="help-text" style="margin-top:14px">الحوافز والراتب دفعتان داخل الخطة؛ سجّلهما من قسم الدخل. بدء دورة تخطيط جديدة إجراء مستقل، وتُرحّل فيه كل الأرصدة والالتزامات غير المدفوعة. تجديد الالتزام المتكرر متاح من بطاقته، مع منع تكرار الاستحقاق نفسه.</p></section><section class="panel">${section('التثبيت والاستخدام','واجهة متجاوبة على الهاتف والحاسوب.')}<p class="help-text">على iPhone: افتح Safari ثم مشاركة ← إضافة إلى الشاشة الرئيسية.<br>على Android أو Windows: قائمة المتصفح ← تثبيت التطبيق.<br>يتوفر العمل دون اتصال بعد اكتمال حفظ ملفات التطبيق، بحسب دعم المتصفح.</p><div class="settings-actions">${btn('help','دليل الحسابات','help','secondary')}<button class="btn secondary" id="installBtn" hidden>تثبيت ميزان</button></div></section></div><section class="panel">${section('بداية تجريبية جديدة','نزّل نسخة احتياطية إذا احتجت سجلك القديم، ثم صفّر بيانات التجربة فقط.')}<div class="settings-actions">${btn('preview-reset','تصفير بيانات التجربة','settings','danger')}${btn('setup','إنشاء خطة جديدة','plus','secondary')}${!state.demo?btn('demo','عرض مثال توضيحي','grid','secondary'):''}</div></section>`}
-function render(){page=location.hash.slice(1)||page;if(!navs.some(n=>n[0]===page))page='workflow';$('nav').innerHTML=navs.map(([p,ic,label])=>`<a class="nav-link ${page===p?'active':''}" href="#${p}" data-page="${p}">${icon(ic)}<span>${label}</span>${page===p?'<i class="nav-dot"></i>':''}</a>`).join('');$('breadcrumb').textContent=navs.find(n=>n[0]===page)[2];let banner=state.demo?`<div class="demo-banner"><span><b>أنت تتصفح خطة توضيحية</b> · الأرقام مثال للتجربة، ابدأ بخطة تحمل أرقامك.</span><button class="text-btn" data-action="setup">ابدأ خطتك ${icon('arrow')}</button></div>`:'';if(storageError)banner+=`<div class="notice warn">${safe(storageError)} ${brokenRaw?'<button class="text-btn" data-action="rescue">تنزيل البيانات الأصلية</button>':''}</div>`;const renders={workflow:workflowPage,living:livingPage,reports:statementPage,overview,income:incomePage,obligations:obligationsPage,plan:planPage,ledger:ledgerPage,reports:reportsPage,settings:settingsPage};const mobile='<div class="notice warn preview-banner" role="status"><span>نسخة تجربة مستقلة — لا تتأثر بيانات ميزان الأساسي.</span><button type="button" class="btn small danger" data-action="preview-reset">تصفير بيانات التجربة</button></div>';$('main').innerHTML=mobile+banner+renders[page]();paintIcons();document.querySelectorAll('[data-neo-page]').forEach(a=>{const active=a.dataset.neoPage===page;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});const neoMore=document.querySelector('.neo-more');if(neoMore)neoMore.open=false;bindPage();}
+function render(){page=location.hash.slice(1)||page;if(!navs.some(n=>n[0]===page))page='workflow';$('nav').innerHTML=navs.map(([p,ic,label])=>`<a class="nav-link ${page===p?'active':''}" href="#${p}" data-page="${p}">${icon(ic)}<span>${label}</span>${page===p?'<i class="nav-dot"></i>':''}</a>`).join('');$('breadcrumb').textContent=navs.find(n=>n[0]===page)[2];let banner=state.demo?`<div class="demo-banner"><span><b>أنت تتصفح خطة توضيحية</b> · الأرقام مثال للتجربة، ابدأ بخطة تحمل أرقامك.</span><button class="text-btn" data-action="setup">ابدأ خطتك ${icon('arrow')}</button></div>`:'';if(storageError)banner+=`<div class="notice warn">${safe(storageError)} ${brokenRaw?'<button class="text-btn" data-action="rescue">تنزيل البيانات الأصلية</button>':''}</div>`;const renders={workflow:workflowPage,living:livingPage,reports:statementPage,overview,income:incomePage,obligations:obligationsPage,plan:planPage,ledger:ledgerPage,settings:settingsPage};const mobile='<div class="notice warn preview-banner" role="status"><span>نسخة تجربة مستقلة — لا تتأثر بيانات ميزان الأساسي.</span><button type="button" class="btn small danger" data-action="preview-reset">تصفير بيانات التجربة</button></div>';$('main').innerHTML=mobile+banner+renders[page]();paintIcons();document.querySelectorAll('[data-neo-page]').forEach(a=>{const active=a.dataset.neoPage===page;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});const neoMore=document.querySelector('.neo-more');if(neoMore)neoMore.open=false;bindPage();}
 function field(label,name,type='text',value='',extra=''){return `<div class="field"><label for="f-${name}">${label}</label><input id="f-${name}" name="${name}" type="${type}" value="${safe(value)}" ${extra}></div>`}
 function select(label,name,options,value=''){return `<div class="field"><label for="f-${name}">${label}</label><select id="f-${name}" name="${name}">${options.map(([v,l])=>`<option value="${safe(v)}" ${v===value?'selected':''}>${safe(l)}</option>`).join('')}</select></div>`}
 const walletOptions=()=>state.wallets.map(w=>[w.id,w.name]);const methodOptions=[['card','البطاقة المصرفية'],['cash','نقداً']];
@@ -692,8 +766,8 @@ function download(name,data,type='application/json'){const blob=new Blob([data],
 function backup(){download(`mizan-backup-${today()}.json`,JSON.stringify(state,null,2));toast('تم تجهيز النسخة الاحتياطية')}
 function exportCsv(){const rows=[['التاريخ','العملية','التفاصيل','المبلغ','العملة','الحساب','الملاحظة','مصدر الدخل','شهر الاستحقاق'],...state.transactions.map(t=>[t.date,...txLabel(t).slice(0,2),inputMoney(t.amount),state.settings.currency,t.method||'داخلي',t.note||'',t.sourceName||'',t.incomePeriod||''])];const clean=v=>{let s=String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};download(`mizan-ledger-${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(clean).join(',')).join('\r\n'),'text/csv')}
 function help(){modal('كيف يعمل ميزان؟','من أول استلام إلى آخر يوم في الدورة.',`<div class="help-text"><p><b>مواعيدك:</b> الحوافز بين 10 و12، والراتب بين 22 و24 من كل شهر. عدّل المواعيد من إعدادات الدخل. الدفعتان ضمن الخطة الحالية؛ لا يضاف المتوقع قبل تأكيد استلامه.</p><br><p><b>1. استلم:</b> سجّل الدخل الذي وصل فعلياً إلى البطاقة أو النقد.</p><br><p><b>2. أضف ثم وافق:</b> تسجيل الالتزام لا يحجز أموالاً. حدّد الحجز لاحقاً من زر «حجز مبلغ» ووافق عليه صراحةً. الحجز ليس دفعاً.</p><br><p><b>3. وزّع:</b> امنح ما تبقّى محافظ للصرف واحتياطي للطوارئ والادخار.</p><br><p><b>4. سجّل:</b> المصروف يخفض الحساب والمحفظة. سداد الالتزام يخفض الحساب وحجز الالتزام. السحب النقدي والتحويل لا يغيّران إجمالي المال.</p><br><p><b>5. راجع:</b> تابع السقف اليومي وطابق الرصيد من التقارير. احفظ نسخة احتياطية دورياً.</p><br><p>تُحفظ أموالك في هذا المتصفح فقط. لا توجد مزامنة بين الأجهزة أو اتصال مصرفي. المبلغ المقترح للصرف تنظيم حسابي حسب بياناتك، وليس توقعاً لدخل لم يُستلم.</p></div><div class="form-actions">${btn('close','فهمت','check')}</div>`)}
-function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports')$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
-const actions={'preview-reset':resetPreviewData,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,theme:()=>{try{const s=structuredClone(state);s.settings.theme=s.settings.theme==='dark'?'light':'dark';save(s,'تم تغيير المظهر')}catch(e){toast(e.message)}},rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة')};
+function bindPage(){wireMoneyInputs(document);if($('wfMonth'))$('wfMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value<=today().slice(0,7)){wfMonth=e.target.value;render()}});if($('scheduleMonth'))$('scheduleMonth').addEventListener('change',e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){schedulePeriod=e.target.value;render()}});if(page==='ledger'){const filter=()=>{const text=$('search').value.toLowerCase(),type=$('typeFilter').value,from=$('fromFilter').value,to=$('toFilter').value;const txs=[...state.transactions].reverse().filter(t=>(type==='all'||t.type===type)&&(!from||t.date>=from)&&(!to||t.date<=to)&&txLabel(t).join(' ').toLowerCase().includes(text));$('ledgerResults').innerHTML=ledgerRows(txs)};['search','typeFilter','fromFilter','toFilter'].forEach(id=>$(id).addEventListener('input',filter))}if(page==='settings'){$('settingsForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{let s=structuredClone(state);if(!currencies[f.currency||s.settings.currency])throw Error('اختر عملة مدعومة.');s.settings={...s.settings,...f};save(s,'تم حفظ التفضيلات')}catch(ex){toast(ex.message)}};if(installPrompt)$('installBtn').hidden=false}if(page==='reports'&&$('reconcileForm'))$('reconcileForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{const actual=amount(f.actual,true),expected=currentStats()[f.method],delta=actual-expected;let s=structuredClone(state);s.reconciliations.push({id:uid(),date:today(),method:f.method,actual,expected,delta,transactionIds:s.transactions.map(t=>t.id)});save(s,'تم حفظ نتيجة المطابقة');$('reconResult').innerHTML=`<div class="notice ${delta?'warn':''}">${delta?`يوجد فرق ${money(delta)}. راجع الدخل والمصاريف والحركات النقدية؛ لا نعدّل الرصيد تلقائياً.`:'الرصيد الفعلي مطابق تماماً للسجل.'}</div>`}catch(ex){toast(ex.message)}};}
+const actions={'wf-category-manage':livingCategoryManage,'wf-category-add':()=>livingCategoryEdit(),'wf-category-edit':livingCategoryEdit,'wf-category-delete':livingCategoryDelete,'preview-reset':resetPreviewData,'wf-config':wfConfig,'wf-activate':wfActivate,'wf-incentives-receipt':()=>wfReceive('incentives'),'wf-salary-receipt':()=>wfReceive('salary'),'wf-incentives-apply':()=>wfApply('incentives'),'wf-salary-apply':()=>wfApply('salary'),'wf-incentives-link':()=>openLinkReceipt('incentives',wfMonth),'wf-salary-link':()=>openLinkReceipt('salary',wfMonth),'wf-pay':wfPay,'wf-release':openRelease,'wf-living-allocate':wfLivingAllocate,'wf-living-expense':wfLivingExpense,'wf-living-direct':wfLivingDirect,'wf-living-extra':wfLivingExtra,'wf-living-pdf':wfLivingReport,'wf-living-scroll':()=>location.hash='living',income:openIncome,'income-sources':openIncomeSources,'receipt':(id,p)=>openIncome(id,p||schedulePeriod),'link-receipt':openLinkReceipt,expense:openExpense,obligation:()=>openObligation(),pay:id=>obligationAction('pay',id),reserve:id=>obligationAction('reserve',id),unreserve:id=>obligationAction('unreserve',id),renew:id=>openObligation(state.obligations.find(o=>o.id===id)),'delete-obligation':deleteObligation,'archive-obligation':archiveObligation,'restore-obligation':restoreObligation,account:openAccount,transfer:openTransfer,release:openRelease,wallet:()=>openWallet(), 'wallet-edit':openWallet,allocate:openAllocate,'new-cycle':openCycle,setup:setupStart,close:closeModal,help,backup,csv:exportCsv,restore:()=>$('restoreFile').click(),settings:()=>location.hash='settings',print:wfLivingReport,theme:()=>{try{const s=structuredClone(state);s.settings.theme=s.settings.theme==='dark'?'light':'dark';save(s,'تم تغيير المظهر')}catch(e){toast(e.message)}},rescue:()=>download('mizan-recovery-original.json',brokenRaw),demo:()=>confirmModal('عرض الخطة التوضيحية؟','ستُستبدل بياناتك الحالية بالمثال. نزّل نسخة احتياطية قبل المتابعة.',()=>{try{save(makeDemo(),'أنت الآن في الخطة التوضيحية')}catch(e){toast(e.message)}}),'delete-tx':id=>confirmModal('حذف هذه الحركة؟','سيُعاد فحص الحسابات كاملة. يُرفض الحذف إن تسبب بعجز في حركة لاحقة.',()=>act(s=>E.remove(s,id),'تم حذف الحركة وإعادة حساب الأرصدة'),'حذف الحركة')};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=actions[b.dataset.action];if(fn){e.preventDefault();try{fn(b.dataset.id,b.dataset.period)}catch(ex){showError(ex.message)}}});
 $('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('الحد الأقصى للملف 10 ميغابايت.');const data=JSON.parse(await file.text()),next=data.version===1?window.MizanMigration.importLegacy(data,E):data;E.validate(next);if(!currencies[next.settings.currency])throw Error('عملة الملف غير مدعومة في هذه الواجهة.');confirmModal('استعادة النسخة الاحتياطية؟',`تم التحقق من ${next.transactions.length} حركة. ستُستبدل البيانات الحالية بهذه النسخة. احفظ نسخة من سجلك الحالي قبل التأكيد.`,()=>{try{save(next,'تمت الاستعادة والتحقق من توازن الأرصدة',true)}catch(ex){toast(ex.message)}},'استعادة البيانات')}catch(ex){toast('تعذرت الاستعادة: '+ex.message)}finally{e.target.value=''}});
 let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if($('installBtn'))$('installBtn').hidden=false});document.addEventListener('click',async e=>{if(e.target.id==='installBtn'&&installPrompt){await installPrompt.prompt();installPrompt=null;e.target.hidden=true}});
