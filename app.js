@@ -73,7 +73,23 @@ function wireMoneyInputs(root){
 }
 function parseMoney(raw,dec,zero=false){const str=normalizeMoneyText(raw);if(!/^(\d+)(\.\d+)?$/.test(str))throw Error('أدخل مبلغاً صحيحاً غير سالب.');const [whole,fraction='']=str.split('.');if(fraction.length>dec)throw Error(`العملة تدعم ${dec} منازل عشرية.`);const n=BigInt(whole)*10n**BigInt(dec)+BigInt(fraction.padEnd(dec,'0')||'0');if(n>BigInt(Number.MAX_SAFE_INTEGER)||(!zero&&n===0n))throw Error('أدخل مبلغاً موجباً ضمن الحدود المسموحة.');return Number(n)}
 function amount(raw,zero=false){return parseMoney(raw,ccy().dec,zero)}
-function save(next,message='تم الحفظ بنجاح',replaceBroken=false){if(brokenRaw&&!replaceBroken)throw Error('توجد بيانات محفوظة تعذر قراءتها. نزّلها من زر الإنقاذ، ثم ابدأ خطة جديدة أو استعد نسخة صحيحة.');E.validate(next);keepLocalSnapshot(state);try{localStorage.setItem(KEY,JSON.stringify(next))}catch(e){throw Error('تعذر حفظ التغيير. صدّر نسخة احتياطية أو أتح مساحة تخزين ثم حاول مجدداً.')}state=next;storageError='';brokenRaw='';applySettings();render();if(message)toast(message)}
+function save(next,message='تم الحفظ بنجاح',replaceBroken=false){
+ if(brokenRaw&&!replaceBroken)throw Error('توجد بيانات محفوظة تعذر قراءتها. نزّلها من زر الإنقاذ، ثم ابدأ خطة جديدة أو استعد نسخة صحيحة.');
+ E.validate(next);
+ if(!replaceBroken){
+  let raw;
+  try{raw=localStorage.getItem(KEY)}catch{throw Error('تعذر الوصول إلى تخزين الجهاز للتحقق من آخر تحديث.')}
+  if(raw!==null){
+   let stored;
+   try{stored=JSON.parse(raw)}catch{throw Error('السجل المحفوظ غير قابل للقراءة؛ استخدم نسخة الإنقاذ أولاً.')}
+   if(JSON.stringify(stored)!==JSON.stringify(state))
+    throw Error('تغيّر السجل المالي في نافذة أخرى. حمّل آخر نسخة من البيانات قبل المتابعة، ولا تكتب فوقها.');
+  }
+ }
+ keepLocalSnapshot(state);
+ try{localStorage.setItem(KEY,JSON.stringify(next))}catch(e){throw Error('تعذر حفظ التغيير. صدّر نسخة احتياطية أو أتح مساحة تخزين ثم حاول مجدداً.')}
+ state=next;storageError='';brokenRaw='';applySettings();render();if(message)toast(message);
+}
 function act(fn,msg){try{save(fn(structuredClone(state)),msg);closeModal()}catch(e){showError(e.message)}}
 function event(s,t){return E.commit(s,{id:uid(),date:today(),...t})}
 function makeDemo(){let s=E.initial();s.demo=true;s.settings.name='';s.cycle.start=addDays(today(),-9);s.cycle.days=30;
@@ -536,9 +552,10 @@ function smartOpen(){
  const stage=smartStage();if(!stage)throw Error('اكتمل اعتماد دخل هذا الشهر؛ استخدم التقارير أو الصرف السريع.');
  const rec=S.receipts(state,stage,wfMonth);if(rec.length>1)throw Error('يوجد أكثر من استلام؛ راجع الدخل أولاً.');
  const last=state.transactions.filter(t=>t.type==='income'&&['cash','card'].includes(t.method)).slice(-1)[0];
+ const previousPayment=state.transactions.filter(t=>['expense','pay'].includes(t.type)&&['cash','card'].includes(t.method)).slice(-1)[0];
  const draft={base:JSON.stringify(state),month:wfMonth,stage,mode:wfIncomeMode(),existing:!!rec.length,
   income:rec[0]?.amount||0,date:rec[0]?.date||today(),method:rec[0]?.method||last?.method||'card',
-  payMethod:last?.method||'card',
+  payMethod:previousPayment?.method||last?.method||'card',
   plan:wfPlan()?{...wfPlan()}:{...smartPrior(wfData().plans)},
   targets:{...smartPrior(state.settings.livingTargets),...livingTargets()},choices:{}};
  smartIncome(draft);
@@ -580,7 +597,7 @@ function smartAllocate(d){
  modal('الدورة الذكية · 2 من 3','يمكن تغيير المقترحات؛ كل مبلغ يبقى تحت مراجعتك.',
  `<div class="smart-steps"><b>1 · الدخل</b><b>2 · التسوية والميزانية</b><span>3 · المراجعة</span></div>
  <h3>الالتزامات الشهرية</h3><div class="smart-grid">${planRows||'<p class="wf-help">لا توجد بنود حالياً؛ لا تُنشأ حجوزات.</p>'}</div>
- <h3>حالة الاستقطاعات</h3>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
+ <h3>حالة الاستقطاعات</h3><p class="wf-help">اقتراح الشهر السابق لا يعني السداد. راجع حالة كل بند قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
  ${select('طريقة دفع البنود المدفوعة فعلياً','payMethod',methodOptions,d.payMethod)}
  <h3>ميزانية المعيشة</h3><p class="wf-help">مقترحة من آخر شهر؛ غيّرها كما تريد، والصفر يعني عدم إضافة تخصيص.</p>
  <div class="smart-grid">${budget||'<p class="wf-help">لا توجد أقسام معيشة.</p>'}</div>`,
@@ -672,7 +689,10 @@ function smartReview(d){
  ${line('استقطاعات قبل الإيداع (توثيق فقط)',t.withheld)}
  ${line('سداد فعلي',t.paid)}${line('حجوزات جديدة',t.reserved)}
  ${line('توزيع المعيشة',t.living)}
- <hr>${line('الرصيد بعد الاعتماد',r.after.total)}
+ <hr>${line('البطاقة بعد الاعتماد',r.after.card)}
+ ${line('النقد بعد الاعتماد',r.after.cash)}
+ ${line('الرصيد الكلي بعد الاعتماد',r.after.total)}
+ ${line('المحجوز بعد الاعتماد',Object.values(r.after.reserved).reduce((sum,v)=>sum+v,0))}
  ${line('المتاح بعد الاعتماد',r.after.unallocated)}
  </div>
  <p class="wf-help">عدد القيود الجديدة: ${r.events}. إذا تعذّر تنفيذ أحدها تُرفض الدورة كلها، ولا تُحفظ أي خطوة جزئية.</p>
