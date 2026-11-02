@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
 const get=p=>fs.readFileSync(path.join(root,p),'utf8');
-const app=get('app.js'),html=get('index.html'),css=get('thukhr-design-system.css'),sw=get('sw.js');
+const app=require('./helpers/app-source.cjs').source,html=get('index.html'),css=get('thukhr-design-system.css'),sw=get('sw.js');
 test('new design is linked and cached for offline use',()=>{
  const cssVersion=html.match(/thukhr-design-system\.css\?v=([^"']+)/)?.[1];
  assert.ok(cssVersion,'Versioned visual stylesheet missing');

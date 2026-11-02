@@ -1,8 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs'),path=require('node:path');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+const app=require('./helpers/app-source.cjs').source;
 const modeSrc=app.slice(app.indexOf('function wfIncomeMode('),app.indexOf('function wfIncomeModePicker('));
 const amountSrc=app.slice(app.indexOf('function wfAmount('),app.indexOf('function wfStageSummary('));
 const stageSrc=app.slice(app.indexOf('function wfStageSummary('),app.indexOf('function workflowPage('));

@@ -1,7 +1,7 @@
 'use strict';
-const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../engine.js'),S=require('../schedule.js');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8'),month='2026-10',day='2026-10-31';
+const app=require('./helpers/app-source.cjs').source,month='2026-10',day='2026-10-31';
 const code=app.slice(app.indexOf('function autoFixedPlanShare('),app.indexOf('function smartBuild(original,d){'));
 const builder=()=>{
  const env={
@@ -9,7 +9,7 @@ const builder=()=>{
   monthlyAllFields:st=>st.settings.wfFields||[],
   wfIncomeMode:(m,st)=>st.settings.wfIncomeModes?.[m]||st.settings.wfDefaultIncomeMode||'both',
   wfObId:(m,k)=>'wf_'+k+'_'+m.replace('-','_'),
-  event:(st,event)=>E.commit(st,{id:E.uid(),...event})
+  commitEvent:(st,event)=>E.commit(st,{id:E.uid(),...event})
  };
  return new Function('env','with(env){'+code+';return {autoFixedSettlement,ensureRecurringAutoPlan}}')(env);
 };

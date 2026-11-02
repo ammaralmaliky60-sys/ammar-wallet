@@ -1,7 +1,7 @@
 'use strict';
-const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../engine.js');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+const app=require('./helpers/app-source.cjs').source;
 const source=app.slice(app.indexOf('let resetProof=null,resetAttempt=0;'),app.indexOf('function setupStart(){'));
 if(!source.includes('function openFinancialResetFinal('))throw Error('Reset flow not found.');
 const clone=o=>JSON.parse(JSON.stringify(o));

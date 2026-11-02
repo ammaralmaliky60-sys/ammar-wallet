@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const get=n=>fs.readFileSync(path.join(__dirname,'..',n),'utf8');
-const app=get('app.js'),css=get('thukhr-design-system.css'),index=get('index.html'),sw=get('sw.js');
+const app=require('./helpers/app-source.cjs').source,css=get('thukhr-design-system.css'),index=get('index.html'),sw=get('sw.js');
 const src=app.slice(app.indexOf("const DEFAULT_OBLIGATION_STATUS='pay';"),app.indexOf('function smartAllocate(d){'));
 if(!src.startsWith("const DEFAULT_OBLIGATION_STATUS='pay';"))throw Error('Default status helper missing.');
 const select=(label,name,opts,value)=>'<select name="'+name+'">'+opts.map(([v,l])=>'<option value="'+v+'"'+(v===value?' selected':'')+'>'+l+'</option>').join('')+'</select>';
@@ -38,7 +38,6 @@ test('status explanations update when a select changes',()=>{
  let listener,display={textContent:'',dataset:{}};
  const selector={value:'reserve',addEventListener:(name,fn)=>{if(name==='change')listener=fn}};
  const wrapper={querySelector:t=>t==='select'?selector:display};
- const root={querySelectorAll:()=>[wrapper]};
  // Wrapper runs the handler under a mock $ lookup.
  const mocked=new Function('api','node','const obligationStatusExplanation=api.obligationStatusExplanation;const $=()=>({querySelectorAll:()=>[node]});return ('+
    api.wireObligationStatusExplanations.toString()+')()');
@@ -51,10 +50,10 @@ test('status explanations update when a select changes',()=>{
 test('responsive styles and versioned deployment reference the update',()=>{
  assert.match(css,/thukhr-status-explain/);
  assert.match(css,/@media\(max-width:760px\)/);
- const asset=index.match(/app\.js\?v=([^"']+)/)?.[1];
+ const asset=index.match(/main\.js\?v=([^"']+)/)?.[1];
  assert.ok(asset,'Versioned app script missing');
- assert.ok(sw.includes('app.js?v='+asset),'The offline cache must contain the active script');
- assert.match(sw,/const CACHE='(?:firza|thukhr)-static-[^']+'/);
+ assert.ok(sw.includes('main.js?v='+asset),'The offline cache must contain the active script');
+ assert.match(sw,/const CACHE\s*=\s*'(?:weenrahat|firza|thukhr)-static-[^']+'/);
 });
 test('engine accounting remains independent of new UI words',()=>{
  const engine=get('engine.js');

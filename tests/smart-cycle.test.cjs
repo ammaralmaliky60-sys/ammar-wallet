@@ -1,7 +1,7 @@
 'use strict';
-const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../engine.js'),S=require('../schedule.js');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+const app=require('./helpers/app-source.cjs').source;
 const source=app.slice(app.indexOf('function smartStage()'),app.indexOf('function workflowPage(){'));
 const day='2026-10-31',month='2026-10',copy=o=>JSON.parse(JSON.stringify(o));
 const fields=[
@@ -12,7 +12,6 @@ const fields=[
 const wfData=st=>st.settings.twoStageWorkflow||{plans:{},completed:{}};
 const base=()=>{const st=E.initial();st.demo=false;st.cycle.start=month+'-01';return st};
 function fixture(state,mode='salary-only'){
- let stage=mode==='salary-only'?'salary':'incentives';
  const env={state,month,wfMonth:month,E,S,today:()=>day,structuredClone:copy,money:String,
   wfIncomeMode:()=>mode,wfDone:k=>null,wfData,
   wfObId:(m,k)=>'wf_'+k+'_'+m.replace('-','_'),monthlyAllFields:()=>fields,monthlyFields:()=>fields,
@@ -27,7 +26,7 @@ function fixture(state,mode='salary-only'){
    else if(o.stage==='split')part=step==='incentives'?Math.floor(full/2):full-Math.floor(full/2);
    return {...o,key:o.key,amount:part,fullAmount:full};
   }).filter(o=>o.amount>0),
-  event:(st,t)=>E.commit(st,{id:E.uid(),date:day,...t})};
+  commitEvent:(st,t)=>E.commit(st,{id:E.uid(),date:day,...t})};
  const api=new Function('env','with(env){'+source+';return {smartBuild,smartStage,smartPrior,fundLivingTargets,workflowSettlementSnapshot,monthlyCommitmentProjection}}')(env);
  return api;
 }

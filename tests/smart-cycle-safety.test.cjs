@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const fs=require('node:fs'),path=require('node:path'),E=require('../engine.js');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+const E=require('../engine.js');
+const app=require('./helpers/app-source.cjs').source;
 const begin=app.indexOf('function save(next,');
 const end=app.indexOf('\nfunction act(',begin);
 if(begin<0||end<0)throw Error('Missing save function');
