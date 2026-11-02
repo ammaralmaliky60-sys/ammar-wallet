@@ -12,7 +12,6 @@ const fields=[
 const wfData=st=>st.settings.twoStageWorkflow||{plans:{},completed:{}};
 const base=()=>{const st=E.initial();st.demo=false;st.cycle.start=month+'-01';return st};
 function fixture(state,mode='salary-only'){
- let stage=mode==='salary-only'?'salary':'incentives';
  const env={state,month,wfMonth:month,E,S,today:()=>day,structuredClone:copy,money:String,
   wfIncomeMode:()=>mode,wfDone:k=>null,wfData,
   wfObId:(m,k)=>'wf_'+k+'_'+m.replace('-','_'),monthlyAllFields:()=>fields,monthlyFields:()=>fields,

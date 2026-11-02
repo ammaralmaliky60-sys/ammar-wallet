@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+*.log
+# Personal financial backups must never be committed.
+*backup*.json
+firza-*.json
+thukhr-*.json
+thukhr-*.csv
+mizan-ledger-*.csv
+mizan-*.json

@@ -38,7 +38,6 @@ test('status explanations update when a select changes',()=>{
  let listener,display={textContent:'',dataset:{}};
  const selector={value:'reserve',addEventListener:(name,fn)=>{if(name==='change')listener=fn}};
  const wrapper={querySelector:t=>t==='select'?selector:display};
- const root={querySelectorAll:()=>[wrapper]};
  // Wrapper runs the handler under a mock $ lookup.
  const mocked=new Function('api','node','const obligationStatusExplanation=api.obligationStatusExplanation;const $=()=>({querySelectorAll:()=>[node]});return ('+
    api.wireObligationStatusExplanations.toString()+')()');
@@ -54,7 +53,7 @@ test('responsive styles and versioned deployment reference the update',()=>{
  const asset=index.match(/app\.js\?v=([^"']+)/)?.[1];
  assert.ok(asset,'Versioned app script missing');
  assert.ok(sw.includes('app.js?v='+asset),'The offline cache must contain the active script');
- assert.match(sw,/const CACHE='(?:firza|thukhr)-static-[^']+'/);
+ assert.match(sw,/const CACHE\s*=\s*'(?:firza|thukhr)-static-[^']+'/);
 });
 test('engine accounting remains independent of new UI words',()=>{
  const engine=get('engine.js');
