@@ -15,11 +15,7 @@ const CHOICE_ICONS={
 const CHOICE_MAX_OPTIONS=8,CHOICE_MAX_LABEL=46;
 const prefersReducedMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
 
-function choiceColor(value){
- const list=[...(typeof livingAllCategories==='function'?livingAllCategories():[]),...(state?.wallets||[])];
- const color=list.find(item=>item.id===value)?.color;
- return /^#[0-9a-f]{3,8}$/i.test(color||'')?color:'';
-}
+function choiceColor(value){return categoryColor(value)}
 function choiceOptions(select){
  return [...select.options].filter(o=>!(o.value===''&&o.disabled)).map(o=>{
   const [label,...rest]=o.textContent.split(' · ');
@@ -144,7 +140,7 @@ function addQuickAmount(button){
 }
 
 /* Animated figures: large amounts count from their previous value to the new one. */
-const COUNT_TARGETS=['.fz-lite-hero>strong .num','.fz-lite-hero-split .num','.fz-lite-income-card>strong .num','.fz-lite-fixed-overview>strong .num','.fz-lite-fixed-metrics .num'];
+const COUNT_TARGETS=['.fz-net>strong .num','.fz-pace-daily>strong .num','.fz-detail-total>strong .num','.fz-lite-hero>strong .num','.fz-lite-hero-split .num','.fz-lite-income-card>strong .num','.fz-lite-fixed-overview>strong .num','.fz-lite-fixed-metrics .num'];
 const countMemory=new Map();
 function readFigure(text){
  const latin=text.replace(/[٠-٩]/g,c=>'٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/٫/g,'.').replace(/[,٬\s]/g,'');
@@ -172,18 +168,57 @@ function animateFigures(root){
  }));
 }
 
+/* Month stepper: an Arabic previous/next control over the native month input (which stays the
+   source of truth, so the existing change listener in bindPage keeps working). */
+const STEP_ARROWS={prev:'M9 6l6 6-6 6',next:'M15 6l-6 6 6 6'};// RTL: previous sits on the right.
+let pendingMonthStep=null;// Which month button to refocus after the page re-renders.
+function shiftMonth(month,delta){
+ const [y,m]=month.split('-').map(Number),d=new Date(Date.UTC(y,m-1+delta,1));
+ return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+}
+function enhanceMonthInput(input){
+ if(input.fzStepper||!/^\d{4}-\d{2}$/.test(input.value))return;
+ const arrow=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+ const stepper=document.createElement('div');
+ stepper.className='fz-month-stepper';
+ stepper.innerHTML=`<button type="button" data-month-step="-1" aria-label="الشهر السابق">${arrow(STEP_ARROWS.prev)}</button>`+
+  `<output aria-live="polite">${safe(arabicMonth(input.value))}</output>`+
+  `<button type="button" data-month-step="1" aria-label="الشهر التالي" ${input.max&&input.value>=input.max?'disabled':''}>${arrow(STEP_ARROWS.next)}</button>`;
+ input.fzStepper=stepper;
+ input.classList.add('fz-select-hidden');input.tabIndex=-1;input.setAttribute('aria-hidden','true');
+ input.closest('.fz-month-select')?.classList.add('has-stepper');
+ input.after(stepper);
+}
+function stepMonth(button){
+ const input=button.closest('.fz-month-select')?.querySelector('input[type="month"]');
+ if(!input||button.disabled)return;
+ const next=shiftMonth(input.value,Number(button.dataset.monthStep));
+ if(input.max&&next>input.max)return;
+ input.value=next;
+ pendingMonthStep=button.dataset.monthStep;
+ input.dispatchEvent(new Event('change',{bubbles:true}));
+ try{navigator.vibrate?.(6)}catch{/* Haptics are optional. */}
+}
+
 /* Wire everything up after each render or modal update. */
 let lastEnhancedPage='';
 function enhanceInterface(root=document){
  root.querySelectorAll('select').forEach(enhanceSelect);
  root.querySelectorAll('input[data-quick-amount]').forEach(enhanceAmountInput);
+ root.querySelectorAll('.fz-month-select input[type="month"]').forEach(enhanceMonthInput);
  document.querySelectorAll('.fz-choice').forEach(syncChoiceGroup);
 }
 function onMainRendered(){
  const main=$('main');
  enhanceInterface(main);
  animateFigures(main);
- if(page!==lastEnhancedPage){
+ const monthStep=pendingMonthStep;
+ if(monthStep!==null){
+  pendingMonthStep=null;
+  const target=main.querySelector(`[data-month-step="${monthStep}"]:not(:disabled)`)||main.querySelector('[data-month-step]:not(:disabled)');
+  target?.focus({preventScroll:true});
+ }
+ if(page!==lastEnhancedPage||monthStep!==null){
   lastEnhancedPage=page;
   if(!prefersReducedMotion()){
    main.classList.remove('fz-enter');void main.offsetWidth;main.classList.add('fz-enter');
@@ -202,7 +237,9 @@ function installInteractions(){
   const option=event.target.closest('.fz-choice-opt');
   if(option){chooseValue(option.closest('.fz-choice'),option);return}
   const chip=event.target.closest('.fz-amount-chips button');
-  if(chip)addQuickAmount(chip);
+  if(chip){addQuickAmount(chip);return}
+  const step=event.target.closest('[data-month-step]');
+  if(step)stepMonth(step);
  });
  document.addEventListener('keydown',onChoiceKey);
  // Code may change a <select> in response to another field: keep chips in step.

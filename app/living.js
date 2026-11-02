@@ -233,3 +233,42 @@ function livingPage(){
      </div>
    </div>`+sections+wfLivingPanel();
 }
+
+/* Read-only insights for the Lite pages: they summarise the ledger and never write to it. */
+function categoryInfo(id,st=state){
+ const known=livingAllCategories(st).find(c=>c.id===id)||st.wallets.find(w=>w.id===id);
+ const color=/^#[0-9a-f]{3,8}$/i.test(known?.color||'')?known.color:'';
+ return {id,label:known?.label||known?.name||'قسم محفوظ سابقاً',color};
+}
+function categoryColor(id,st=state){return categoryInfo(id,st).color}
+function spendingByCategory(st=state,month=wfMonth){
+ const totals=new Map();
+ for(const t of st.transactions)
+  if(t.type==='expense'&&t.date?.slice(0,7)===month)totals.set(t.walletId,(totals.get(t.walletId)||0)+t.amount);
+ const total=[...totals.values()].reduce((sum,n)=>sum+n,0);
+ const rows=[...totals].map(([id,amount])=>({...categoryInfo(id,st),amount,share:total?amount/total:0}))
+  .sort((a,b)=>b.amount-a.amount||a.label.localeCompare(b.label,'ar'));
+ return {total,rows};
+}
+const ACTIVITY_SIGNS={income:1,expense:-1,pay:-1};
+function activityEntry(t,st=state){
+ const [label,detail,glyph]=txLabel(t);
+ return {id:t.id,type:t.type,date:t.date,amount:t.amount,sign:ACTIVITY_SIGNS[t.type]||0,label,icon:glyph,
+  detail:t.type==='expense'?categoryInfo(t.walletId,st).label:detail,
+  color:t.type==='expense'?categoryColor(t.walletId,st):''};
+}
+function recentActivity(st=state,month=wfMonth,limit=5){
+ return st.transactions.map((t,index)=>({t,index}))
+  .filter(({t})=>Object.hasOwn(ACTIVITY_SIGNS,t.type)&&t.date?.slice(0,7)===month)
+  .sort((a,b)=>b.t.date.localeCompare(a.t.date)||b.index-a.index)
+  .slice(0,limit).map(({t})=>activityEntry(t,st));
+}
+function monthDays(month){const [y,m]=month.split('-').map(Number);return new Date(Date.UTC(y,m,0)).getUTCDate()}
+/* How fast the living budget is being used compared with how much of the month has passed. */
+function spendingPace(budget,spent,month,day){
+ const days=monthDays(month),current=day.slice(0,7)===month?Number(day.slice(8,10)):days;
+ const daysLeft=Math.max(1,days-current+1),remaining=Math.max(0,budget-spent);
+ const elapsed=Math.round(current/days*100),used=budget?Math.round(spent/budget*100):0;
+ const status=!budget?'none':spent>budget?'over':used>elapsed+10?'fast':'ok';
+ return {elapsed,used,remaining,daysLeft,daily:Math.floor(remaining/daysLeft),over:Math.max(0,spent-budget),status};
+}

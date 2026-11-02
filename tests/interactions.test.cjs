@@ -11,7 +11,7 @@ function load(env={}){
  assert.notEqual(body,source,'installInteractions() must be the last statement');
  const context={
   window:{matchMedia:()=>({matches:false})},state:{wallets:[{id:'home',color:'#25866b'}],settings:{digits:'en'}},
-  livingAllCategories:()=>[{id:'vegetables',color:'#54a981'}],icon:name=>`<svg data-name="${name}"></svg>`,
+  categoryColor:id=>({home:'#25866b',vegetables:'#54a981'})[id]||'',icon:name=>`<svg data-name="${name}"></svg>`,
   safe:v=>String(v),...env
  };
  return new Function('env','with(env){'+body+';return {readFigure,choiceStyle,choiceOptions,canEnhanceSelect,choiceMarkup}}')(context);
