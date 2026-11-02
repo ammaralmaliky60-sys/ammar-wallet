@@ -2,7 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const E=require('../engine.js');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+const app=require('./helpers/app-source.cjs').source;
 const family=fs.readFileSync(path.join(__dirname,'..','thukhr-family.js'),'utf8');
 const now=E.today(),start='2026-09-01';
 function base(){const s=E.initial();s.cycle.start=start;return s}

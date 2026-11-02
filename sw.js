@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'firza-static-v1.1.0-20261102';
+const CACHE = 'firza-static-v1.2.0-20261102-modules';
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-'];
 
 const ASSETS = [
@@ -29,7 +29,24 @@ const ASSETS = [
   './migration.js',
   './thukhr-family.js?v=thukhr-finance-20261031-r1',
   './report-pdf.js?v=thukhr-finance-20261031-r2',
-  './app.js?v=20261102-audit-r1',
+
+  // Application (order mirrors index.html)
+  './app/core.js?v=20261102-modules-r1',
+  './app/store.js?v=20261102-modules-r1',
+  './app/ui-shell.js?v=20261102-modules-r1',
+  './app/monthly-fields.js?v=20261102-modules-r1',
+  './app/workflow.js?v=20261102-modules-r1',
+  './app/smart-cycle.js?v=20261102-modules-r1',
+  './app/living.js?v=20261102-modules-r1',
+  './app/finance-center.js?v=20261102-modules-r1',
+  './app/spending.js?v=20261102-modules-r1',
+  './app/emergency.js?v=20261102-modules-r1',
+  './app/lite.js?v=20261102-modules-r1',
+  './app/pages.js?v=20261102-modules-r1',
+  './app/forms.js?v=20261102-modules-r1',
+  './app/reset-setup.js?v=20261102-modules-r1',
+  './app/backup.js?v=20261102-modules-r1',
+  './app/main.js?v=20261102-modules-r1',
 
   // Stylesheets
   './style.css?v=gold-20261031-r2',

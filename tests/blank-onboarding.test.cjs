@@ -1,7 +1,7 @@
 'use strict';
-const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../engine.js'),S=require('../schedule.js');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+const app=require('./helpers/app-source.cjs').source;
 const fieldsCode=app.slice(app.indexOf('const LEGACY_WF_FIELDS=['),app.indexOf('function monthlyHiddenFields('));
 const wizardCode=app.slice(app.indexOf('function wizardRows('),app.indexOf('function renderWizard()'));
 const mon='2026-10',day='2026-10-31';
@@ -13,7 +13,7 @@ const build=(old,setup)=>{
  let count=0;
  const env={E,S,autoFixedSettlement:(st)=>({next:st}),currencies:{IQD:{dec:0}},uid:()=> 'unique'+(++count),
   parseMoney:(raw,dec,zero=false)=>{const n=Number(raw);if(!Number.isSafeInteger(n)||n<0||(!zero&&!n))throw Error('أدخل مبلغاً موجباً');return n},
-  event:(s,t)=>E.commit(s,{id:E.uid(),...t})};
+  commitEvent:(s,t)=>E.commit(s,{id:E.uid(),...t})};
  return new Function('env','with(env){'+wizardCode+';return wizardFreshPlan}')(env)(old,setup);
 };
 test('initial profile starts with zero fixed commitments and zero financial obligations',()=>{

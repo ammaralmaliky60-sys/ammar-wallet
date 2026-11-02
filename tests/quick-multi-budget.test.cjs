@@ -1,9 +1,8 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs'),path=require('node:path');
 const E=require('../engine.js');
-const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+const app=require('./helpers/app-source.cjs').source;
 const day='2026-10-31',month='2026-10';
 const copy=x=>JSON.parse(JSON.stringify(x));
 const categories=[
@@ -26,7 +25,7 @@ const draft=(st,items,opts={})=>({base:JSON.stringify(st),date:day,method:'card'
  duplicateApproved:false,...opts});
 const run=(state,d)=>{
  const env={E,structuredClone:copy,today:()=>day,livingCategories:()=>categories,duplicateExpense:dup,
-  event:(st,t)=>E.commit(st,{id:E.uid(),date:day,...t})};
+  commitEvent:(st,t)=>E.commit(st,{id:E.uid(),date:day,...t})};
  return new Function('env','with(env){'+quickSource+';return quickExpenseBuild}')(env)(state,d);
 };
 const budget=(st)=>{

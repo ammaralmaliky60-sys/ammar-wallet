@@ -2,7 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const E=require('../engine.js'),S=require('../schedule.js');
 const get=n=>fs.readFileSync(path.join(__dirname,'..',n),'utf8');
-const app=get('app.js'),html=get('index.html'),sw=get('sw.js'),css=get('firza-lite.css');
+const app=require('./helpers/app-source.cjs').source,html=get('index.html'),sw=get('sw.js'),css=get('firza-lite.css');
 const month='2026-10',day='2026-10-31';
 const initial=()=>{const st=E.initial();st.demo=false;st.cycle.start='2026-10-01';st.settings.wfDefaultIncomeMode='salary-only';st.settings.wfIncomeModes={[month]:'salary-only'};return st};
 const addIncome=(st,n,source='salary')=>E.commit(st,{id:E.uid(),type:'income',date:day,amount:n,method:'card',sourceId:source,incomePeriod:month,note:source});
@@ -85,7 +85,7 @@ test('Lite salary receipt posts exactly one auto-paid commitment without extra a
   wfData:s=>s.settings.twoStageWorkflow||{plans:{},completed:{}},
   wfIncomeMode:(m,s)=>s.settings.wfIncomeModes?.[m]||s.settings.wfDefaultIncomeMode||'both',
   wfObId:(m,k)=>'wf_'+k+'_'+m.replace('-','_'),
-  event:(s,t)=>E.commit(s,{id:E.uid(),...t})};
+  commitEvent:(s,t)=>E.commit(s,{id:E.uid(),...t})};
  const auto=new Function('env','with(env){'+autoSource+';return autoFixedSettlement}')(autoEnv);
  const env={S,E,get state(){return ctx.state},today:()=>day,
   wfIncomeMode:(m,s=ctx.state)=>s.settings.wfIncomeModes?.[m]||'salary-only',
@@ -94,7 +94,7 @@ test('Lite salary receipt posts exactly one auto-paid commitment without extra a
   modal:(title,sub,body,callback)=>{ctx.submit=callback;},
   amountField:()=>'<input>',select:()=>'<select>',methodOptions:[],
   field:()=>'<input>',autoFixedSettlement:auto,
-  event:(s,t)=>E.commit(s,{id:E.uid(),...t}),
+  commitEvent:(s,t)=>E.commit(s,{id:E.uid(),...t}),
   act:(fn)=>{ctx.state=fn(JSON.parse(JSON.stringify(ctx.state)));E.validate(ctx.state);}};
  const receive=new Function('env','with(env){'+sourceBody('function simpleReceiveIncome(','function simpleSetupStart(){')+
  ';return simpleReceiveIncome}')(env);
@@ -116,10 +116,10 @@ test('Lite report retains month-specific accounting and PDF download access',()=
  assert.match(app,/data-action="wf-living-pdf"/);
 });
 test('Lite assets are cached together without changing finance engine or cache API',()=>{
- const version=html.match(/app\.js\?v=([^"']+)/)?.[1],
+ const version=html.match(/main\.js\?v=([^"']+)/)?.[1],
   stylesheet=html.match(/firza-lite\.css\?v=([^"']+)/)?.[1];
  assert.ok(version&&stylesheet);
- assert.ok(sw.includes('app.js?v='+version));
+ assert.ok(sw.includes('main.js?v='+version));
  assert.ok(sw.includes('firza-lite.css?v='+stylesheet));
  assert.match(sw,/caches\.open\(CACHE\)/);
 });

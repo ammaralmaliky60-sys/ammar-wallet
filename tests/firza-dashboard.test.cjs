@@ -2,7 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const E=require('../engine.js'),S=require('../schedule.js');
 const file=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
-const app=file('app.js'),html=file('index.html'),css=file('firza-dashboard.css'),sw=file('sw.js');
+const app=require('./helpers/app-source.cjs').source,html=file('index.html'),css=file('firza-dashboard.css'),sw=file('sw.js');
 const code=app.slice(app.indexOf('function dashboardFinancialSummary('),app.indexOf('function firzaMonthSelector('));
 const month='2026-10',day='2026-10-31';
 function base(){
@@ -86,9 +86,9 @@ test('mobile dashboard and more menu navigate to all independent tabs',()=>{
  assert.match(css,/@media\(max-width:600px\)/);
 });
 test('versioned dashboard scripts and styles are present in offline cache',()=>{
- const appv=html.match(/app\.js\?v=([^"']+)/)?.[1],cssv=html.match(/firza-dashboard\.css\?v=([^"']+)/)?.[1];
+ const appv=html.match(/main\.js\?v=([^"']+)/)?.[1],cssv=html.match(/firza-dashboard\.css\?v=([^"']+)/)?.[1];
  assert.ok(appv&&cssv);
- assert.ok(sw.includes('app.js?v='+appv));
+ assert.ok(sw.includes('main.js?v='+appv));
  assert.ok(sw.includes('firza-dashboard.css?v='+cssv));
 });
 test('financial data storage and reset guard remain untouched by read-only dashboards',()=>{
