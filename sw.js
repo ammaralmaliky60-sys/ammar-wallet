@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'firza-static-v1.2.0-20261102-modules';
+const CACHE = 'firza-static-v1.3.0-20261102-ui';
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-'];
 
 const ASSETS = [
@@ -41,11 +41,12 @@ const ASSETS = [
   './app/finance-center.js?v=20261102-modules-r1',
   './app/spending.js?v=20261102-modules-r1',
   './app/emergency.js?v=20261102-modules-r1',
-  './app/lite.js?v=20261102-modules-r1',
+  './app/lite.js?v=20261102-ui-r1',
   './app/pages.js?v=20261102-modules-r1',
   './app/forms.js?v=20261102-modules-r1',
   './app/reset-setup.js?v=20261102-modules-r1',
   './app/backup.js?v=20261102-modules-r1',
+  './app/interactions.js?v=20261102-ui-r1',
   './app/main.js?v=20261102-modules-r1',
 
   // Stylesheets
@@ -63,6 +64,7 @@ const ASSETS = [
   './firza-identity.css?v=20261031-firza-r1',
   './firza-dashboard.css?v=20261031-firza-dashboard-r3',
   './firza-lite.css?v=20261031-lite-r1',
+  './firza-ui.css?v=20261102-ui-r1',
 
   // Fonts
   './arabic-regular.ttf',

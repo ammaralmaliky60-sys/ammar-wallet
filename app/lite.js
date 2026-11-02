@@ -120,15 +120,22 @@ function simpleLivingPage(){
   const spent=state.transactions.filter(t=>t.type==='expense'&&t.walletId===w.id&&t.date?.slice(0,7)===month)
     .reduce((sum,t)=>sum+t.amount,0);
   const leftover=Math.max(0,planned-spent),pct=planned?Math.min(100,Math.round(spent/planned*100)):0;
-  return '<article class="fz-lite-living-row"><div class="fz-lite-living-head"><strong>'+safe(w.label)+'</strong>'+
+  const level=!planned?(spent?'over':'empty'):spent>planned?'over':pct>=80?'warn':'ok';
+  const color=/^#[0-9a-f]{3,8}$/i.test(w.color||'')?w.color:'var(--th-accent)';
+  return '<article class="fz-lite-living-row" data-level="'+level+'" style="--cat:'+color+'"><div class="fz-lite-living-head"><strong>'+safe(w.label)+'</strong>'+
    '<span>'+money(spent)+' من '+money(planned)+'</span></div>'+
-   '<div class="fz-lite-progress"><i style="width:'+pct+'%"></i></div>'+
-   '<div class="fz-lite-living-foot">المتبقي من السقف '+money(leftover)+'</div></article>';
+   '<div class="fz-lite-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'" aria-label="'+safe(w.label)+'"><i style="width:'+pct+'%"></i></div>'+
+   '<div class="fz-lite-living-foot">'+(level==='over'?'تجاوزت السقف بـ '+money(spent-planned):'المتبقي من السقف '+money(leftover))+'</div></article>';
  }).join('');
+ const used=info.plan.total?Math.round(info.expenses/info.plan.total*100):0;
+ const usedLevel=used>100?'over':used>=80?'warn':'ok';
+ const meter=info.plan.total?'<div class="fz-lite-meter" data-level="'+usedLevel+'">'+
+  '<div class="fz-lite-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.min(100,used)+'" aria-label="نسبة الصرف من الميزانية"><i style="width:'+Math.min(100,used)+'%"></i></div>'+
+  '<span><b>'+used+'%</b> من الميزانية مصروف</span></div>':'';
  return head('المصروف','حدّد سقف كل قسم، ثم سجل مشترياتك اليومية بسهولة.',
   '<button class="btn" data-action="wf-living-quick">'+icon('plus')+' صرف سريع</button>')+
   '<div class="fz-lite"><section class="fz-lite-fixed-overview"><span>الميزانية الشهرية المحددة</span>'+
-  '<strong>'+money(info.plan.total)+'</strong>'+
+  '<strong>'+money(info.plan.total)+'</strong>'+meter+
   '<div class="fz-lite-fixed-metrics"><span>المصروف المسجّل <b>'+money(info.expenses)+'</b></span>'+
   '<span>المتاح غير الموزع <b>'+money(info.stats.unallocated)+'</b></span></div></section>'+
   '<section class="fz-lite-quick"><button class="btn" data-action="simple-budget-edit">'+icon('settings')+' تحديد الميزانية</button>'+
