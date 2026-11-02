@@ -1,4 +1,4 @@
-/* فِرزة — app/ui-shell.js
+/* وين راحت؟ — app/ui-shell.js
  * Navigation, themes, settings application, toast, shared widgets, ledger rows and overview widgets.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
@@ -6,11 +6,20 @@ const navs=[['dashboard','grid','لوحة التحكم'],['salary','wallet','ا�
 let settingsTab='account';
 const arabicMonth=period=>new Intl.DateTimeFormat('ar-IQ',{month:'long',year:'numeric'}).format(new Date(period+'-01T12:00:00'));
 const THUKHR_THEME_KEY='thukhr-appearance-v1';
-const THUKHR_THEMES=[['classic','الأساسي','أبيض وأزرق بترولي'],['night','الليلي','كحلي عميق وفيروزي'],['warm','الدافئ','عاجي وفيروزي هادئ'],['modern','العصري','أزرق بترولي ولمسة ليمونية']];
+// Two appearances only. Earlier saved values ('warm', 'modern') fall back to the device setting.
+const THUKHR_THEMES=[['classic','فاتح','رملي دافئ وأخضر عميق'],['night','داكن','أخضر ليلي هادئ']];
+const THEME_COLORS={classic:'#F6F2EA',night:'#14201F'};
+const prefersDark=()=>window.matchMedia?.('(prefers-color-scheme: dark)').matches===true;
 function thukhrTheme(){
- try{const v=localStorage.getItem(THUKHR_THEME_KEY);return THUKHR_THEMES.some(a=>a[0]===v)?v:'classic'}
- catch{return 'classic'}
+ // Without a saved choice, follow the device's light/dark setting.
+ try{const v=localStorage.getItem(THUKHR_THEME_KEY);if(THUKHR_THEMES.some(a=>a[0]===v))return v}catch{/* Storage unavailable: use the device setting. */}
+ return prefersDark()?'night':'classic';
 }
+function followDeviceTheme(){
+ let saved=null;try{saved=localStorage.getItem(THUKHR_THEME_KEY)}catch{/* Storage unavailable. */}
+ if(!THUKHR_THEMES.some(a=>a[0]===saved))applySettings();
+}
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change',()=>followDeviceTheme());
 function setThukhrTheme(v){
  if(!THUKHR_THEMES.some(a=>a[0]===v))return;
  try{localStorage.setItem(THUKHR_THEME_KEY,v)}catch{toast('تعذر حفظ النمط. قد يعود المظهر السابق عند إعادة الفتح.')}
@@ -18,14 +27,14 @@ function setThukhrTheme(v){
 }
 function thukhrThemePicker(){
  const t=thukhrTheme();
- return `<div class="thukhr-theme-picker" role="group" aria-label="اختر مظهر فِرزة">
+ return `<div class="thukhr-theme-picker" role="group" aria-label="اختر مظهر «وين راحت؟»">
  ${THUKHR_THEMES.map(([id,label,desc])=>`<button type="button" class="thukhr-theme-choice" data-action="thukhr-appearance" data-id="${id}" data-value="${id}" aria-pressed="${id===t}">
  <span class="thukhr-theme-swatch" aria-hidden="true"></span><span><strong>${label}</strong><small>${desc}</small></span></button>`).join('')}
  </div><small>يُحفظ اختيارك على هذا الجهاز، ولا يغيّر أي حركة أو مبلغ مالي.</small>`;
 }
 function thukhrFamilyWelcome(){
- return `<section class="firza-welcome" aria-label="ترحيب فِرزة"><div class="firza-welcome-symbol" aria-hidden="true"><img src="./icon.svg" alt=""></div>
- <div class="firza-welcome-copy"><strong>فلوسك مرتّبة، وحياتك أوضح.</strong><span>فِرزة — كل مبلغ بمكانه</span></div></section>`;
+ return `<section class="firza-welcome" aria-label="ترحيب «وين راحت؟»"><div class="firza-welcome-symbol" aria-hidden="true"><img src="./icon.svg" alt=""></div>
+ <div class="firza-welcome-copy"><strong>فلوسك مرتّبة، وحياتك أوضح.</strong><span>وين راحت؟ — اعرف فلوسك وين تروح</span></div></section>`;
 }
 function thukhrFamilyGoals(){
  return `<section class="thukhr-family-banner" aria-label="أهداف العائلة">
@@ -36,19 +45,18 @@ function thukhrFamilyGoals(){
 }
 function paintIcons(root=document){root.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon)})}
 function applySettings(){
- const theme=thukhrTheme(),dark=theme==='night'||theme==='modern';
+ const theme=thukhrTheme(),dark=theme==='night';
  document.body.dataset.thukhrTheme=theme;
  document.body.classList.toggle('dark',dark);
  document.documentElement.style.colorScheme=dark?'dark':'light';
- const meta=document.querySelector('meta[name="theme-color"]');
- const colors={classic:'#f8fafc',night:'#0b2033',warm:'#f5f7f2',modern:'#0a253b'};
- if(meta)meta.setAttribute('content',colors[theme]);
+ // Both media-specific theme-color tags follow the chosen appearance, so an explicit choice wins over the device.
+ document.querySelectorAll('meta[name="theme-color"]').forEach(meta=>meta.setAttribute('content',THEME_COLORS[theme]));
  const toggle=document.querySelector('[data-action="theme"]');
  if(toggle){toggle.dataset.icon=dark?'sun':'moon';toggle.innerHTML=icon(toggle.dataset.icon);
-  toggle.setAttribute('aria-label',dark?'المظهر الأساسي الفاتح':'المظهر الليلي');
-  toggle.setAttribute('title',dark?'التحويل إلى المظهر الأساسي':'التحويل إلى المظهر الليلي');}
+  toggle.setAttribute('aria-label',dark?'التحويل إلى المظهر الفاتح':'التحويل إلى المظهر الداكن');
+  toggle.setAttribute('title',dark?'المظهر الفاتح':'المظهر الداكن');}
  $('profileName').textContent=state.settings.name||'مساحتك الشخصية';
- $('avatar').textContent=(state.settings.name||'فِرزة')[0];
+ $('avatar').textContent=(state.settings.name||'وين راحت؟')[0];
 }
 function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),3600)}
 function currentStats(){return E.stats(state)}
@@ -84,7 +92,7 @@ function ledgerMobileRows(txs){
 function ledgerDetail(id){
  const t=state.transactions.find(x=>x.id===id);if(!t)throw Error('الحركة غير موجودة.');
  const [label,detail]=txLabel(t);
- modal('تفاصيل الحركة','المعلومات المسجلة في دفتر فِرزة',
+ modal('تفاصيل الحركة','المعلومات المسجلة في دفتر «وين راحت؟»',
  `<div class="thukhr-detail-grid">
  <div><span>نوع الحركة</span><strong>${safe(label)}</strong></div>
  <div><span>المبلغ</span><strong>${money(t.amount)}</strong></div>
@@ -102,7 +110,7 @@ function openLinkReceipt(id,p){const source=S.sources(state).find(x=>x.id===id);
  s.settings.wfIncomeModes={...(s.settings.wfIncomeModes||{}),[f.incomePeriod]:mode};
  return ['salary','incentives'].includes(id)?autoFixedSettlement(s,id,f.incomePeriod,t.method,t.date).next:s},'تم ربط الدخل السابق دون تغيير الأرصدة'):null,'ربط الحركة')}
 
-function overviewIdentity(){return `<span class="neo-title-mark" role="img" aria-label="شعار الفِرزة الذهبي المتحرك"><svg viewBox="0 0 160 145" xmlns="http://www.w3.org/2000/svg" focusable="false">   <defs>    <linearGradient id="mizan-scale-gold" x1="0" x2="1" y1="0" y2="1">     <stop offset="0" stop-color="#ab7935"/>     <stop offset=".35" stop-color="#ffe8ad"/>     <stop offset=".68" stop-color="#dbb36b"/>     <stop offset="1" stop-color="#9b6c2e"/>    </linearGradient>   </defs>   <ellipse cx="80" cy="136" rx="34" ry="4" fill="#f3c874" opacity=".20"/>   <path d="M80 43V124" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="10" stroke-linecap="round"/>   <path d="M52 130H108" fill="none" stroke="url(#mizan-scale-gold)" stroke-width="8" stroke-linecap="round"/>   <g class="mizan-scales" fill="none" stroke="url(#mizan-scale-gold)" stroke-linecap="round" stroke-linejoin="round">    <path d="M38 58Q80 48 122 58" stroke-width="9"/>    <path d="M38 58L17 103M38 58L59 103M122 58L101 103M122 58L143 103" stroke-width="3"/>    <path d="M10 105Q38 134 66 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>    <path d="M94 105Q122 134 150 105Z" fill="url(#mizan-scale-gold)" stroke="none"/>   </g>   <circle class="mizan-gold-point" cx="80" cy="30" r="12" fill="url(#mizan-scale-gold)"/>  </svg></span>`}
+function overviewIdentity(){return `<span class="neo-title-mark" role="img" aria-label="شعار «وين راحت؟»">${BRAND_MARK}</span>`}
 function neoOverviewBudget(){
  const s=currentStats(),spendWallets=state.wallets.filter(w=>w.kind==='spend');
  const spendIds=new Set(spendWallets.map(w=>w.id));

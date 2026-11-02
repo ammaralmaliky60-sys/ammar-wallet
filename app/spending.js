@@ -1,4 +1,4 @@
-/* فِرزة — app/spending.js
+/* وين راحت؟ — app/spending.js
  * Budget funding, living panel actions, quick multi-item expenses and payments.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
@@ -135,7 +135,7 @@ function wfLivingReport(){
  const label=t=>t.walletId?state.wallets.find(w=>w.id===t.walletId)?.name||'':
   t.obligationId?state.obligations.find(o=>o.id===t.obligationId)?.name||'':'';
  const data={
-  period:wfMonth,from:start,to:end,issuedAt:new Date().toLocaleString('ar-IQ'),currency:unit(),brand:'فِرزة',
+  period:wfMonth,from:start,to:end,issuedAt:new Date().toLocaleString('ar-IQ'),currency:unit(),brand:'وين راحت؟',
   stats:{opening:fmt(opening.total),income:fmt(sum('income')),expenses:fmt(sum('expense')),
    paid:fmt(sum('pay')),withheld:fmt(sum('withheld')),total:fmt(closing.total),
    available:fmt(closing.unallocated),reserved:fmt(Object.values(closing.reserved).reduce((n,v)=>n+v,0))},
@@ -182,7 +182,7 @@ function wfLivingDirect(initialId='',quick=false){
    ${quick?'<input type="hidden" name="date" value="'+today()+'">':dateField()}
    <div class="full">${field(quick?'الوصف (اختياري)':'على ماذا صرفت؟','note','text','',quick?'maxlength="120" placeholder="مثلاً: قهوة أو مشتريات"':'required maxlength="120" placeholder="مثلاً شراء خضروات للمنزل"')}</div>
    <div class="field full"><label><input type="checkbox" name="duplicateApproved" value="yes"> أؤكد أن العملية مستقلة إذا سبق تسجيل مبلغ ووصف مطابقين اليوم</label></div></div>
-   <div class="notice">المتاح غير المحجوز: <b>${money(stats.unallocated)}</b>. إذا كانت المحفظة لا تكفي، يمول فِرزة فقط مقدار النقص من المتبقي عند تأكيد الصرف، دون حجز إضافي أو خصم مزدوج.</div>`,
+   <div class="notice">المتاح غير المحجوز: <b>${money(stats.unallocated)}</b>. إذا كانت المحفظة لا تكفي، يموّل التطبيق فقط مقدار النقص من المتبقي عند تأكيد الصرف، دون حجز إضافي أو خصم مزدوج.</div>`,
   f=>{
    const wallet=livingCategories().find(w=>w.id===f.walletId);
    if(!wallet|| (state.wallets.find(w=>w.id===wallet.id)?.kind||wallet.kind)!=='spend')throw Error('الطوارئ محمية من المصروف اليومي؛ افتح خزنة الطوارئ.');

@@ -1,4 +1,4 @@
-/* فِرزة — app/backup.js
+/* وين راحت؟ — app/backup.js
  * Confirmations, downloads, rolling local snapshots, integrity hashes, backup and CSV export.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';

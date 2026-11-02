@@ -1,4 +1,4 @@
-/* فِرزة — app/smart-cycle.js
+/* وين راحت؟ — app/smart-cycle.js
  * Smart cycle wizard: allocation, automatic fixed commitments, review, workflow page and apply.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
@@ -16,7 +16,7 @@ function smartAllocate(d){
  <h3>الالتزامات الشهرية</h3><div class="smart-grid">${planRows||'<p class="wf-help">لا توجد بنود حالياً؛ لا تُنشأ حجوزات.</p>'}</div>
  <h3>حالة الالتزام (للبنود اليدوية فقط)</h3><p class="wf-help">«دفعته فعلياً» هي الحالة الافتراضية الثابتة عند فتح النموذج، ولا تعني أن الدفع حدث مسبقاً. إذا لم تدفع البند فغيّر حالته إلى الحجز أو الاستقطاع قبل الاعتماد.</p>${settlement||'<p class="wf-help">لا توجد استقطاعات لهذه الدفعة.</p>'}
  ${select('دفعت فعلياً من','payMethod',methodOptions,d.payMethod)}
- <h3>ميزانية المعيشة</h3><p class="wf-help">حدد السقوف الثابتة التي تحتاجها، حتى لو تجاوزت المتاح. سيحفظها فِرزة دون إنشاء رصيد وهمي؛ ويمكن تمويل النقص لاحقاً عبر «أخرى» في المعيشة.</p>
+ <h3>ميزانية المعيشة</h3><p class="wf-help">حدد السقوف الثابتة التي تحتاجها، حتى لو تجاوزت المتاح. سيحفظها التطبيق دون إنشاء رصيد وهمي؛ ويمكن تمويل النقص لاحقاً عبر «أخرى» في المعيشة.</p>
  <div class="smart-grid">${budget||'<p class="wf-help">لا توجد أقسام معيشة.</p>'}</div>`,
  f=>{
   if(!locked)for(const o of visible)d.plan[o.key]=amount(f['plan-'+o.key],true);

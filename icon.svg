@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
-<title id="t">فِرزة — FIRZA</title><desc id="d">علامة فِرزة الهندسية من أربع وحدات بالأزرق البترولي والفيروزي والأخضر الليموني ترمز إلى تصنيف الأموال وتنظيمها</desc>
-<defs>
-<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123d5d"/><stop offset="1" stop-color="#071c30"/></linearGradient>
-<linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#177db9"/><stop offset="1" stop-color="#08466f"/></linearGradient>
-<linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1dd2cb"/><stop offset="1" stop-color="#079ca8"/></linearGradient>
-<linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#25c9ac"/><stop offset="1" stop-color="#0395a6"/></linearGradient>
-<linearGradient id="e" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c3f34b"/><stop offset="1" stop-color="#97df38"/></linearGradient>
-</defs>
-<rect width="512" height="512" rx="110" fill="url(#bg)"/>
-<rect x="18" y="18" width="476" height="476" rx="95" fill="none" stroke="#7ad8dc" stroke-opacity=".17" stroke-width="2"/>
-<g>
-<path d="M118 238v-52c0-48 38-86 86-86h52v138Z" fill="url(#a)"/>
-<path d="M263 100h112c19 0 34 15 34 34v55c0 23-19 42-42 42H263Z" fill="url(#b)"/>
-<path d="M156 248h94v116c0 28-22 50-50 50h-45c-22 0-40-18-40-40v-85c0-23 18-41 41-41Z" fill="url(#c)"/>
-<path d="M263 248h112c19 0 34 15 34 34v36c0 31-25 56-56 56h-90Z" fill="url(#e)"/>
-</g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="28" fill="#0F5E56"/><circle cx="52" cy="68" r="30" fill="#D9A441"/><circle cx="52" cy="68" r="20" fill="none" stroke="#0F5E56" stroke-width="4"/><path d="M64 46 C74 30 88 24 100 26" fill="none" stroke="#F6F2EA" stroke-width="9" stroke-linecap="round"/><path d="M89 16 L102 26 L91 37" fill="none" stroke="#F6F2EA" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>

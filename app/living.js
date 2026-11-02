@@ -1,4 +1,4 @@
-/* فِرزة — app/living.js
+/* وين راحت؟ — app/living.js
  * Living-expense categories, targets, budget summaries and the living page.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';

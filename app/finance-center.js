@@ -1,4 +1,4 @@
-/* فِرزة — app/finance-center.js
+/* وين راحت؟ — app/finance-center.js
  * Reporting periods, month closing, finance center, reconciliation, profiles and statement.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';

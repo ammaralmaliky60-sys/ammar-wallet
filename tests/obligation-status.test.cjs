@@ -53,7 +53,7 @@ test('responsive styles and versioned deployment reference the update',()=>{
  const asset=index.match(/main\.js\?v=([^"']+)/)?.[1];
  assert.ok(asset,'Versioned app script missing');
  assert.ok(sw.includes('main.js?v='+asset),'The offline cache must contain the active script');
- assert.match(sw,/const CACHE\s*=\s*'(?:firza|thukhr)-static-[^']+'/);
+ assert.match(sw,/const CACHE\s*=\s*'(?:weenrahat|firza|thukhr)-static-[^']+'/);
 });
 test('engine accounting remains independent of new UI words',()=>{
  const engine=get('engine.js');

@@ -1,4 +1,4 @@
-/* فِرزة — app/reset-setup.js
+/* وين راحت؟ — app/reset-setup.js
  * Financial reset with mandatory backup, and the first-use setup wizard.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
@@ -38,7 +38,7 @@ function openFinancialReset(){
  const profile=localProfiles().find(p=>p.id===activeProfile)?.name||'المساحة الحالية';
  const stats=E.stats(state);
  const summary='عدد الحركات '+state.transactions.length+' · الرصيد '+fmt(stats.total)+' '+unit();
- modal('تهيئة بيانات فِرزة والبدء من جديد','تصفير السجل المالي الحالي فقط، وليس دورة مالية جديدة.',
+ modal('تهيئة بيانات «وين راحت؟» والبدء من جديد','تصفير السجل المالي الحالي فقط، وليس دورة مالية جديدة.',
  `<section class="thukhr-reset-summary">
    <strong>الملف المستهدف: ${safe(profile)}</strong>
    <span>${safe(summary)}</span>
@@ -172,7 +172,7 @@ if(wizardStep===2){
  submit=f=>{
   wizard.plan=f.plan;
   const next=wizardFreshPlan(state,wizard);
-  save(next,'تم إنشاء خطة فِرزة ببنودك فقط ومن دون التزامات افتراضية.',true);
+  save(next,'تم إنشاء خطتك في «وين راحت؟» ببنودك فقط ومن دون التزامات افتراضية.',true);
   closeModal();wfMonth=wizard.start.slice(0,7);location.hash='dashboard';
  };
 }

@@ -1,4 +1,4 @@
-/* فِرزة — app/store.js
+/* وين راحت؟ — app/store.js
  * Persistence: money inputs, save/commit helpers, demo data and initial state load.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';

@@ -1,4 +1,4 @@
-/* فِرزة — app/lite.js
+/* وين راحت؟ — app/lite.js
  * Firza Lite (simple mode): view mode, simplified numbers, pages, onboarding and budget editing.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
@@ -166,7 +166,7 @@ function simpleFixedPage(){
   '</section><section class="fz-lite-list">'+(rows||'<div class="fz-lite-empty"><span class="fz-empty-art">'+icon('calendar')+'</span>'+
     '<strong>بعدك ما أضفت ثوابت</strong><p>أضف الإيجار أو القسط أو الاشتراكات، وحدد مبلغها ومصدر الخصم.</p>'+
     (editable?'<button class="btn" data-action="fixed-entry">'+icon('plus')+' إضافة أول التزام</button>':'')+'</div>')+'</section>'+
-  '<p class="fz-lite-note">الخصم الآلي يسجّل سداداً داخل فِرزة عند تسجيل استلام الدفعة، إذا كان الحساب يكفي. لا يحوّل الأموال مصرفياً، ولا تُخصم مبالغ الاستقطاعات السابقة للإيداع مرتين.</p></div>';
+  '<p class="fz-lite-note">الخصم الآلي يسجّل سداداً داخل «وين راحت؟» عند تسجيل استلام الدفعة، إذا كان الحساب يكفي. لا يحوّل الأموال مصرفياً، ولا تُخصم مبالغ الاستقطاعات السابقة للإيداع مرتين.</p></div>';
 }
 function simpleLivingPage(){
  const month=today().slice(0,7),info=simpleFinancialNumbers();
@@ -279,7 +279,7 @@ function simpleSetupStart(){
  if(state.transactions.length||state.obligations.length||state.history.length){
   throw Error('هذه المساحة تحتوي بيانات سابقة. لاستبدالها استخدم «تهيئة البيانات» من الإعدادات مع نسخة احتياطية.');
  }
- modal('ابدأ مع فِرزة','ثلاث معلومات تكفي. تقدر تضيف الثوابت والميزانية بعد البداية.',
+ modal('ابدأ مع «وين راحت؟»','ثلاث معلومات تكفي. تقدر تضيف الثوابت والميزانية بعد البداية.',
   '<div class="form-grid">'+
    field('اسم اختياري','name','text',state.settings.name||'','maxlength="40"')+
    select('نوع دخلك','incomeMode',[['salary-only','راتب فقط'],['both','راتب وحافز']],state.settings.wfDefaultIncomeMode||'salary-only')+

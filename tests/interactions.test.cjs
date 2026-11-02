@@ -65,8 +65,9 @@ test('the layer never writes financial data',()=>{
  assert.doesNotMatch(source,/localStorage|save\(|commitEvent\(|E\.commit\(/);
 });
 
-test('interaction script loads before main.js and the design layer loads last',()=>{
+test('interaction script loads before main.js and the design layers load last',()=>{
  assert.ok(html.indexOf('app/interactions.js')>0&&html.indexOf('app/interactions.js')<html.indexOf('app/main.js'));
  const sheets=[...html.matchAll(/<link rel="stylesheet" href="\.\/([^"?]+)/g)].map(m=>m[1]);
- assert.equal(sheets.at(-1),'firza-ui.css');
+ // The interaction layer comes after the legacy sheets; the brand identity overrides everything.
+ assert.deepEqual(sheets.slice(-2),['firza-ui.css','brand.css']);
 });

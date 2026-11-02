@@ -1,4 +1,4 @@
-/* فِرزة — app/monthly-fields.js
+/* وين راحت؟ — app/monthly-fields.js
  * Monthly fixed-commitment fields: definitions, editing, hiding, restoring and deleting.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
@@ -52,7 +52,7 @@ function fixedCommitmentEdit(key=''){
  ${select('حساب الخصم','fixedMethod',[['receipt','نفس حساب استلام الراتب أو الحافز'],['card','البطاقة'],['cash','النقد']],item?.autoMethod||'receipt')}
  <div class="field full"><label><input type="checkbox" name="autoDeduct" value="yes" ${item?.autoDeduct===false?'':'checked'}> خصم تلقائي عند تسجيل استلام الدفعة، بدون تأكيد سداد إضافي</label></div>
  </div>
- <div class="notice warn">الخصم التلقائي يُسجّل سداداً في دفتر فِرزة ويخفض رصيد الحساب المحدد؛ لا يجري تحويلاً مصرفياً. إذا كان القسط مستقطعاً من الراتب قبل إيداع الصافي، أوقف الخصم الآلي حتى لا يُحسب مرتين.</div>
+ <div class="notice warn">الخصم التلقائي يُسجّل سداداً في دفتر «وين راحت؟» ويخفض رصيد الحساب المحدد؛ لا يجري تحويلاً مصرفياً. إذا كان القسط مستقطعاً من الراتب قبل إيداع الصافي، أوقف الخصم الآلي حتى لا يُحسب مرتين.</div>
  <div class="notice">إذا كانت الدفعة المستهدفة مسجلة سابقاً لهذا الشهر، يُنفّذ الخصم الآلي عند حفظ هذا الالتزام إن كان الرصيد يكفي. وإلا يبقى المبلغ غير مغطى، دون حساب سالب.</div>`,
  f=>act(n=>{
   const label=String(f.fixedName||'').trim().replace(/\s+/g,' ');
@@ -129,7 +129,7 @@ function monthlyFieldEdit(key=''){
      select('وقت اقتطاع المبلغ','fieldStage',stageOptions,old?.stage||(wfIncomeMode()==='salary-only'?'salary':'incentives'))}
    ${isUsed?'':select('آلية الاستقطاع','fieldReserve',[['normal','يمكن الحجز أو السداد أو الاستقطاع قبل الإيداع'],['reserve','حجز فقط'] ],old?.reserveOnly?'reserve':'normal')}
   </div>
-  <p class="wf-help">إذا اخترت «النصفين»، أدخل المبلغ كاملاً، ويقسمه فِرزة بين الدفعتين. البنود الجديدة تُضبط على خصم تلقائي عند تسجيل استلام الدخل؛ تقدر تغيّرها من «الثوابت والالتزامات».</p>`,
+  <p class="wf-help">إذا اخترت «النصفين»، أدخل المبلغ كاملاً، ويقسمه التطبيق بين الدفعتين. البنود الجديدة تُضبط على خصم تلقائي عند تسجيل استلام الدخل؛ تقدر تغيّرها من «الثوابت والالتزامات».</p>`,
  f=>{
   const name=String(f.fieldName||'').trim().replace(/\s+/g,' ');
   if(name.length<2||name.length>45||/[<>]/.test(name))throw Error('اسم البند يجب أن يكون من حرفين إلى 45 حرفاً.');

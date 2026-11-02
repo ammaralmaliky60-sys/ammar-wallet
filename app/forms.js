@@ -1,4 +1,4 @@
-/* فِرزة — app/forms.js
+/* وين راحت؟ — app/forms.js
  * Form field builders, modal dialogs and transaction/obligation/wallet dialogs.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';

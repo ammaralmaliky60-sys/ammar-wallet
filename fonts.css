@@ -1,50 +1,36 @@
-/* Mizan typography: locally hosted, OFL licensed and available offline.
-   Alexandria: headings and prominent financial figures.
-   IBM Plex Sans Arabic: body, controls, tables, and numerical data.
-   Licenses: ./fonts/OFL-Alexandria.txt and ./fonts/OFL-IBM-Plex-Sans-Arabic.txt */
+/* وين راحت؟ typography: Readex Pro (weights 400–700), downloaded from Google Fonts and served
+   from this site so it works offline and makes no third-party request.
+   Licence: ./fonts/readex-pro/OFL.txt. One variable file per script subset covers all weights. */
 @font-face{
-  font-family:"Alexandria";
-  src:url("./fonts/Alexandria%5Bwght%5D.ttf") format("truetype");
+  font-family:"Readex Pro";
+  src:url("./fonts/readex-pro/ReadexPro-arabic.woff2") format("woff2");
   font-style:normal;
-  font-weight:100 900;
+  font-weight:400 700;
   font-display:swap;
+  unicode-range:U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EEFF;
 }
 @font-face{
-  font-family:"IBM Plex Sans Arabic";
-  src:url("./fonts/IBMPlexSansArabic-Regular.ttf") format("truetype");
+  font-family:"Readex Pro";
+  src:url("./fonts/readex-pro/ReadexPro-latin-ext.woff2") format("woff2");
   font-style:normal;
-  font-weight:400;
+  font-weight:400 700;
   font-display:swap;
+  unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face{
-  font-family:"IBM Plex Sans Arabic";
-  src:url("./fonts/IBMPlexSansArabic-Medium.ttf") format("truetype");
+  font-family:"Readex Pro";
+  src:url("./fonts/readex-pro/ReadexPro-latin.woff2") format("woff2");
   font-style:normal;
-  font-weight:500;
+  font-weight:400 700;
   font-display:swap;
-}
-@font-face{
-  font-family:"IBM Plex Sans Arabic";
-  src:url("./fonts/IBMPlexSansArabic-Bold.ttf") format("truetype");
-  font-style:normal;
-  font-weight:700;
-  font-display:swap;
+  unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 body,button,input,select,textarea{
-  font-family:"IBM Plex Sans Arabic",Mizan,"Segoe UI",Tahoma,Arial,sans-serif;
-}
-h1,h2,h3,.brand>span,.mobile-brand,.hero-total,.stat-amount,.wallet-balance,.ob-detail b,.cycle-card h2,.modal-head h2{
-  font-family:"Alexandria","IBM Plex Sans Arabic",Mizan,Tahoma,sans-serif;
-  font-synthesis:weight;
+  font-family:"Readex Pro",Tahoma,Arial,sans-serif;
 }
 .num{
-  font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
   font-variant-numeric:tabular-nums;
   font-feature-settings:"tnum" 1;
-}
-button,input,select,textarea{font-synthesis:weight;}
-@media print{
-  body{font-family:"IBM Plex Sans Arabic",Mizan,Tahoma,Arial,sans-serif}
 }
 
 /* Numeric entry: LTR grouping inside RTL forms; financial values remain unchanged. */
@@ -52,12 +38,11 @@ input[data-money]{
   direction:ltr;
   unicode-bidi:isolate;
   text-align:center;
-  font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
   font-variant-numeric:tabular-nums;
   font-feature-settings:"tnum" 1;
   letter-spacing:.3px;
   font-size:16px;
-  font-weight:500;
+  font-weight:600;
 }
 input[data-money]:focus{letter-spacing:.35px}
 @media(max-width:760px){input[data-money]{font-size:18px;min-height:50px}}

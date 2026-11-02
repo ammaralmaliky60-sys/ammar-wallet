@@ -1,4 +1,4 @@
-/* فِرزة — app/interactions.js
+/* وين راحت؟ — app/interactions.js
  * Presentation-only interaction layer: turns short <select> menus into tappable choice cards/chips,
  * adds quick-amount chips, animated figures and page-enter motion. It never touches the ledger:
  * every choice still writes to the original <select>, so forms, validation and tests are unchanged.

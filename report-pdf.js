@@ -1,12 +1,13 @@
-/* ذُخر: direct offline PDF generator. No print API, remote scripts, or network access.
-   Arabic and RTL content is drawn with the application's own local fonts. */
+/* وين راحت؟: direct offline PDF generator. No print API, remote scripts, or network access.
+   Arabic and RTL content is drawn with the application's own local font (Readex Pro). */
 (function(root){
 'use strict';
 const PAGE_W=1240,PAGE_H=1754,PDF_W=595.28,PDF_H=841.89;
-const C={navy:'#181b23',navy2:'#282a34',gold:'#bc944e',goldLight:'#e9d5ae',ink:'#292b32',gray:'#69707b',line:'#dce0e5',soft:'#f6f7f8',white:'#ffffff'};
+// Brand palette (same values as brand.css). goldText is the darker gold used for text on light paper.
+const C={navy:'#0F5E56',navy2:'#0B4842',gold:'#D9A441',goldLight:'#EBD9AE',goldText:'#7F6026',cream:'#F6F2EA',ink:'#14201F',gray:'#4A5655',line:'#E2DCCF',soft:'#F6F2EA',white:'#ffffff'};
 const fmt = v => String(v===undefined||v===null?'0':v);
 function font(ctx,size=22,weight=400,heading=false){
-  ctx.font=weight+' '+size+'px "'+(heading?'Alexandria':'IBM Plex Sans Arabic')+'",Tahoma,Arial,sans-serif';
+  ctx.font=weight+' '+size+'px "Readex Pro",Tahoma,Arial,sans-serif';
 }
 function rtl(ctx,txt,x,y,size=22,color=C.ink,weight=400,maxWidth,heading=false){
   ctx.save();font(ctx,size,weight,heading);ctx.fillStyle=color;
@@ -43,10 +44,10 @@ function drawHeading(ctx,title,y){
 function pageHeader(ctx,data,isFirst){
   rect(ctx,0,0,PAGE_W,isFirst?213:146,C.navy);
   rect(ctx,0,isFirst?207:140,PAGE_W,6,C.gold);
-  rtl(ctx,(data.brand||'ميزان')+'  |  التقرير المالي',1175,47,25,C.goldLight,600);
+  rtl(ctx,(data.brand||'وين راحت؟')+'  |  التقرير المالي',1175,47,25,C.cream,600);
   if(isFirst){
     rtl(ctx,'الكشف المالي الشخصي',1175,110,44,C.white,700,1080,true);
-    rtl(ctx,'الفترة من '+data.from+' إلى '+(data.to||data.issuedAt),1175,167,20,C.goldLight,400,1080);
+    rtl(ctx,'الفترة من '+data.from+' إلى '+(data.to||data.issuedAt),1175,167,20,C.cream,400,1080);
   }else{
     rtl(ctx,'سجل الحركات | متابعة الكشف',1175,99,30,C.white,600,1080,true);
   }
@@ -78,7 +79,7 @@ function walletTable(ctx,data,top){
     rect(ctx,x,y,w,58,i%2===0?C.white:C.soft,C.line);
     const values=[row.name,row.budget,row.spent,row.balance];colX=1172;
     for(let j=0;j<values.length;j++){
-      rtl(ctx,values[j],colX-14,y+29,j===0?20:21,j===0?C.ink:j===3?C.gold:C.ink,j===0?600:500,cols[j]-24);
+      rtl(ctx,values[j],colX-14,y+29,j===0?20:21,j===0?C.ink:j===3?C.goldText:C.ink,j===0?600:500,cols[j]-24);
       colX-=cols[j];
     }
   }
@@ -177,9 +178,9 @@ async function download(report){
   if(!report||!Array.isArray(report.entries)||!Array.isArray(report.wallets))throw Error('تعذر تحضير بيانات الكشف.');
   if(document.fonts&&document.fonts.load){
     await Promise.allSettled([
-      document.fonts.load('600 26px "IBM Plex Sans Arabic"'),
-      document.fonts.load('700 26px "IBM Plex Sans Arabic"'),
-      document.fonts.load('600 28px "Alexandria"')
+      document.fonts.load('400 26px "Readex Pro"','وين راحت؟ 0123'),
+      document.fonts.load('600 26px "Readex Pro"','وين راحت؟ 0123'),
+      document.fonts.load('700 26px "Readex Pro"','وين راحت؟ 0123')
     ]);
   }
   const rows=report.entries;
@@ -198,7 +199,7 @@ async function download(report){
   const blob=buildPDF(jpegs,pages.map(p=>p.rows));
   if(blob.size<3000)throw Error('لم يكتمل توليد ملف PDF.');
   const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,13);
-  const filename=(report.brand==='ميزان'?'Mizan':'Thukhr')+'_Statement_'+fmt(report.period).replace(/[^0-9-]/g,'')+'_'+stamp+'.pdf';
+  const filename=(report.brand==='ميزان'?'Mizan':'Ween-Rahat')+'_Statement_'+fmt(report.period).replace(/[^0-9-]/g,'')+'_'+stamp+'.pdf';
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=filename;a.style.display='none';document.body.appendChild(a);
   try{a.click();}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}

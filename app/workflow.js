@@ -1,4 +1,4 @@
-/* فِرزة — app/workflow.js
+/* وين راحت؟ — app/workflow.js
  * Monthly workflow data, income modes, stage configuration and obligation status helpers.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
@@ -168,7 +168,7 @@ function smartOpen(){
 
 function smartIncome(d){
  const label=d.stage==='salary'?'الراتب':'الحوافز';
- const fields=d.existing?`<div class="notice">الاستلام موجود بالفعل: <b>${money(d.income)}</b> بتاريخ ${safe(d.date)}. لن يسجله فِرزة ثانيةً.</div>`:
+ const fields=d.existing?`<div class="notice">الاستلام موجود بالفعل: <b>${money(d.income)}</b> بتاريخ ${safe(d.date)}. لن يسجله التطبيق ثانيةً.</div>`:
  `<div class="form-grid">${moneyField('المبلغ المستلم فعلياً','income',inputMoney(d.income||''),'required')}
  ${select('طريقة الاستلام','method',methodOptions,d.method)}
  ${field('تاريخ الاستلام','date','date',d.date,`required min="${state.cycle.start}" max="${today()}"`)}</div>`;

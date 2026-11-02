@@ -1,4 +1,4 @@
-/* فِرزة — app/emergency.js
+/* وين راحت؟ — app/emergency.js
  * Emergency vault: protected spending, moves, corrections and page.
  * Classic script: shares the global scope with the other app/*.js files, loaded in the order listed in index.html. */
 'use strict';
