@@ -7,12 +7,13 @@
 
 /* Icons for well-known option values (anything else falls back to a colour dot or plain chip). */
 const CHOICE_ICONS={
+ all:'ledger',income:'income',expense:'wallet',allocate:'wallet',transfer:'transfer',account:'cash',
  card:'card',cash:'cash',salary:'wallet','salary-only':'wallet',incentives:'trend',both:'income',split:'transfer',
  reserve:'clock',withheld:'check',pay:'check',spend:'wallet',saving:'saving',emergency:'shield',
  home:'home',personal:'user',kids:'kids',vegetables:'home',monthly:'calendar',none:'close',
  in:'income',out:'arrow',to:'arrow',from:'transfer'
 };
-const CHOICE_MAX_OPTIONS=8,CHOICE_MAX_LABEL=46;
+const CHOICE_MAX_OPTIONS=8,CHOICE_MAX_SCROLL_OPTIONS=12,CHOICE_MAX_LABEL=46;
 const prefersReducedMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
 
 function choiceColor(value){return categoryColor(value)}
@@ -25,9 +26,11 @@ function choiceOptions(select){
 function choiceSignature(select){return [...select.options].map(o=>o.value+'\u0001'+o.textContent+'\u0001'+o.disabled).join('\u0002')}
 function canEnhanceSelect(select){
  // Disabled menus only display a fixed value; a row of greyed-out chips would add noise.
- if(select.multiple||select.disabled||select.dataset.native!==undefined||!select.closest('.field'))return false;
+ // Menus outside a form field (filters) are converted only when they opt in with data-choice="scroll".
+ const scroll=select.dataset.choice==='scroll';
+ if(select.multiple||select.disabled||select.dataset.native!==undefined||(!scroll&&!select.closest('.field')))return false;
  const options=choiceOptions(select);
- return options.length>=1&&options.length<=CHOICE_MAX_OPTIONS&&options.every(o=>o.label.length<=CHOICE_MAX_LABEL);
+ return options.length>=1&&options.length<=(scroll?CHOICE_MAX_SCROLL_OPTIONS:CHOICE_MAX_OPTIONS)&&options.every(o=>o.label.length<=CHOICE_MAX_LABEL);
 }
 function choiceStyle(options){
  const iconic=options.every(o=>CHOICE_ICONS[o.value]),colored=options.every(o=>choiceColor(o.value));
@@ -36,7 +39,7 @@ function choiceStyle(options){
  return options.length<=3&&options.every(o=>o.label.length<=18)?'segment':'chips';
 }
 function choiceMarkup(select){
- const options=choiceOptions(select),style=choiceStyle(options);
+ const options=choiceOptions(select),style=select.dataset.choice==='scroll'?'scroll':choiceStyle(options);
  return {style,html:options.map(o=>{
   const color=choiceColor(o.value),glyph=CHOICE_ICONS[o.value];
   const mark=color?`<span class="fz-choice-dot" style="--dot:${color}" aria-hidden="true"></span>`:
@@ -92,11 +95,12 @@ function chooseValue(group,button){
 }
 function enhanceSelect(select){
  if(select.fzChoice||!canEnhanceSelect(select))return;
- const field=select.closest('.field'),label=field.querySelector(`label[for="${CSS.escape(select.id)}"]`)||field.querySelector('label');
+ const field=select.closest('.field'),label=field?(field.querySelector(`label[for="${CSS.escape(select.id)}"]`)||field.querySelector('label')):null;
  const group=document.createElement('div');
  group.className='fz-choice';
  group.setAttribute('role','radiogroup');
  if(label){label.id||=`${select.id||select.name}-label`;group.setAttribute('aria-labelledby',label.id)}
+ else if(select.getAttribute('aria-label'))group.setAttribute('aria-label',select.getAttribute('aria-label'));
  group.fzSelect=select;select.fzChoice=group;
  select.classList.add('fz-select-hidden');select.tabIndex=-1;select.setAttribute('aria-hidden','true');
  select.after(group);
@@ -184,13 +188,13 @@ function enhanceMonthInput(input){
  stepper.innerHTML=`<button type="button" data-month-step="-1" aria-label="الشهر السابق">${arrow(STEP_ARROWS.prev)}</button>`+
   `<output aria-live="polite">${safe(arabicMonth(input.value))}</output>`+
   `<button type="button" data-month-step="1" aria-label="الشهر التالي" ${input.max&&input.value>=input.max?'disabled':''}>${arrow(STEP_ARROWS.next)}</button>`;
- input.fzStepper=stepper;
+ input.fzStepper=stepper;stepper.fzInput=input;
  input.classList.add('fz-select-hidden');input.tabIndex=-1;input.setAttribute('aria-hidden','true');
- input.closest('.fz-month-select')?.classList.add('has-stepper');
+ input.closest('.fz-month-select,.wf-month')?.classList.add('has-stepper');
  input.after(stepper);
 }
 function stepMonth(button){
- const input=button.closest('.fz-month-select')?.querySelector('input[type="month"]');
+ const input=button.closest('.fz-month-stepper')?.fzInput;
  if(!input||button.disabled)return;
  const next=shiftMonth(input.value,Number(button.dataset.monthStep));
  if(input.max&&next>input.max)return;
@@ -205,7 +209,7 @@ let lastEnhancedPage='';
 function enhanceInterface(root=document){
  root.querySelectorAll('select').forEach(enhanceSelect);
  root.querySelectorAll('input[data-quick-amount]').forEach(enhanceAmountInput);
- root.querySelectorAll('.fz-month-select input[type="month"]').forEach(enhanceMonthInput);
+ root.querySelectorAll('input[type="month"]#wfMonth').forEach(enhanceMonthInput);
  document.querySelectorAll('.fz-choice').forEach(syncChoiceGroup);
 }
 function onMainRendered(){

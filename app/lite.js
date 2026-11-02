@@ -55,18 +55,19 @@ function simpleFinancialNumbers(st=state,month=today().slice(0,7)){
 /* A signed amount. The sign follows the number in source order so that, in right-to-left text,
    it renders on the number's left ("+150,000"), as in Latin financial notation. */
 function signedMoney(amount,sign){
- return '<span class="num">'+fmt(amount)+'</span>'+(sign?'<span class="fz-sign">'+sign+'</span>':'')+' <small>'+unit()+'</small>';
+ return '<span class="num">'+fmt(amount)+'</span>'+(sign?'<span class="fz-sign">'+sign+'</span>':'')+'\u00a0<small>'+unit()+'</small>';
 }
 function relativeDay(day){
  if(day===today())return 'اليوم';
  if(day===addDays(today(),-1))return 'أمس';
  return date(day);
 }
-function activityRow(entry){
+function activityRow(entry,options){
+ const withDate=options?.withDate!==false;// options may be a map() index: only an explicit false hides the date.
  const sign=entry.sign>0?'+':entry.sign<0?'−':'';
  return '<button type="button" class="fz-activity-row" data-action="ledger-detail" data-id="'+safe(entry.id)+'" data-type="'+safe(entry.type)+'">'+
   '<span class="fz-activity-ic"'+(entry.color?' style="--dot:'+entry.color+'"':'')+'>'+icon(entry.icon)+'</span>'+
-  '<span class="fz-activity-text"><strong>'+safe(entry.label)+'</strong><small>'+safe([entry.detail,relativeDay(entry.date)].filter(Boolean).join(' · '))+'</small></span>'+
+  '<span class="fz-activity-text"><strong>'+safe(entry.label)+'</strong><small>'+safe([entry.detail,withDate&&relativeDay(entry.date)].filter(Boolean).join(' · '))+'</small></span>'+
   '<b class="fz-activity-amount" data-sign="'+(entry.sign>0?'in':'out')+'">'+signedMoney(entry.amount,sign)+'</b></button>';
 }
 function greeting(){

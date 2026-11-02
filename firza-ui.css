@@ -394,6 +394,113 @@ body[data-thukhr-theme] #toast:before{content:"";width:9px;height:9px;border-rad
 #main.fz-enter .fz-lite>:nth-child(5){animation-delay:.2s}
 #main.fz-enter .fz-lite>:nth-child(n+6){animation-delay:.25s}
 
+/* =====================================================================
+   Advanced mode
+   ===================================================================== */
+
+/* Currency units always sit beside their number (several legacy rules made them block-level). */
+body[data-thukhr-theme] #main .num+small,body[data-thukhr-theme] #main .fz-sign+small{display:inline!important;white-space:nowrap}
+body[data-thukhr-theme] #main .num:is(:has(+small),:has(+.fz-sign)){display:inline!important}
+
+/* Panels share the card language of the simple mode. */
+body[data-thukhr-theme][data-firza-view="advanced"] #main .panel{border-radius:var(--fz-r-lg);box-shadow:var(--fz-card-shadow);border-color:var(--th-line)}
+
+/* Action groups: equal tiles instead of ragged stacked buttons. */
+body[data-thukhr-theme] :is(.wf-living-top-actions,.wf-living-actions,.fz-fixed-actions){display:flex;flex-wrap:wrap;gap:8px}
+body[data-thukhr-theme] :is(.wf-living-top-actions,.wf-living-actions,.fz-fixed-actions)>.btn{flex:1 1 160px;justify-content:center;margin:0}
+@media (max-width:760px){
+ body[data-thukhr-theme] :is(.wf-living-top-actions,.wf-living-actions,.fz-fixed-actions){display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))}
+ body[data-thukhr-theme] :is(.wf-living-top-actions,.wf-living-actions,.fz-fixed-actions)>.btn{width:100%;min-height:48px;font-size:12px;padding-inline:10px}
+ /* A lone last tile takes the full row. The spending page's first action already spans a row (legacy rule), which flips the parity. */
+ body[data-thukhr-theme] :is(.wf-living-top-actions,.wf-living-actions,.fz-fixed-actions)>.btn:only-child,
+ body[data-thukhr-theme] :is(.wf-living-actions,.fz-fixed-actions)>.btn:last-child:nth-child(odd),
+ body[data-thukhr-theme] .wf-living-top-actions>.btn:first-child{grid-column:1/-1}
+ body[data-thukhr-theme] .wf-living-top-actions>.btn:last-child:nth-child(even){grid-column:1/-1}
+}
+
+/* Month stepper inside the dark workflow card */
+.wf-month.has-stepper>.thukhr-readable-month{display:none}
+body[data-thukhr-theme] .wf-intro .fz-month-stepper{background:#ffffff14;border-color:#ffffff2b}
+body[data-thukhr-theme] .wf-intro .fz-month-stepper output{color:#fff}
+body[data-thukhr-theme] .wf-intro .fz-month-stepper button{background:#ffffff1f;color:#fff;box-shadow:none}
+
+/* Dashboard budget lines: category colour + status, like the simple spending page */
+body[data-thukhr-theme] .fz-budget-line-head>span{display:inline-flex;align-items:center;gap:8px}
+body[data-thukhr-theme] .fz-budget-line-head>span:before{content:"";width:10px;height:10px;border-radius:3px;background:var(--cat,var(--th-accent))}
+body[data-thukhr-theme] .fz-budget-line .fz-track i{background:linear-gradient(90deg,var(--cat,var(--th-accent)),color-mix(in srgb,var(--cat,var(--th-accent)) 60%,#fff));transform-origin:right center;animation:fz-grow .9s var(--fz-ease) both}
+body[data-thukhr-theme] .fz-budget-line[data-level="warn"] .fz-track i{background:linear-gradient(90deg,var(--fz-caution),#f6cf6d)}
+body[data-thukhr-theme] .fz-budget-line[data-level="over"] .fz-track i{background:linear-gradient(90deg,var(--fz-over),#f39484)}
+body[data-thukhr-theme] .fz-budget-line[data-level="over"] .fz-budget-line-head b{color:var(--fz-over)}
+body[data-thukhr-theme] .fz-budget-line[data-level="over"]{border-radius:12px;padding:8px 10px;margin-inline:-10px}
+body[data-thukhr-theme] .fz-glance .fz-activity{margin-top:4px}
+
+/* Reports: installment tracking */
+body[data-thukhr-theme] .fz-fixed-item .fz-ob-badge{margin:4px 0}
+body[data-thukhr-theme] .fz-fixed-item-meta .fz-ob-progress{margin-top:8px;max-width:none}
+body[data-thukhr-theme] .fz-fixed-item[data-status="covered"] .fz-fixed-item-amount b{color:var(--fz-ok)}
+.fz-installment{display:grid;gap:8px;padding:14px 0;border-bottom:1px solid var(--th-line)}
+.fz-installment:last-of-type{border-bottom:0}
+.fz-installment-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.fz-installment-head strong{font-size:14px;font-weight:800}
+.fz-installment-head b{font-size:15px;font-weight:850;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fz-installment-due{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--th-muted)}
+.fz-installment-due svg{width:14px;height:14px}
+body[data-thukhr-theme] .fz-installment .fz-ob-progress{max-width:none}
+
+/* Ledger: search, type chips, period chips, summary and day-grouped rows */
+body[data-thukhr-theme] .filters.fz-ledger-filters{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:6px}
+.fz-search{position:relative;display:block}
+.fz-search svg{position:absolute;top:50%;inset-inline-start:15px;width:19px;height:19px;transform:translateY(-50%);color:var(--th-muted);pointer-events:none}
+body[data-thukhr-theme] .fz-search input{width:100%;min-height:50px;padding-inline-start:44px;border-radius:16px;font-size:14px}
+.fz-choice[data-style="scroll"]{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 2px 8px;margin:0 -2px;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.fz-choice[data-style="scroll"]::-webkit-scrollbar{display:none}
+@media (max-width:760px){.fz-choice[data-style="scroll"]{-webkit-mask-image:linear-gradient(to left,transparent,#000 32px);mask-image:linear-gradient(to left,transparent,#000 32px);padding-inline-end:24px}}
+@media (min-width:761px){.fz-choice[data-style="scroll"]{flex-wrap:wrap;overflow:visible}}
+.fz-choice[data-style="scroll"] .fz-choice-opt{flex:none;scroll-snap-align:start;min-height:38px;padding:5px 14px 5px 10px;border-radius:999px;font-size:12px;gap:7px}
+.fz-choice[data-style="scroll"] .fz-choice-ic{width:24px;height:24px;border-radius:8px}
+.fz-choice[data-style="scroll"] .fz-choice-ic svg{width:14px;height:14px}
+.fz-choice[data-style="scroll"] .fz-choice-opt:after{display:none}
+.fz-choice[data-style="scroll"] .fz-choice-opt[aria-checked="true"]{background:var(--th-text);border-color:var(--th-text);color:var(--th-panel);box-shadow:0 6px 16px #0b2d4b26}
+.fz-choice[data-style="scroll"] .fz-choice-opt[aria-checked="true"] .fz-choice-ic{background:#ffffff26;color:inherit;transform:none}
+.fz-period{display:flex;flex-wrap:wrap;gap:6px}
+.fz-period-chip{min-height:34px;padding:4px 13px;border-radius:999px;border:1px dashed color-mix(in srgb,var(--th-accent) 45%,var(--th-line));background:transparent;color:var(--th-text);
+ font:inherit;font-size:12px;font-weight:750;cursor:pointer;transition:background-color .2s,color .2s,transform .2s var(--fz-spring)}
+.fz-period-chip:active{transform:scale(.94)}
+.fz-period-chip[aria-pressed="true"]{border-style:solid;border-color:var(--th-accent);background:color-mix(in srgb,var(--th-accent) 14%,transparent);color:var(--th-accent)}
+body[data-thukhr-theme] .fz-ledger-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body[data-thukhr-theme] .fz-ledger-dates[hidden]{display:none}
+.fz-ledger-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 16px}
+.fz-ledger-summary>div{display:grid;gap:2px;padding:11px 12px;border-radius:14px;background:var(--th-panel2);min-width:0}
+.fz-ledger-summary span{font-size:11px;color:var(--th-muted)}
+.fz-ledger-summary strong{font-size:15px;font-weight:850;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.fz-ledger-summary strong small{font-size:10px;font-weight:600}
+.fz-ledger-summary [data-kind="in"] strong{color:var(--fz-ok)}
+@media (max-width:420px){.fz-ledger-summary strong{font-size:13px}}
+.fz-ledger-days{display:grid;gap:14px}
+.fz-ledger-day>header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 2px 8px;border-bottom:1px solid var(--th-line);margin-bottom:2px}
+.fz-ledger-day>header strong{font-size:13px;font-weight:850}
+.fz-ledger-day>header span{font-size:12px;font-weight:800;color:var(--th-muted);font-variant-numeric:tabular-nums}
+.fz-ledger-day>header span[data-sign="in"]{color:var(--fz-ok)}
+.fz-ledger-day>header small{font-size:10px}
+/* Desktop ledger table */
+body[data-thukhr-theme] .thukhr-ledger-table .expense-color{color:var(--th-text)}
+body[data-thukhr-theme] .thukhr-ledger-table .income-color{color:var(--fz-ok)}
+body[data-thukhr-theme] .thukhr-ledger-table tbody tr{transition:background-color .15s}
+@media (hover:hover){body[data-thukhr-theme] .thukhr-ledger-table tbody tr:hover{background:var(--th-panel2)}}
+body[data-thukhr-theme] .thukhr-ledger-table td .num{font-weight:800;font-variant-numeric:tabular-nums}
+
+/* Mobile "More" sheet: a grid of icon tiles */
+@media (max-width:760px){
+ body[data-thukhr-theme] .thukhr-more-sheet:not([hidden]){grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:14px;border-radius:26px;
+  box-shadow:0 24px 60px #0b2d4b40;animation:fz-pop .28s var(--fz-ease)}
+ body[data-thukhr-theme] .thukhr-more-sheet>a{flex-direction:column;justify-content:center;text-align:center;gap:8px;min-height:88px;padding:12px 6px;border-radius:18px;font-size:12px;font-weight:750;line-height:1.4;
+  background:var(--th-panel2);transition:transform .2s var(--fz-spring),background-color .2s}
+ body[data-thukhr-theme] .thukhr-more-sheet>a:active{transform:scale(.94)}
+ body[data-thukhr-theme] .thukhr-more-sheet>a>[data-icon]{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;
+  background:color-mix(in srgb,var(--th-accent) 14%,var(--th-panel));color:var(--th-accent)}
+ body[data-thukhr-theme] .thukhr-more-sheet>a>[data-icon] svg{width:20px;height:20px}
+}
+
 /* ---------- Keyframes ---------- */
 @keyframes fz-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes fz-pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}

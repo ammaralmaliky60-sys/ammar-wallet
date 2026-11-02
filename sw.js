@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'firza-static-v1.4.0-20261102-insights';
+const CACHE = 'firza-static-v1.5.0-20261102-advanced';
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-'];
 
 const ASSETS = [
@@ -31,23 +31,23 @@ const ASSETS = [
   './report-pdf.js?v=thukhr-finance-20261031-r2',
 
   // Application (order mirrors index.html)
-  './app/core.js?v=20261102-modules-r1',
+  './app/core.js?v=20261102-advanced-r1',
   './app/store.js?v=20261102-modules-r1',
-  './app/ui-shell.js?v=20261102-modules-r1',
+  './app/ui-shell.js?v=20261102-advanced-r1',
   './app/monthly-fields.js?v=20261102-modules-r1',
   './app/workflow.js?v=20261102-modules-r1',
   './app/smart-cycle.js?v=20261102-modules-r1',
   './app/living.js?v=20261102-insights-r1',
-  './app/finance-center.js?v=20261102-modules-r1',
+  './app/finance-center.js?v=20261102-advanced-r1',
   './app/spending.js?v=20261102-modules-r1',
   './app/emergency.js?v=20261102-modules-r1',
-  './app/lite.js?v=20261102-insights-r1',
-  './app/pages.js?v=20261102-modules-r1',
+  './app/lite.js?v=20261102-advanced-r1',
+  './app/pages.js?v=20261102-advanced-r1',
   './app/forms.js?v=20261102-modules-r1',
   './app/reset-setup.js?v=20261102-modules-r1',
   './app/backup.js?v=20261102-modules-r1',
-  './app/interactions.js?v=20261102-insights-r1',
-  './app/main.js?v=20261102-insights-r1',
+  './app/interactions.js?v=20261102-advanced-r1',
+  './app/main.js?v=20261102-advanced-r1',
 
   // Stylesheets
   './style.css?v=gold-20261031-r2',
@@ -64,7 +64,7 @@ const ASSETS = [
   './firza-identity.css?v=20261031-firza-r1',
   './firza-dashboard.css?v=20261031-firza-dashboard-r3',
   './firza-lite.css?v=20261031-lite-r1',
-  './firza-ui.css?v=20261102-insights-r1',
+  './firza-ui.css?v=20261102-advanced-r1',
 
   // Fonts
   './arabic-regular.ttf',

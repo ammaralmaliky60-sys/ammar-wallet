@@ -55,9 +55,11 @@ function dashboardPage(){
    <p>${m.living.total?`استُخدم ${m.livingPct}% من الميزانية المدخلة. السقف ليس رصيداً مودعاً.`:'لم تُحفظ ميزانية المصروف لهذا الشهر بعد. حدّد الأقسام والمبالغ من صفحة المصروف.'}</p>
   </div>
   <div class="fz-budget-breakdown"><strong>توزيع الميزانية على الأقسام</strong>
-   ${m.monthRows.length?m.monthRows.map(row=>`<div class="fz-budget-line">
+   ${m.monthRows.length?m.monthRows.map(row=>{
+    const level=row.spent>row.amount?'over':row.pct>=80?'warn':'ok',color=categoryColor(row.id);
+    return `<div class="fz-budget-line" data-level="${level}"${color?` style="--cat:${color}"`:''}>
     <div class="fz-budget-line-head"><span>${safe(row.label)}</span><b>${money(row.spent)} <small>من ${money(row.amount)}</small></b></div>
-    <div class="fz-track"><i style="width:${row.pct}%"></i></div></div>`).join(''):'<p class="fz-empty-note">لم تُحدد أي مبالغ للأقسام بعد.</p>'}</div>
+    <div class="fz-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${row.pct}" aria-label="${safe(row.label)}"><i style="width:${row.pct}%"></i></div></div>`}).join(''):'<p class="fz-empty-note">لم تُحدد أي مبالغ للأقسام بعد.</p>'}</div>
  </section>
  <section class="fz-dashboard-bottom">
   <article class="fz-glance">
@@ -70,8 +72,7 @@ function dashboardPage(){
   </article>
   <article class="fz-glance">
    <div class="fz-dashboard-section-head"><div><span class="fz-eyebrow">الحركات المسجلة</span><h2>آخر العمليات</h2></div><a href="#ledger">السجل الكامل ←</a></div>
-   ${monthlyTx.length?monthlyTx.map(t=>{const label=txLabel(t);return `<div class="fz-movement"><span><b>${safe(label[0])}</b><small>${date(t.date,true)} · ${safe(t.note||label[1])}</small></span>
-    <strong class="${t.type==='income'?'fz-inflow':t.type==='expense'||t.type==='pay'?'fz-outflow':''}">${money(t.amount)}</strong></div>`}).join(''):
+   ${monthlyTx.length?`<div class="fz-activity">${monthlyTx.map(t=>activityRow(activityEntry(t))).join('')}</div>`:
     '<p class="fz-empty-note">لا توجد عمليات مسجلة لهذا الشهر بعد.</p>'}
   </article>
  </section>
@@ -126,13 +127,16 @@ function fixedCommitmentsPage(){
  </section>
  <section class="fz-finance-info">
   ${section('بنود الالتزامات الشهرية','يعرض المبلغ الأصلي وما غُطّي منه وما بقي دون احتساب مزدوج.')}
-  ${projection.entries.length?projection.entries.map(item=>`<article class="fz-fixed-item">
-   <div><strong>${safe(item.label)}</strong><span>المبلغ الكامل ${money(item.amount)}</span>
+  ${projection.entries.length?projection.entries.map(item=>{
+   const status=item.uncovered<=0?'covered':item.covered>0?'partial':'open',pct=item.amount?Math.min(100,Math.round(item.covered/item.amount*100)):0;
+   return `<article class="fz-fixed-item" data-status="${status}">
+   <div><strong>${safe(item.label)}</strong><span class="fz-ob-badge">${icon(OB_STATUS[status][0])}${OB_STATUS[status][1]}</span><span>المبلغ الكامل ${money(item.amount)}</span>
    ${monthlyAllFields().find(f=>wfObId(month,f.key)===item.id)?`<small>مصدر الخصم: ${safe(monthlyFieldStageLabel(monthlyAllFields().find(f=>wfObId(month,f.key)===item.id)))} · ${monthlyAllFields().find(f=>wfObId(month,f.key)===item.id)?.autoDeduct===true?'تلقائي':'يدوي'}</small>
    ${editable?`<button type="button" class="btn small secondary" data-action="fixed-edit" data-id="${safe(monthlyAllFields().find(f=>wfObId(month,f.key)===item.id).key)}">تعديل المبلغ ومصدر الخصم</button>`:''}`:''}
    </div>
    <div class="fz-fixed-item-amount"><b>${money(item.uncovered)}</b><small>غير مغطى</small></div>
-   <div class="fz-fixed-item-meta">مغطى بالسداد أو الحجز أو الاستقطاع: ${money(item.covered)}</div></article>`).join(''):
+   <div class="fz-fixed-item-meta">مغطى بالسداد أو الحجز أو الاستقطاع: ${money(item.covered)}
+   <div class="fz-lite-progress fz-ob-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="نسبة تغطية ${safe(item.label)}"><i style="width:${pct}%"></i></div></div></article>`}).join(''):
     '<p class="fz-empty-note">ماكو بنود ثابتة مسجلة لهذا الشهر. أضف البنود وحدد قيمها.</p>'}
  </section>
  <div class="fz-fixed-actions">
@@ -149,12 +153,44 @@ function incomePage(){const s=currentStats(),txs=[...state.transactions].reverse
 function obligationsPage(){const s=currentStats(),activeObligations=state.obligations.filter(o=>!o.archived),archivedObligations=state.obligations.filter(o=>o.archived),total=activeObligations.reduce((a,o)=>a+o.amount,0),res=activeObligations.reduce((a,o)=>a+(s.reserved[o.id]||0),0),paid=activeObligations.reduce((a,o)=>a+(s.paid[o.id]||0),0);return head('الالتزامات الثابتة','تسجيل الالتزام لا يحجز أي مبلغ، إلا إذا وافقت أنت على الحجز لاحقاً.',btn('obligation','إضافة التزام'))+`<div class="stat-grid">${stat('إجمالي الالتزامات النشطة',total,'calendar','المبالغ المستحقة غير المؤرشفة')}${stat('محجوز ولم يُدفع',res,'shield','يبقى ضمن الرصيد حتى السداد','gold')}${stat('تم سداده',paid,'check','مدفوعات الالتزامات المسجلة','blue')}${stat('غير مغطّى بعد',Math.max(0,total-res-paid),'clock','يحتاج إلى حجز من المتاح','purple')}</div><div class="obligation-list">${activeObligations.length?activeObligations.map(o=>{const p=s.paid[o.id]||0,r=s.reserved[o.id]||0,missing=o.amount-r-p,isPaid=p===o.amount,late=o.due<today()&&!isPaid;return `<article class="ob-card"><div class="card-top"><h3>${safe(o.name)}</h3><span class="chip ${late?'red':missing?'amber':''}">${isPaid?'مدفوع بالكامل':late?'متأخر':missing?'يحتاج حجزاً':'محجوز'}</span></div><div class="ob-detail"><span>الاستحقاق ${date(o.due,true)}${o.recurring?' · متكرر':''}</span><b>${money(o.amount)}</b></div><div class="progress"><i style="width:${(p+r)/o.amount*100}%"></i></div><div class="progress-meta"><span>مدفوع ${fmt(p)} · محجوز ${fmt(r)}</span><span>غير مغطى ${fmt(missing)}</span></div><div class="ob-actions">${r>0?`<button class="btn small" data-action="pay" data-id="${safe(o.id)}">${icon('check')}سداد الالتزام</button>`:''}${missing>0?`<button class="btn small soft" data-action="reserve" data-id="${safe(o.id)}">حجز مبلغ</button>`:''}${r>0?`<button class="btn small secondary" data-action="unreserve" data-id="${safe(o.id)}">إلغاء حجز</button>`:''}${o.recurring?`<button class="text-btn" data-action="renew" data-id="${safe(o.id)}">تجديد الاستحقاق</button>`:''}${state.transactions.some(t=>t.obligationId===o.id)?`<button class="btn small secondary" data-action="archive-obligation" data-id="${safe(o.id)}"${r>0?' title="ألغِ الحجز أولاً"':''}>أرشفة</button>`:`<button class="btn small danger" data-action="delete-obligation" data-id="${safe(o.id)}">${icon('trash')}حذف الالتزام</button>`}</div></article>`}).join(''):empty('مساحة خالية من الالتزامات','أضف الإيجار أو الأقساط أو الخدمات وحدد تاريخ الاستحقاق.')}</div>${archivedObligations.length?`<section class="panel"><div class="section-heading"><div><h2>الالتزامات المؤرشفة (${archivedObligations.length})</h2><p>محفوظة مع حركاتها المالية ولا تدخل في مجموع الالتزامات النشطة.</p></div></div><div class="obligation-list">${archivedObligations.map(o=>`<article class="ob-card"><div class="card-top"><h3>${safe(o.name)}</h3><span class="chip">مؤرشف</span></div><div class="ob-detail"><span>الاستحقاق ${date(o.due,true)}</span><b>${money(o.amount)}</b></div><div class="progress-meta"><span>مدفوع ${fmt(s.paid[o.id]||0)}</span><span>محجوز ${fmt(s.reserved[o.id]||0)}</span></div><div class="ob-actions"><button class="btn small secondary" data-action="restore-obligation" data-id="${safe(o.id)}">إعادة للقائمة النشطة</button></div></article>`).join('')}</div></section>`:''}<div class="notice">تسجيل أي التزام لا يخصم شيئاً من البطاقة أو النقد أو المحافظ أو المتاح للتوزيع. يمكنك الحجز فقط بعد اختيار المبلغ والموافقة عليه. الحجز ينقل من «المتاح للتوزيع» إلى الالتزام، والسداد الفعلي وحده يخفض رصيد البطاقة أو النقد.</div>`}
 function weeklyTable(){const count=Math.ceil(state.cycle.days/7);return `<div class="table-wrap"><table><thead><tr><th>الأسبوع</th><th>الفترة</th><th>المخصص النسبي</th><th>الصرف الفعلي</th><th class="align-left">الفرق</th></tr></thead><tbody>${Array.from({length:count},(_,i)=>{const start=addDays(state.cycle.start,i*7),n=Math.min(7,state.cycle.days-i*7),end=addDays(start,n-1);let base=state.transactions.filter(t=>t.type==='allocate'&&t.date>=state.cycle.start&&state.wallets.some(w=>w.id===t.walletId&&w.kind==='spend')).reduce((a,t)=>a+t.amount,0);const target=Math.floor(base*Math.min(state.cycle.days,(i+1)*7)/state.cycle.days)-Math.floor(base*i*7/state.cycle.days),spent=state.transactions.filter(t=>t.type==='expense'&&t.date>=start&&t.date<=end&&state.wallets.some(w=>w.id===t.walletId&&w.kind==='spend')).reduce((a,t)=>a+t.amount,0);return `<tr><td>الأسبوع ${i+1}</td><td class="muted">${date(start)} — ${date(end)}</td><td>${money(target)}</td><td>${money(spent)}</td><td class="align-left ${target<spent?'expense-color':'income-color'}">${money(target-spent)}</td></tr>`}).join('')}</tbody></table></div>`}
 function planPage(){const s=currentStats();return head('المحافظ والخطة','خطة مرنة تناسب حياتك، تبدأ بعد تغطية التزاماتك.',btn('wallet','محفظة جديدة','plus','secondary')+btn('allocate','توزيع المتاح','wallet'))+`<div class="notice">متاح للتوزيع الآن: <b>${money(s.unallocated)}</b> · أرصدة المحافظ هي تخصيصات من رصيدك، والتحويل بينها لا يُعدّ دخلاً أو مصروفاً.</div><div class="wallet-grid">${walletCards()}</div><div class="row" style="margin-bottom:23px;flex-wrap:wrap">${btn('transfer','تحويل بين المحافظ','transfer','secondary')}${btn('release','إرجاع مبلغ إلى المتاح','wallet','secondary')}${btn('expense','تسجيل مصروف','plus')}</div><div class="two-col"><section class="panel">${section('توزيع يناسبك','اختر أسلوبك وعدّل أوزان محافظك كما تريد.')}<p class="help-text">خطة الملف الأصلي محفوظة كقالب اختياري: المنزل 125,000، الشخصية 120,000، الأسرة 60,000، والطوارئ 30,000. يمكنك تطبيق نسبها على أي مبلغ أو إدخال مبالغك الخاصة.</p><div class="settings-actions">${btn('allocate','اختيار توزيع','wallet','soft')}</div></section><section class="panel">${section('سقف يومي يحمي خطتك','يتكيّف مع المصروف الفعلي والأيام المتبقية.')}<div class="stat-amount">${money(cap())}</div><p class="help-text">الرصيد المتاح لمحافظ الصرف موزّع على الأيام المتبقية، مع خصم ما صُرف اليوم. الفائض يبقى في محفظتك. الادخار والطوارئ والالتزامات خارج هذا السقف.</p></section></div><section class="panel">${section('المراجعة الأسبوعية','مخصص نسبي بحسب أيام الأسبوع الفعلية، بما فيها الأسبوع الأخير القصير.')}${weeklyTable()}${state.transactions.some(t=>t.date>addDays(state.cycle.start,state.cycle.days-1))?'<div class="notice warn">توجد حركات بعد انتهاء المدة؛ تظهر في السجل وإجماليات التقارير. ابدأ دورة جديدة لتحديث حدود الصرف والتقسيم الأسبوعي.</div>':''}<div class="notice">المخصص النسبي مبني على التخصيصات الجديدة خلال الدورة. التحويلات والترحيل تغيّر الرصيد الفعلي والسقف اليومي؛ راجعها في السجل ولا تعتبر فرق الأسبوع رصيداً مصرفياً.</div></section>`}
-function ledgerPage(){return head('سجل الحركات','كل حركة محفوظة بتاريخها ومبلغها وغرضها، مع بحث وفلاتر دقيقة.')+`<section class="panel">${section('دفترك المالي',`${state.transactions.length} حركة مسجلة`,btn('csv','تصدير CSV','download','secondary small'))}<div class="filters"><input id="search" placeholder="ابحث بالوصف أو المحفظة…" aria-label="البحث في السجل"><select id="typeFilter" aria-label="نوع الحركة"><option value="all">جميع الحركات</option><option value="income">الدخل</option><option value="expense">المصروفات</option><option value="pay">سداد الالتزامات</option><option value="withheld">استقطاع قبل الإيداع</option><option value="reserve">الحجز</option><option value="allocate">التخصيص</option><option value="transfer">التحويلات</option><option value="account">النقد والبطاقة</option></select><label class="thukhr-date-filter" for="fromFilter"><span>من تاريخ</span>
+const LEDGER_PERIODS=[['all','كل الفترات'],['month','هذا الشهر'],['last-month','الشهر الماضي'],['week','آخر 7 أيام'],['custom','فترة مخصصة']];
+function ledgerPeriodRange(key,day=today()){
+ const month=day.slice(0,7);
+ if(key==='month')return {from:month+'-01',to:day};
+ if(key==='week')return {from:addDays(day,-6),to:day};
+ if(key==='last-month'){const end=addDays(month+'-01',-1);return {from:end.slice(0,7)+'-01',to:end}}
+ return {from:'',to:''};
+}
+/* Quick period chips write to the original date filters, so the existing filter logic stays the single path. */
+function ledgerPeriod(key){
+ const from=$('fromFilter'),to=$('toFilter');
+ if(!from||!to||!LEDGER_PERIODS.some(([k])=>k===key))return;
+ document.querySelectorAll('.fz-period-chip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===key)));
+ $('ledgerDates').hidden=key!=='custom';
+ if(key==='custom'){from.focus();return}
+ const range=ledgerPeriodRange(key);
+ from.value=range.from;to.value=range.to;
+ from.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function countText(n){return new Intl.NumberFormat(state.settings.digits==='ar'?'ar-IQ':'en-US').format(n)}
+function ledgerSummary(txs){
+ const total=types=>txs.filter(t=>types.includes(t.type)).reduce((n,t)=>n+t.amount,0);
+ return `<div><span>الحركات</span><strong>${countText(txs.length)}</strong></div>`+
+  `<div data-kind="in"><span>الدخل</span><strong>${signedMoney(total(['income']),'+')}</strong></div>`+
+  `<div data-kind="out"><span>المصروف والسداد</span><strong>${signedMoney(total(['expense','pay']),'−')}</strong></div>`;
+}
+function ledgerPage(){const all=[...state.transactions].reverse();return head('سجل الحركات','كل حركة محفوظة بتاريخها ومبلغها وغرضها، مع بحث وفلاتر دقيقة.')+`<section class="panel">${section('دفترك المالي',`${countText(state.transactions.length)} حركة مسجلة`,btn('csv','تصدير CSV','download','secondary small'))}<div class="filters fz-ledger-filters">
+ <label class="fz-search">${icon('search')}<input id="search" type="search" placeholder="ابحث بالوصف أو المحفظة…" aria-label="البحث في السجل" autocomplete="off"></label>
+ <select id="typeFilter" data-choice="scroll" aria-label="نوع الحركة"><option value="all">جميع الحركات</option><option value="income">الدخل</option><option value="expense">المصروفات</option><option value="pay">سداد الالتزامات</option><option value="withheld">استقطاع قبل الإيداع</option><option value="reserve">الحجز</option><option value="allocate">التخصيص</option><option value="transfer">التحويلات</option><option value="account">النقد والبطاقة</option></select>
+ <div class="fz-period" role="group" aria-label="الفترة">${LEDGER_PERIODS.map(([key,label])=>`<button type="button" class="fz-period-chip" data-action="ledger-period" data-id="${key}" aria-pressed="${key==='all'}">${label}</button>`).join('')}</div>
+ <div id="ledgerDates" class="fz-ledger-dates" hidden><label class="thukhr-date-filter" for="fromFilter"><span>من تاريخ</span>
  <input type="date" id="fromFilter" lang="ar-IQ" aria-label="من تاريخ">
  <small id="fromFilterReadable">التاريخ اختياري</small></label>
  <label class="thukhr-date-filter" for="toFilter"><span>إلى تاريخ</span>
  <input type="date" id="toFilter" lang="ar-IQ" aria-label="إلى تاريخ">
- <small id="toFilterReadable">التاريخ اختياري</small></label></div><div id="ledgerResults" class="thukhr-ledger-table">${ledgerRows([...state.transactions].reverse())}</div><div id="ledgerMobileResults" class="thukhr-ledger-mobile">${ledgerMobileRows([...state.transactions].reverse())}</div></section><div class="notice">عند حذف عملية، تُفحص الحركات التي تليها. إذا كان الحذف يجعل أي حساب أو محفظة سالبة، يُرفض لحماية دقة السجل.</div>`}
+ <small id="toFilterReadable">التاريخ اختياري</small></label></div></div>
+ <div id="ledgerSummary" class="fz-ledger-summary" aria-live="polite">${ledgerSummary(all)}</div>
+ <div id="ledgerResults" class="thukhr-ledger-table">${ledgerRows(all)}</div><div id="ledgerMobileResults" class="thukhr-ledger-mobile">${ledgerMobileRows(all)}</div></section><div class="notice">عند حذف عملية، تُفحص الحركات التي تليها. إذا كان الحذف يجعل أي حساب أو محفظة سالبة، يُرفض لحماية دقة السجل.</div>`}
 function settingsPage(){const html= head('الإعدادات','الحساب والمظهر ومواعيد الدخل والنسخ الاحتياطية.')+`<div class="two-col"><section class="panel">${section('مساحتك الشخصية','خصّص تجربتك حسب احتياجك.')}<form id="settingsForm" class="form-grid"><div class="field full"><label for="userName">الاسم المفضل</label><input name="name" id="userName" maxlength="40" value="${safe(state.settings.name)}" placeholder="كيف تحب أن نناديك؟"></div><div class="field"><label for="currency">العملة الأساسية</label><select id="currency" name="currency" ${state.transactions.length?'disabled':''}>${Object.entries(currencies).map(([k,c])=>`<option value="${k}" ${k===state.settings.currency?'selected':''}>${c.label} (${k})</option>`).join('')}</select><small>لعملة جديدة، ابدأ خطة مستقلة. لا تُحوَّل الأرصدة بتغيير الاسم.</small></div><div class="field"><label for="digits">عرض الأرقام</label><select id="digits" name="digits"><option value="en" ${state.settings.digits==='en'?'selected':''}>123,456</option><option value="ar" ${state.settings.digits==='ar'?'selected':''}>١٢٣٬٤٥٦</option></select></div><div class="full"><button class="btn" type="submit">حفظ التفضيلات</button></div></form></section><section class="panel">${section('صورة العائلة','اختيارية، ولا تغادر جهازك أو تُرفع إلى GitHub.')}
  <p class="thukhr-privacy">يمكنك اختيار صورتك العائلية لتظهر في قسم الأهداف العائلية فقط. تُحفظ في مساحة المتصفح نفسها فقط. حذف بيانات الموقع يمحوها.</p>
  <div class="thukhr-family-settings">

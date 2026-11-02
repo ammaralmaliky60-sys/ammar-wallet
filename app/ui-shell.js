@@ -65,22 +65,20 @@ const walletIcon=w=>w.kind==='emergency'?'shield':w.kind==='saving'?'saving':w.i
 function allocationOf(id){return state.transactions.reduce((n,t)=>n+(t.type==='allocate'&&t.walletId===id?t.amount:0)+(t.type==='transfer'&&t.to===id?t.amount:0)-(t.type==='transfer'&&t.from===id?t.amount:0)-(t.type==='release'&&t.walletId===id?t.amount:0),0)}
 function walletCards(){const s=currentStats();return state.wallets.map(w=>{const bal=s.wallets[w.id]||0,budget=allocationOf(w.id),pct=budget?Math.max(0,Math.min(100,bal/budget*100)):0;return `<article class="wallet-card" style="--wc:${safe(w.color)}"><div class="wallet-top"><div class="wallet-name"><span class="wallet-icon">${icon(walletIcon(w))}</span>${safe(w.name)}</div><button class="dots" data-action="wallet-edit" data-id="${safe(w.id)}" aria-label="إعدادات ${safe(w.name)}">⋯</button></div><div class="wallet-balance">${money(bal)}</div><div class="wallet-detail">من أصل ${fmt(budget)} ${unit()}</div><div class="progress"><i style="width:${pct}%"></i></div><div class="wallet-foot"><span>${w.kind==='spend'?'المتاح اليوم':'رصيد محمي من الصرف اليومي'}</span><b>${w.kind==='spend'?`${fmt(cap(w.id))} ${unit()}`:w.kind==='emergency'?'احتياطي آمن':'هدف ادخار'}</b></div></article>`}).join('')}
 function txLabel(t){const w=id=>state.wallets.find(w=>w.id===id)?.name||'',o=()=>state.obligations.find(o=>o.id===t.obligationId)?.name||'التزام';return {income:['دخل مستلم',t.sourceName?`${t.sourceName} · ${t.incomePeriod}`:t.note||'دخل جديد','income'],expense:[t.emergencyAuthorization?'صرف طارئ':t.note||'مصروف',w(t.walletId),'wallet'],reserve:['حجز التزام',o(),'calendar'],withheld:['مستقطع قبل الإيداع',o(),'check'],pay:['سداد التزام',o(),'check'],allocate:['تخصيص لمحفظة',w(t.walletId),'wallet'],transfer:['تحويل بين المحافظ',`${w(t.from)} ← ${w(t.to)}`,'transfer'],account:[t.from==='card'?'سحب نقدي':'إيداع في البطاقة','حركة داخلية بين الحسابات','transfer'],release:['إعادة للمتاح',w(t.walletId),'wallet'],unreserve:['إلغاء حجز',o(),'calendar']}[t.type]||['حركة','','ledger']}
-function ledgerRows(txs,compact=false){if(!txs.length)return empty('سجلك يبدأ من أول خطوة','أضف دخلك أو سجّل أول حركة لتظهر هنا.');return `<div class="table-wrap"><table><thead><tr><th>العملية</th>${!compact?'<th>الغرض / الحساب</th>':''}<th>التاريخ</th><th class="align-left">المبلغ</th>${!compact?'<th></th>':''}</tr></thead><tbody>${txs.map(t=>{const [label,detail,ic]=txLabel(t),sign=t.type==='income'?'+':t.type==='expense'||t.type==='pay'?'−':'';return `<tr><td><div class="cell-name"><span class="cell-icon">${icon(ic)}</span><div>${safe(label)}<small>${safe(compact?detail:t.note||detail)}</small></div></div></td>${!compact?`<td>${safe(detail)}<br><small class="muted">${t.method==='card'?'البطاقة':t.method==='cash'?'نقداً':'تخصيص داخلي'}</small></td>`:''}<td class="muted">${date(t.date)}</td><td class="align-left ${t.type==='income'?'income-color':sign?'expense-color':''}"><span class="num">${sign}${fmt(t.amount)}</span> <small>${unit()}</small></td>${!compact?`<td class="align-left"><button class="icon-btn" data-action="delete-tx" data-id="${safe(t.id)}" aria-label="حذف الحركة">${icon('trash')}</button></td>`:''}</tr>`}).join('')}</tbody></table></div>`}
+function ledgerRows(txs,compact=false){if(!txs.length)return empty('سجلك يبدأ من أول خطوة','أضف دخلك أو سجّل أول حركة لتظهر هنا.');return `<div class="table-wrap"><table><thead><tr><th>العملية</th>${!compact?'<th>الغرض / الحساب</th>':''}<th>التاريخ</th><th class="align-left">المبلغ</th>${!compact?'<th></th>':''}</tr></thead><tbody>${txs.map(t=>{const [label,detail,ic]=txLabel(t),sign=t.type==='income'?'+':t.type==='expense'||t.type==='pay'?'−':'';return `<tr><td><div class="cell-name"><span class="cell-icon">${icon(ic)}</span><div>${safe(label)}<small>${safe(compact?detail:t.note||detail)}</small></div></div></td>${!compact?`<td>${safe(detail)}<br><small class="muted">${t.method==='card'?'البطاقة':t.method==='cash'?'نقداً':'تخصيص داخلي'}</small></td>`:''}<td class="muted">${date(t.date)}</td><td class="align-left ${t.type==='income'?'income-color':sign?'expense-color':''}"><span class="num">${fmt(t.amount)}</span>${sign?`<span class="fz-sign">${sign}</span>`:''}\u00a0<small>${unit()}</small></td>${!compact?`<td class="align-left"><button class="icon-btn" data-action="delete-tx" data-id="${safe(t.id)}" aria-label="حذف الحركة">${icon('trash')}</button></td>`:''}</tr>`}).join('')}</tbody></table></div>`}
 function ledgerMobileRows(txs){
  if(!txs.length)return empty('لا توجد حركات مطابقة','عدّل البحث أو الفترة.');
- return `<div class="thukhr-transaction-cards">${txs.map(t=>{
-  const [label,detail,ic]=txLabel(t),sign=t.type==='income'?'+':t.type==='expense'||t.type==='pay'?'−':'';
-  const wallet=state.wallets.find(w=>w.id===t.walletId);
-  return `<article class="thukhr-transaction-card">
-   <div class="thukhr-transaction-icon">${icon(ic)}</div>
-   <div class="thukhr-transaction-body"><strong>${safe(label)}</strong>
-    <small>${safe(t.note||wallet?.name||detail||'حركة مالية')}</small>
-    <span class="thukhr-transaction-date">${date(t.date,true)} · ${t.method==='card'?'بطاقة':t.method==='cash'?'نقداً':'تحويل داخلي'}</span>
-   </div>
-   <div class="thukhr-transaction-right"><b class="${sign?'thukhr-outgoing':''}">${sign}${fmt(t.amount)} <small>${unit()}</small></b>
-    <button type="button" class="thukhr-transaction-detail" data-action="ledger-detail" data-id="${safe(t.id)}" aria-label="تفاصيل الحركة ${safe(label)}">تفاصيل</button>
-   </div>
-  </article>`;
+ // Newest day first; within a day keep the recorded order (latest first).
+ const sorted=txs.map((t,i)=>({t,i})).sort((a,b)=>b.t.date.localeCompare(a.t.date)||a.i-b.i).map(x=>x.t);
+ const days=[];
+ for(const t of sorted){const last=days.at(-1);if(last?.date===t.date)last.items.push(t);else days.push({date:t.date,items:[t]})}
+ const method=t=>t.method==='card'?'بطاقة':t.method==='cash'?'نقداً':'';
+ return `<div class="fz-ledger-days">${days.map(day=>{
+  const net=day.items.reduce((n,t)=>n+(ACTIVITY_SIGNS[t.type]||0)*t.amount,0);
+  const title=day.date===today()?'اليوم':day.date===addDays(today(),-1)?'أمس':date(day.date,true);
+  return `<section class="fz-ledger-day"><header><strong>${title}</strong>${net?`<span data-sign="${net>0?'in':'out'}">${signedMoney(Math.abs(net),net>0?'+':'−')}</span>`:''}</header>`+
+   day.items.map(t=>{const entry=activityEntry(t);entry.detail=[t.note&&t.note!==entry.label?t.note:entry.detail,method(t)].filter(Boolean).join(' · ');return activityRow(entry,{withDate:false})}).join('')+
+   `</section>`;
  }).join('')}</div>`;
 }
 function ledgerDetail(id){

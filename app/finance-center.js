@@ -45,8 +45,12 @@ function financeCenter(){
  ${section('متابعة الأقساط','تُظهر التسوية النقدية والاستقطاع السابق للإيداع بصورة منفصلة')}
  ${state.obligations.filter(o=>!o.archived).slice(-18).map(o=>{
   const pay=s.paid[o.id]||0,held=s.reserved[o.id]||0,withheld=s.withheld?.[o.id]||0;
-  return `<div class="keyval"><span>${safe(o.name)} · ${safe(o.due)}</span>
-  <b>${money(o.amount)} <small>مدفوع ${fmt(pay)} · مستقطع ${fmt(withheld)} · محجوز ${fmt(held)} · غير مغطى ${fmt(Math.max(0,o.amount-pay-withheld-held))}</small></b></div>`;
+  const open=Math.max(0,o.amount-pay-withheld-held),covered=o.amount-open,pct=o.amount?Math.min(100,Math.round(covered/o.amount*100)):0;
+  const status=open<=0?'covered':covered>0?'partial':'open';
+  return `<div class="fz-installment" data-status="${status}"><div class="fz-installment-head"><strong>${safe(o.name)}</strong><b>${money(o.amount)}</b></div>
+  <span class="fz-installment-due">${icon('calendar')}${date(o.due,true)}</span>
+  <div class="fz-ob-meta"><span>مدفوع <b>${money(pay)}</b></span><span>مستقطع <b>${money(withheld)}</b></span><span>محجوز <b>${money(held)}</b></span><span>غير مغطى <b>${money(open)}</b></span></div>
+  <div class="fz-lite-progress fz-ob-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="نسبة تغطية ${safe(o.name)}"><i style="width:${pct}%"></i></div></div>`;
  }).join('')}
  ${section('سجل المطابقات','لا يحدث تعديل للأموال لمجرد وجود فرق')}
  ${state.reconciliations.slice(-7).reverse().map(r=>`<div class="keyval"><span>${safe(r.date)} · ${r.method==='card'?'البطاقة':'النقد'} · ${safe(r.note||'مطابقة')}</span>

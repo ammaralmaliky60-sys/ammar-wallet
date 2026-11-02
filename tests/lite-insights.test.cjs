@@ -81,6 +81,6 @@ test('the greeting escapes the saved name',()=>{
 test('signed amounts put the sign after the number in source order (renders on its left in RTL)',()=>{
  const body=lite.slice(lite.indexOf('function signedMoney('),lite.indexOf('function relativeDay('));
  const signed=new Function('fmt','unit',body+';return signedMoney')(n=>String(n),()=>'د.ع');
- assert.equal(signed(150000,'+'),'<span class="num">150000</span><span class="fz-sign">+</span> <small>د.ع</small>');
- assert.equal(signed(5,''),'<span class="num">5</span> <small>د.ع</small>');
+ assert.equal(signed(150000,'+'),'<span class="num">150000</span><span class="fz-sign">+</span>\u00a0<small>د.ع</small>');
+ assert.equal(signed(5,''),'<span class="num">5</span>\u00a0<small>د.ع</small>');
 });
