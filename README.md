@@ -55,3 +55,8 @@ npm run check     # lint + الاختبارات (تعمل تلقائياً في 
 ملفات `src/core` دوال نقية تعمل في المتصفح وفي Node، وتُختبر مباشرة. الواجهة كلها تحت مساحة الاسم `WR`.
 
 عند تعديل أي ملف JS أو CSS: حدّث `?v=` في `index.html` وفي `sw.js` معاً وغيّر اسم `CACHE`. الاختبار `tests/assets.test.cjs` يتحقق من تطابقهما، و`tests/brand.test.cjs` من الألوان والتباين (4.5:1 على الأقل في الوضعين).
+
+## تطبيق Android وGoogle Play
+
+تجهيز Android مستقل في [`mobile/README.md`](mobile/README.md)، وإجراءات الخصوصية والنشر في [`docs/GOOGLE_PLAY_RELEASE.md`](docs/GOOGLE_PLAY_RELEASE.md).
+يتشارك الموقع والتطبيق منطق الميزانية، لكنهما **لا يتشاركان مخزن البيانات**: يجب نقل نسخة JSON يدوياً بينهما. لا ترفع أي نسخ مالية إلى المستودع.

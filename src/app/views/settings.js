@@ -45,6 +45,7 @@
           <button type="button" class="btn ghost" data-action="restore">${WR.icon('upload')}استعادة نسخة</button></div>
         ${legacy ? `<div class="note"><b>بيانات الإصدار السابق</b><p>محفوظة كما هي على هذا الجهاز${s.meta.migratedFrom ? '، ونُقلت منها حركاتك' : ''}. يمكنك تنزيلها للاحتفاظ بها.</p>
           <button type="button" class="btn small ghost" data-action="legacy-download">${WR.icon('download')}تنزيل بيانات الإصدار السابق</button></div>` : ''}
+        <p class="muted"><a class="link" href="./privacy.html">سياسة الخصوصية</a> — اطّلع على كيفية حفظ بياناتك وحذفها.</p>
         <div class="danger-zone"><button type="button" class="btn danger" data-action="wipe">${WR.icon('trash')}حذف كل البيانات والبدء من جديد</button></div>
       </section></div>`;
   }
@@ -143,8 +144,16 @@
   WR.actions = Object.assign(WR.actions || {}, {
     'edit-account': d => editAccount(d.id), 'edit-source': d => editSource(d.id),
     'set-theme': d => { WR.store.setTheme(d.id === 'auto' ? null : d.id); WR.applyTheme(); WR.render(); },
-    backup: () => { WR.download(`ween-rahat-backup-${F.today()}.json`, WR.store.backupText(WR.app.state)); WR.toast('تم تنزيل النسخة الاحتياطية. احفظها في مكان آمن.'); },
+    backup: () => {
+      Promise.resolve(WR.download(`ween-rahat-backup-${F.today()}.json`, WR.store.backupText(WR.app.state)))
+        .then(() => WR.toast(window.WRNative?.isNative ? 'فُتحت خيارات الحفظ أو المشاركة. تأكد من حفظ الملف خارج التطبيق.' : 'تم تنزيل النسخة الاحتياطية. احفظها في مكان آمن.'))
+        .catch(e => WR.toast('تعذر حفظ النسخة: ' + e.message, { tone: 'error' }));
+    },
     restore, wipe,
-    'legacy-download': () => { const raw = WR.store.legacyRaw(); if (raw) WR.download(`ween-rahat-previous-version-${F.today()}.json`, raw); }
+    'legacy-download': () => {
+      const raw = WR.store.legacyRaw();
+      if (raw) Promise.resolve(WR.download(`ween-rahat-previous-version-${F.today()}.json`, raw))
+        .catch(e => WR.toast('تعذر حفظ بيانات الإصدار السابق: ' + e.message, { tone: 'error' }));
+    }
   });
 })(window.WR = window.WR || {});

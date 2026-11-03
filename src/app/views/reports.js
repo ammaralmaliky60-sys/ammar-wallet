@@ -72,8 +72,9 @@
     const rows = [['التاريخ', 'النوع', 'الفئة أو المصدر', 'الحساب', 'إلى حساب', 'المبلغ', 'العملة', 'الملاحظة'],
       ...list.map(t => [t.date, TYPE_LABEL[t.type], detail(t), WR.account(t.accountId).name, t.toAccountId ? WR.account(t.toAccountId).name : '',
         F.amountInputValue(t.amount, dec) || '0', s.settings.currency, t.note])];
-    WR.download(`ween-rahat-${app.monthKey}.csv`, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
-    WR.toast('تم تنزيل حركات الشهر بصيغة CSV');
+    Promise.resolve(WR.download(`ween-rahat-${app.monthKey}.csv`, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'text/csv;charset=utf-8'))
+      .then(() => WR.toast(window.WRNative?.isNative ? 'فُتحت خيارات حفظ تقرير CSV.' : 'تم تنزيل حركات الشهر بصيغة CSV'))
+      .catch(e => WR.toast('تعذر حفظ CSV: ' + e.message, { tone: 'error' }));
   }
   function exportPdf() {
     if (!window.ThukhrPDF?.download) throw new Error('مكوّن PDF غير متاح. أعد تحميل الصفحة.');
@@ -89,7 +90,7 @@
       entries: list.map(t => ({ id: t.id, date: t.date, type: TYPE_LABEL[t.type], category: detail(t), note: t.note || detail(t), amount: WR.fmt(t.amount) }))
     };
     WR.toast('جارٍ إنشاء تقرير PDF…');
-    Promise.resolve(window.ThukhrPDF.download(data)).then(info => WR.toast(`تم تنزيل التقرير، عدد الصفحات: ${info.pages}`))
+    Promise.resolve(window.ThukhrPDF.download(data)).then(info => WR.toast(window.WRNative?.isNative ? `فُتحت خيارات حفظ PDF (${info.pages} صفحة).` : `تم تنزيل التقرير، عدد الصفحات: ${info.pages}`))
       .catch(e => WR.toast('تعذر إنشاء PDF: ' + (e?.message || 'خطأ غير معروف'), { tone: 'error' }));
   }
 

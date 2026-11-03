@@ -110,7 +110,8 @@
     } else {
       WR.views.onboarding.recovery(result);
     }
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    // Native assets are already bundled and versioned with the APK/AAB.
+    if (!window.WRNative?.isNative && 'serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
   }
   WR.start = start;
 })(window.WR = window.WR || {});
