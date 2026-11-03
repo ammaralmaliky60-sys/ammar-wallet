@@ -1,0 +1,9 @@
+{
+  "appId": "iq.ammar.weenrahat",
+  "appName": "وين راحت؟",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#F6F2EA"
+  }
+}
