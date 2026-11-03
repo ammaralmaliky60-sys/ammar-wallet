@@ -46,12 +46,17 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      # GitHub ubuntu-latest includes Android command-line tools already.
-      # Avoid setup-android@v3: its obsolete 'tools' package install now fails.
+      # GitHub ubuntu-latest includes SDK tools; the sdkmanager bin folder is
+      # not necessarily on PATH. Use the runner's actual SDK installation.
       - name: Install Android API 36
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          CMD="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$CMD"
+          yes | "$CMD" --licenses > /dev/null || true
+          "$CMD" --install 'platforms;android-36' 'build-tools;36.0.0'
       - name: Test web app
         run: |
           npm ci
