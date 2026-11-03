@@ -3,45 +3,43 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.join(__dirname,'..');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
-const html=read('index.html'),brand=read('brand.css'),fonts=read('fonts.css'),manifest=JSON.parse(read('manifest.webmanifest'));
-const appFiles=fs.readdirSync(path.join(root,'app')).map(f=>'app/'+f);
+const html=read('index.html'),css=read('styles.css'),fonts=read('fonts.css'),manifest=JSON.parse(read('manifest.webmanifest'));
+const walk=dir=>fs.readdirSync(path.join(root,dir),{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(dir+'/'+e.name):[dir+'/'+e.name]);
+const shipped=['index.html','manifest.webmanifest','report-pdf.js','sw.js','styles.css','fonts.css',...walk('src')];
 
 // ---- helpers -------------------------------------------------------------
-function block(selector){
- const at=brand.indexOf(selector+'{');
- assert.ok(at>=0,`brand.css block not found: ${selector}`);
- const body=brand.slice(at+selector.length+1,brand.indexOf('}',at));
+const block=selector=>{
+ const at=css.indexOf(selector+'{');
+ assert.ok(at>=0,`styles.css block not found: ${selector}`);
+ const body=css.slice(at+selector.length+1,css.indexOf('}',at));
  return Object.fromEntries([...body.matchAll(/--([a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(m=>[m[1],m[2].toUpperCase()]));
-}
-const light=block(':root,\nbody[data-thukhr-theme="classic"]');
-const dark=block('body[data-thukhr-theme="night"]');
+};
+const light=block(':root,\nbody[data-theme="light"]');
+const dark=block('body[data-theme="dark"]');
 const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 const lum=c=>c.map(v=>v/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[0.2126,0.7152,0.0722][i],0);
 const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)};
 const tint=(color,base,p)=>rgb(color).map((v,i)=>v*p+rgb(base)[i]*(1-p));
 
 // ---- name ----------------------------------------------------------------
-test('the old name and tagline no longer appear anywhere in the shipped app',()=>{
- for(const file of ['index.html','manifest.webmanifest','report-pdf.js','sw.js','brand.css','firza-ui.css',...appFiles]){
+test('older names and the old tagline do not appear in the shipped app',()=>{
+ for(const file of shipped){
   const text=read(file);
-  assert.doesNotMatch(text,/فِرزة|فرزة/,`${file} still says فِرزة`);
+  assert.doesNotMatch(text,/فِرزة|فرزة|ذُخر/,`${file} still uses an old name`);
   assert.doesNotMatch(text,/كل مبلغ بمكانه/,`${file} still has the old tagline`);
  }
 });
 
-test('title, description, manifest and footer carry the new name with its question mark',()=>{
+test('title, description and manifest carry the name with its question mark',()=>{
  assert.match(html,/<title>وين راحت؟ \| اعرف فلوسك وين تروح<\/title>/);
  assert.match(html,/<meta name="description" content="وين راحت؟/);
  assert.equal(manifest.short_name,'وين راحت؟');
  assert.match(manifest.name,/^وين راحت؟/);
- assert.match(html,/<footer>وين راحت؟ /);
- assert.match(html,/اعرف فلوسك وين تروح/);
 });
 
 test('the header question mark is wrapped so it can be coloured coral',()=>{
- const marks=html.match(/وين راحت<span class="brand-q">؟<\/span>/g)||[];
- assert.equal(marks.length,2,'sidebar and mobile header');
- assert.match(brand,/\.brand-q[^{]*\{color:var\(--brand-coral\)/);
+ assert.equal((html.match(/وين راحت<span class="brand-q">؟<\/span>/g)||[]).length,2,'sidebar and mobile header');
+ assert.match(css,/\.brand-q\{color:var\(--brand-coral\)\}/);
 });
 
 // ---- palette -------------------------------------------------------------
@@ -52,18 +50,17 @@ test('light tokens are exactly the specified palette',()=>{
 });
 
 test('dark tokens are exactly the specified palette, also when the device prefers dark',()=>{
- assert.deepEqual(
-  {g:dark['brand-green'],bg:dark.bg,s:dark.surface,t:dark.text,m:dark['text-muted'],b:dark.border},
-  {g:'#3FA394',bg:'#14201F',s:'#1C2B2A',t:'#F6F2EA',m:'#A9B5B3',b:'#2A3B39'});
- const media=brand.slice(brand.indexOf('@media (prefers-color-scheme: dark)'));
- for(const [k,v] of Object.entries({'brand-green':'#3FA394','bg':'#14201F','surface':'#1C2B2A','text':'#F6F2EA','text-muted':'#A9B5B3','border':'#2A3B39'}))
-  assert.match(media.slice(0,media.indexOf('}\n}')),new RegExp(`--${k}:${v}`,'i'),`prefers-color-scheme block: --${k}`);
+ const want={'brand-green':'#3FA394','bg':'#14201F','surface':'#1C2B2A','text':'#F6F2EA','text-muted':'#A9B5B3','border':'#2A3B39'};
+ for(const [k,v] of Object.entries(want))assert.equal(dark[k],v,`--${k}`);
+ const media=css.slice(css.indexOf('@media (prefers-color-scheme: dark)'));
+ const firstBlock=media.slice(0,media.indexOf('}\n}'));
+ for(const [k,v] of Object.entries(want))assert.match(firstBlock,new RegExp(`--${k}:${v}`,'i'),`prefers-color-scheme block: --${k}`);
 });
 
 test('theme-color follows light and dark',()=>{
  assert.match(html,/<meta name="theme-color" content="#F6F2EA" media="\(prefers-color-scheme: light\)">/);
  assert.match(html,/<meta name="theme-color" content="#14201F" media="\(prefers-color-scheme: dark\)">/);
- assert.match(read('app/ui-shell.js'),/THEME_COLORS=\{classic:'#F6F2EA',night:'#14201F'\}/);
+ assert.match(read('src/app/main.js'),/dark \? '#14201F' : '#F6F2EA'/);
 });
 
 // ---- contrast ------------------------------------------------------------
@@ -72,13 +69,13 @@ for(const [mode,t] of [['light',light],['dark',dark]]){
   const pairs=[
    ['text','bg'],['text','surface'],['text','surface-2'],['text-muted','bg'],['text-muted','surface'],['text-muted','surface-2'],
    ['green-text','bg'],['green-text','surface'],['gold-text','bg'],['gold-text','surface'],['coral-text','bg'],['coral-text','surface'],
-   ['on-green','brand-green'],['on-coral','brand-coral']
+   ['on-green','brand-green'],['on-coral','brand-coral'],['hero-text','hero-1'],['hero-text','hero-2']
   ];
   for(const [fg,bg] of pairs){
    const r=ratio(rgb(t[fg]),rgb(t[bg]));
    assert.ok(r>=4.5,`${mode}: --${fg} on --${bg} is ${r.toFixed(2)}:1`);
   }
-  // Status chips put coloured text on a 10% tint of the same hue.
+  // Status pills put coloured text on a 10% tint of the same hue.
   for(const [fg,hue] of [['gold-text','brand-gold'],['coral-text','brand-coral'],['green-text','brand-green']])
    for(const base of ['bg','surface']){
     const r=ratio(rgb(t[fg]),tint(t[hue],t[base],0.10));
@@ -87,20 +84,26 @@ for(const [mode,t] of [['light',light],['dark',dark]]){
  });
 }
 
-test('white text never sits on coral; dark text is used instead',()=>{
+test('white text never sits on coral: the spend buttons use dark text',()=>{
  assert.ok(ratio(rgb('#FFFFFF'),rgb(light['brand-coral']))<4.5,'sanity: white on coral fails');
  assert.equal(light['on-coral'],'#14201F');
- assert.match(brand,/\.btn\[data-action="wf-living-quick"\][^{]*\{[^}]*color:var\(--on-coral\)/);
+ assert.match(css,/\.btn\.spend\{background:var\(--brand-coral\);color:var\(--on-coral\)/);
+ assert.match(css,/\.tab-add\{[^}]*background:var\(--brand-coral\);color:var\(--on-coral\)/);
+});
+
+test('cards use 16px corners and buttons 12px; touch targets are 44px on phones',()=>{
+ assert.match(css,/--r-card:16px;--r-btn:12px/);
+ assert.match(css,/\.btn\{[^}]*min-height:44px/);
+ assert.match(css,/@media \(max-width:899px\)\{\n button,\.btn,[^{]*\{min-height:44px\}/);
 });
 
 // ---- typography and icons ------------------------------------------------
 test('Readex Pro is self-hosted and used everywhere, with tabular figures',()=>{
  assert.match(fonts,/font-family:"Readex Pro"/);
- for(const subset of ['arabic','latin','latin-ext'])
-  assert.ok(fs.existsSync(path.join(root,'fonts/readex-pro/ReadexPro-'+subset+'.woff2')),subset);
+ for(const subset of ['arabic','latin','latin-ext'])assert.ok(fs.existsSync(path.join(root,'fonts/readex-pro/ReadexPro-'+subset+'.woff2')),subset);
  assert.ok(fs.existsSync(path.join(root,'fonts/readex-pro/OFL.txt')),'licence');
- assert.match(brand,/font-family:"Readex Pro"[^;]*!important/);
- assert.match(brand,/font-variant-numeric:tabular-nums/);
+ assert.match(css,/body\{[^}]*font:400 15px\/1\.65 "Readex Pro"/);
+ assert.match(css,/body\{[^}]*font-variant-numeric:tabular-nums/);
 });
 
 test('icon.svg is the supplied app icon and the PNG sizes exist',()=>{

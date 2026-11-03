@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'weenrahat-static-v2.0.0-20261102-brand';
+const CACHE = 'weenrahat-static-v3.0.0';
 // Older prefixes stay listed so their caches are removed after the update.
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-'];
 
@@ -25,54 +25,32 @@ const ASSETS = [
   './icon-512.png',
   './icon-maskable-512.png',
 
-  // Scripts
-  './schedule.js',
-  './engine.js?v=thukhr-finance-20261031-zero-defaults-r1',
-  './migration.js',
-  './thukhr-family.js?v=thukhr-finance-20261031-r1',
-  './report-pdf.js?v=20261102-brand-r1',
-
-  // Application (order mirrors index.html)
-  './app/core.js?v=20261102-brand-r1',
-  './app/store.js?v=20261102-brand-r1',
-  './app/ui-shell.js?v=20261102-brand-r1',
-  './app/monthly-fields.js?v=20261102-brand-r1',
-  './app/workflow.js?v=20261102-brand-r1',
-  './app/smart-cycle.js?v=20261102-brand-r1',
-  './app/living.js?v=20261102-brand-r1',
-  './app/finance-center.js?v=20261102-brand-r1',
-  './app/spending.js?v=20261102-brand-r1',
-  './app/emergency.js?v=20261102-brand-r1',
-  './app/lite.js?v=20261102-brand-r1',
-  './app/pages.js?v=20261102-brand-r1',
-  './app/forms.js?v=20261102-brand-r1',
-  './app/reset-setup.js?v=20261102-brand-r1',
-  './app/backup.js?v=20261102-brand-r1',
-  './app/interactions.js?v=20261102-brand-r1',
-  './app/main.js?v=20261102-brand-r1',
-
-  // Stylesheets
-  './style.css?v=gold-20261031-r2',
-  './fonts.css?v=20261102-brand-r1',
-  './modern-ui.css?v=20261031-v3',
-  './overview-motion.css?v=20261031-r1',
-  './mizan-neo.css?v=20261031-r1',
-  './mizan-neo-compact.css?v=20261031-r1',
-  './two-stage.css?v=monthly-items-20261031-r1',
-  './thukhr-themes.css?v=thukhr-20261031-r1',
-  './quick-expense.css?v=20261031-multi-r1',
-  './emergency-vault.css?v=20261031-r1',
-  './thukhr-design-system.css?v=20261031-reset-r1',
-  './firza-identity.css?v=20261031-firza-r1',
-  './firza-dashboard.css?v=20261031-firza-dashboard-r3',
-  './firza-lite.css?v=20261031-lite-r1',
-  './firza-ui.css?v=20261102-brand-r1',
-  './brand.css?v=20261102-brand-r1',
-
-  // Fonts (Readex Pro, self-hosted)
+  // Styles and font
+  './fonts.css?v=3.0.0',
+  './styles.css?v=3.0.0',
   './fonts/readex-pro/ReadexPro-arabic.woff2',
   './fonts/readex-pro/ReadexPro-latin.woff2',
-  './fonts/readex-pro/ReadexPro-latin-ext.woff2'
+  './fonts/readex-pro/ReadexPro-latin-ext.woff2',
+
+  // Core (order mirrors index.html)
+  './src/core/format.js?v=3.0.0',
+  './src/core/ledger.js?v=3.0.0',
+  './src/core/migrate.js?v=3.0.0',
+  './report-pdf.js?v=3.0.0',
+
+  // App
+  './src/app/icons.js?v=3.0.0',
+  './src/app/ui.js?v=3.0.0',
+  './src/app/store.js?v=3.0.0',
+  './src/app/main.js?v=3.0.0',
+  './src/app/views/entry.js?v=3.0.0',
+  './src/app/views/home.js?v=3.0.0',
+  './src/app/views/transactions.js?v=3.0.0',
+  './src/app/views/budget.js?v=3.0.0',
+  './src/app/views/reports.js?v=3.0.0',
+  './src/app/views/settings.js?v=3.0.0',
+  './src/app/views/onboarding.js?v=3.0.0',
+  './src/app/start.js?v=3.0.0'
 ];
 
 const isOwnCache = key => CACHE_PREFIXES.some(prefix => key.startsWith(prefix));
