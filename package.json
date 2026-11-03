@@ -1,8 +1,8 @@
 {
-  "name": "firza-wallet",
-  "version": "1.1.0",
+  "name": "ween-rahat",
+  "version": "3.0.0",
   "private": true,
-  "description": "وين راحت؟ — تطبيق ويب (PWA) لإدارة المال العائلي محلياً: الراتب والحوافز والالتزامات والمحافظ وخزنة الطوارئ.",
+  "description": "وين راحت؟ — برنامج ويب (PWA) لمتابعة مصروف البيت ودخله وميزانيته وتقاريره، والبيانات على الجهاز فقط.",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20"
@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "eslint": "^9.39.0",
-    "espree": "^10.4.0",
     "globals": "^15.15.0"
   }
 }

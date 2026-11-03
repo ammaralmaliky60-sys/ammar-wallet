@@ -1,0 +1,354 @@
+{
+ "version": 2,
+ "settings": {
+  "name": "عمار",
+  "currency": "IQD",
+  "theme": "dark",
+  "digits": "en",
+  "incomeSources": [
+   {
+    "id": "incentives",
+    "name": "الحوافز الشهرية",
+    "fromDay": 10,
+    "toDay": 12
+   },
+   {
+    "id": "salary",
+    "name": "الراتب الشهري",
+    "fromDay": 22,
+    "toDay": 24
+   }
+  ],
+  "wfFields": [],
+  "wfHiddenFields": [],
+  "livingCategories": [
+   {
+    "id": "home",
+    "label": "المنزل",
+    "kind": "spend",
+    "color": "#b88c5b"
+   },
+   {
+    "id": "vegetables",
+    "label": "الخضروات",
+    "kind": "spend",
+    "color": "#54a981"
+   },
+   {
+    "id": "kids",
+    "label": "الأطفال",
+    "kind": "spend",
+    "color": "#8b96d0"
+   },
+   {
+    "id": "emergency",
+    "label": "الطوارئ",
+    "kind": "emergency",
+    "color": "#c3a463"
+   }
+  ],
+  "livingHiddenCategories": [
+   {
+    "id": "dining",
+    "label": "المطاعم",
+    "kind": "spend",
+    "color": "#ca8c6d"
+   }
+  ],
+  "livingTargets": {
+   "2026-09": {
+    "home": 200000,
+    "vegetables": 50000
+   },
+   "2026-10": {
+    "home": 250000,
+    "vegetables": 60000,
+    "kids": 80000
+   }
+  },
+  "emergencyProtection": {
+   "version": 1,
+   "legacyIds": []
+  }
+ },
+ "cycle": {
+  "id": "96b0842a-9138-4f56-97ff-5c45b7d74fac",
+  "start": "2026-09-20",
+  "days": 30
+ },
+ "wallets": [
+  {
+   "id": "home",
+   "name": "المنزل",
+   "kind": "spend",
+   "color": "#25866b",
+   "weight": 125
+  },
+  {
+   "id": "personal",
+   "name": "المصاريف الشخصية",
+   "kind": "spend",
+   "color": "#6485c8",
+   "weight": 120
+  },
+  {
+   "id": "kids",
+   "name": "العائلة",
+   "kind": "spend",
+   "color": "#c19345",
+   "weight": 60
+  },
+  {
+   "id": "emergency",
+   "name": "الطوارئ",
+   "kind": "emergency",
+   "color": "#8a75b6",
+   "weight": 30
+  },
+  {
+   "id": "vegetables",
+   "name": "الخضروات",
+   "kind": "spend",
+   "color": "#54a981",
+   "weight": 0
+  },
+  {
+   "id": "dining",
+   "name": "المطاعم",
+   "kind": "spend",
+   "color": "#ca8c6d",
+   "weight": 0
+  }
+ ],
+ "obligations": [
+  {
+   "id": "rent",
+   "name": "الإيجار",
+   "amount": 300000,
+   "due": "2026-10-01",
+   "recurring": true
+  },
+  {
+   "id": "loan",
+   "name": "قسط السيارة",
+   "amount": 120000,
+   "due": "2026-10-05",
+   "recurring": true
+  }
+ ],
+ "transactions": [
+  {
+   "id": "v2tx1",
+   "type": "income",
+   "date": "2026-09-20",
+   "amount": 150000,
+   "method": "cash",
+   "note": "رصيد البداية · مبلغ موجود فعلياً"
+  },
+  {
+   "id": "v2tx2",
+   "type": "income",
+   "date": "2026-09-20",
+   "amount": 400000,
+   "method": "card",
+   "note": "رصيد البداية · مبلغ موجود فعلياً"
+  },
+  {
+   "id": "v2tx3",
+   "type": "income",
+   "date": "2026-09-23",
+   "amount": 850000,
+   "method": "card",
+   "sourceId": "salary",
+   "sourceName": "الراتب الشهري",
+   "incomePeriod": "2026-09",
+   "note": "الراتب الشهري"
+  },
+  {
+   "id": "v2tx4",
+   "type": "allocate",
+   "date": "2026-09-23",
+   "amount": 200000,
+   "walletId": "home"
+  },
+  {
+   "id": "v2tx5",
+   "type": "allocate",
+   "date": "2026-09-23",
+   "amount": 50000,
+   "walletId": "vegetables"
+  },
+  {
+   "id": "v2tx6",
+   "type": "allocate",
+   "date": "2026-09-23",
+   "amount": 40000,
+   "walletId": "dining"
+  },
+  {
+   "id": "v2tx7",
+   "type": "allocate",
+   "date": "2026-09-23",
+   "amount": 60000,
+   "walletId": "emergency"
+  },
+  {
+   "id": "v2tx8",
+   "type": "expense",
+   "date": "2026-09-25",
+   "amount": 85000,
+   "walletId": "home",
+   "method": "card",
+   "note": "سوق الشهر"
+  },
+  {
+   "id": "v2tx9",
+   "type": "expense",
+   "date": "2026-09-26",
+   "amount": 12500,
+   "walletId": "vegetables",
+   "method": "cash",
+   "note": "خضار"
+  },
+  {
+   "id": "v2tx10",
+   "type": "expense",
+   "date": "2026-09-27",
+   "amount": 18000,
+   "walletId": "dining",
+   "method": "cash",
+   "note": "عشاء"
+  },
+  {
+   "id": "v2tx11",
+   "type": "reserve",
+   "date": "2026-09-28",
+   "amount": 300000,
+   "obligationId": "rent"
+  },
+  {
+   "id": "v2tx12",
+   "type": "pay",
+   "date": "2026-10-01",
+   "amount": 300000,
+   "obligationId": "rent",
+   "method": "card"
+  },
+  {
+   "id": "v2tx13",
+   "type": "reserve",
+   "date": "2026-10-01",
+   "amount": 50000,
+   "obligationId": "loan"
+  },
+  {
+   "id": "v2tx14",
+   "type": "unreserve",
+   "date": "2026-10-02",
+   "amount": 10000,
+   "obligationId": "loan"
+  },
+  {
+   "id": "v2tx15",
+   "type": "withheld",
+   "date": "2026-10-03",
+   "amount": 70000,
+   "obligationId": "loan",
+   "note": "استقطاع القسط من الراتب"
+  },
+  {
+   "id": "v2tx16",
+   "type": "account",
+   "date": "2026-10-04",
+   "amount": 100000,
+   "from": "card",
+   "to": "cash",
+   "note": "سحب نقدي"
+  },
+  {
+   "id": "v2tx17",
+   "type": "income",
+   "date": "2026-10-11",
+   "amount": 150000,
+   "method": "cash",
+   "sourceId": "incentives",
+   "sourceName": "الحوافز الشهرية",
+   "incomePeriod": "2026-10"
+  },
+  {
+   "id": "v2tx18",
+   "type": "income",
+   "date": "2026-10-12",
+   "amount": 25000,
+   "method": "cash",
+   "note": "أخرى"
+  },
+  {
+   "id": "v2tx19",
+   "type": "transfer",
+   "date": "2026-10-12",
+   "amount": 10000,
+   "from": "home",
+   "to": "vegetables"
+  },
+  {
+   "id": "v2tx20",
+   "type": "release",
+   "date": "2026-10-13",
+   "amount": 5000,
+   "walletId": "dining"
+  },
+  {
+   "id": "v2tx21",
+   "type": "expense",
+   "date": "2026-10-14",
+   "amount": 30000,
+   "walletId": "emergency",
+   "method": "cash",
+   "note": "دواء طارئ",
+   "emergencyAuthorization": {
+    "confirmed": true,
+    "category": "medical",
+    "reason": "علاج طارئ للطفل"
+   }
+  },
+  {
+   "id": "v2tx22",
+   "type": "income",
+   "date": "2026-10-23",
+   "amount": 850000,
+   "method": "card",
+   "sourceId": "salary",
+   "sourceName": "الراتب الشهري",
+   "incomePeriod": "2026-10"
+  },
+  {
+   "id": "v2tx23",
+   "type": "allocate",
+   "date": "2026-10-23",
+   "amount": 100000,
+   "walletId": "kids"
+  },
+  {
+   "id": "v2tx24",
+   "type": "expense",
+   "date": "2026-10-25",
+   "amount": 45000,
+   "walletId": "kids",
+   "method": "card",
+   "note": "مستلزمات المدرسة"
+  },
+  {
+   "id": "v2tx25",
+   "type": "expense",
+   "date": "2026-11-01",
+   "amount": 15000,
+   "walletId": "dining",
+   "method": "cash",
+   "note": "غداء"
+  }
+ ],
+ "history": [],
+ "reconciliations": [],
+ "demo": false
+}

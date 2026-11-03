@@ -54,7 +54,7 @@ function pageHeader(ctx,data,isFirst){
 }
 function footer(ctx,data,page,total){
   line(ctx,69,1660,1172,1660,C.line,2);
-  rtl(ctx,'الحجز والتخصيص لا يعدّان مصروفاً نقدياً. هذا كشف شخصي وليس وثيقة مصرفية رسمية.',1172,1686,17,C.gray,400,1060);
+  rtl(ctx,'التحويل بين الحسابات لا يُعدّ مصروفاً. هذا كشف شخصي وليس وثيقة مصرفية رسمية.',1172,1686,17,C.gray,400,1060);
   rtl(ctx,'صفحة '+page+' من '+total,1172,1724,18,C.navy,600);
   ltr(ctx,fmt(data.period),69,1724,17,C.gray);
 }
@@ -66,8 +66,8 @@ function kpi(ctx,x,y,width,label,value,subtitle){
   if(subtitle)ltr(ctx,subtitle,x+15,y+97,11,C.gray,400,width-30);
 }
 function walletTable(ctx,data,top){
-  drawHeading(ctx,'ملخص محافظ المعيشة',top);
-  const x=69,w=1103,h=54,cols=[277,271,271,284],titles=['المحفظة','الميزانية الشهرية','المصروف المسجّل','الرصيد المتبقي'];
+  drawHeading(ctx,'المصروف حسب الفئة',top);
+  const x=69,w=1103,h=54,cols=[277,271,271,284],titles=['الفئة','السقف الشهري','المصروف','المتبقي من السقف'];
   let colX=1172;
   rect(ctx,x,top+43,w,h,C.navy2);
   for(let i=0;i<titles.length;i++){
@@ -119,12 +119,12 @@ function renderPage(data,rows,firstPage,pageNo,totalPages,walletRows=null){
   let y;
   if(firstPage){
     const cards=[
-      ['الرصيد الافتتاحي',data.stats.opening||'0'],
-      ['الدخل المستلم',data.stats.income],
-      ['المصاريف الفعلية',data.stats.expenses],
-      ['الالتزامات المدفوعة',data.stats.paid],
-      ['رصيد إغلاق الشهر',data.stats.total],
-      ['استقطاع قبل الإيداع',data.stats.withheld||'0']
+      ['رصيد بداية الشهر',data.stats.opening||'0'],
+      ['الدخل',data.stats.income],
+      ['المصروف',data.stats.expenses],
+      ['الصافي (الدخل − المصروف)',data.stats.net||'0'],
+      ['رصيد نهاية الشهر',data.stats.total],
+      ['عدد الحركات',data.stats.count||'0']
     ];
     const width=355,start=69,gap=19;
     cards.forEach((v,i)=>kpi(ctx,start+(i%3)*(width+gap),253+Math.floor(i/3)*133,width,v[0],v[1]));
