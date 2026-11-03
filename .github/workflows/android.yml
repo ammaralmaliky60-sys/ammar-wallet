@@ -1,0 +1,108 @@
+name: Android (debug APK / signed Play AAB)
+
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'src/**'
+      - 'index.html'
+      - 'privacy.html'
+      - 'report-pdf.js'
+      - 'styles.css'
+      - 'fonts.css'
+      - 'icon.svg'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Build a signed Google Play Android App Bundle (requires repository secrets)'
+        type: boolean
+        required: true
+        default: false
+      version_code:
+        description: 'Play Store versionCode (increase for every release)'
+        type: string
+        required: true
+        default: '1'
+      version_name:
+        description: 'Public versionName (e.g. 1.0.0)'
+        type: string
+        required: true
+        default: '1.0.0'
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android API 36
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Test web app
+        run: |
+          npm ci
+          npm run check
+      - name: Install Android toolchain and check syntax
+        run: |
+          npm install --prefix mobile --no-audit --no-fund
+          npm --prefix mobile run check:syntax
+      - name: Package app assets
+        run: npm --prefix mobile run web
+      - name: Create native Android project
+        working-directory: mobile
+        run: |
+          npx cap add android
+          npx cap sync android
+      - name: Set native security rules and versions
+        run: npm --prefix mobile run native:configure
+      - name: Generate native icon and splash assets
+        working-directory: mobile
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#F6F2EA' --splashBackgroundColor '#F6F2EA'
+      - name: Build unsigned debug APK for internal testing
+        working-directory: mobile/android
+        run: ./gradlew --no-daemon assembleDebug
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ween-rahat-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Prepare signed Google Play bundle
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+          ANDROID_VERSION_NAME: ${{ inputs.version_name }}
+        run: |
+          test -n "$UPLOAD_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          test -s "$RUNNER_TEMP/upload.jks"
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/upload.jks"
+          npm --prefix mobile run native:configure
+          (cd mobile/android && ./gradlew --no-daemon bundleRelease)
+      - name: Upload signed Play AAB
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ween-rahat-play-signed-aab
+          path: mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
