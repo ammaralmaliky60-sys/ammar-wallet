@@ -542,3 +542,109 @@ dialog#sheet::backdrop{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4p
  .card,.monthbar{background:white;box-shadow:none;border-color:#ccc}
  .hero{background:#0F5E56!important;print-color-adjust:exact}
 }
+
+/* Interactive light and motion. Only transform/opacity animate continuously;
+   text, balances and layout remain still and readable. */
+.nav-item .ic,.btn .ic,.icon-btn .ic,.tab-add .ic,.chip .ic,.fchip .ic,
+.seg .ic,.tx-ic,.bar-name i,.empty-art,.balance{
+ transition:transform .22s var(--ease),color .18s,background-color .18s,border-color .18s;
+ transform-origin:center;
+}
+.nav-item.active .ic{
+ animation:icon-select .46s var(--ease);
+ filter:drop-shadow(0 2px 5px color-mix(in srgb,var(--brand-green) 28%,transparent));
+}
+.chip input:checked+span .ic,.seg input:checked+span .ic{animation:icon-select .4s var(--ease)}
+.chip input:checked+span,.seg input:checked+span,.fchip[aria-pressed="true"]{
+ border-color:var(--brand-green);
+ box-shadow:inset 0 0 0 1px var(--brand-green),0 3px 12px color-mix(in srgb,var(--brand-green) 12%,transparent);
+}
+.btn,.icon-btn,.tab-add,.fchip{position:relative;isolation:isolate}
+.btn::after,.icon-btn::after,.tab-add::after,.fchip::after{
+ content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;opacity:0;
+ background:linear-gradient(115deg,transparent 22%,#ffffff24 44%,#ffffff55 50%,#ffffff24 56%,transparent 78%);
+ background-size:220% 100%;background-position:100% 0;
+}
+.btn:focus-visible::after,.icon-btn:focus-visible::after,.tab-add:focus-visible::after,
+.fchip:focus-visible::after{animation:control-gleam .6s var(--ease)}
+.btn:active,.icon-btn:active,.tab-add:active,.fchip:active{transform:scale(.96)}
+.icon-btn:active .ic,.tab-add:active .ic{transform:scale(.87) rotate(-9deg)}
+.field:focus-within>span:first-child{color:var(--green-text)}
+.field input:focus,.field select:focus,.search input:focus{
+ outline:none;border-color:var(--brand-green);
+ box-shadow:var(--ring),0 5px 18px color-mix(in srgb,var(--brand-green) 10%,transparent);
+}
+.hero::before{
+ content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:linear-gradient(115deg,transparent 30%,#ffffff0d 45%,#ffffff1c 50%,#ffffff0d 55%,transparent 70%);
+ transform:translateX(-110%);animation:hero-gleam 9s ease-in-out infinite;
+}
+.hero::after{animation:orb-drift 9s ease-in-out infinite alternate}
+.brand-mark{animation:brand-float 6s ease-in-out infinite}
+.motion-enter>.page-head{animation:view-arrive .24s var(--ease) both}
+.motion-enter>.monthbar{animation:view-arrive .28s var(--ease) both}
+.motion-enter>.card,.motion-enter .home-grid .card,.motion-enter .report-grid>.card,
+.motion-enter .settings-grid>.card{animation:view-arrive .34s var(--ease) both}
+.motion-enter .col:nth-child(2)>.card,.motion-enter .report-grid>.card:nth-child(even),
+.motion-enter .settings-grid>.card:nth-child(even){animation-delay:.035s}
+.motion-enter .col>.card+.card{animation-delay:.065s}
+.effect-layer,.effect-layer *{pointer-events:none!important;user-select:none}
+.effect-layer{position:fixed;inset:0;z-index:180;overflow:hidden;contain:strict}
+.effect-feedback{position:absolute;display:block;overflow:hidden;isolation:isolate;color:var(--green-text)}
+.effect-ripple{
+ position:absolute;display:block;border-radius:50%;
+ background:radial-gradient(circle,#ffffff55 0%,#5eead455 35%,#a78bfa40 60%,transparent 72%);
+}
+.effect-selected .ic{animation:icon-select .4s var(--ease)}
+body[data-effects-paused] *,body[data-effects-paused] *::before,body[data-effects-paused] *::after{animation-play-state:paused!important}
+@media (hover:hover) and (pointer:fine){
+ .nav-item:hover .ic,.nav-item:focus-visible .ic{transform:translateY(-2px) rotate(-7deg) scale(1.12)}
+ .btn:hover .ic,.icon-btn:hover .ic,.tab-add:hover .ic{transform:rotate(-7deg) scale(1.12)}
+ .btn:not(:disabled):hover::after,.icon-btn:not(:disabled):hover::after,
+ .tab-add:hover::after,.fchip:hover::after{animation:control-gleam .6s var(--ease)}
+ .chip:hover>span{border-color:var(--brand-green)}
+ .chip:hover .ic,.fchip:hover .ic,.seg label:hover .ic{transform:translateY(-2px) scale(1.12)}
+ .tx:hover .tx-ic,.budget-row:hover .tx-ic,.bar-row:hover .bar-name i{transform:translateY(-2px) rotate(-5deg)}
+ .balance:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--brand-green) 45%,var(--border))}
+ .card:hover .empty-art{transform:translateY(-3px) rotate(-4deg)}
+}
+@keyframes icon-select{
+ 0%{transform:scale(.8)}
+ 45%{transform:translateY(-3px) scale(1.18) rotate(-8deg)}
+ 75%{transform:scale(.96) rotate(3deg)}
+ 100%{transform:none}
+}
+@keyframes view-arrive{
+ from{opacity:.35;transform:translateY(9px)}
+ to{opacity:1;transform:translateY(0)}
+}
+@keyframes control-gleam{
+ 0%{opacity:0;background-position:100% 0}
+ 30%{opacity:.8}
+ 100%{opacity:0;background-position:0 0}
+}
+@keyframes hero-gleam{
+ 0%,65%{transform:translateX(-110%);opacity:0}
+ 70%{opacity:.75}
+ 92%,100%{transform:translateX(110%);opacity:0}
+}
+@keyframes orb-drift{
+ from{transform:translate(0,0) scale(1);opacity:.65}
+ to{transform:translate(-10px,12px) scale(1.08);opacity:1}
+}
+@keyframes brand-float{
+ 0%,100%{transform:translateY(0)}
+ 50%{transform:translateY(-3px)}
+}
+@media (prefers-reduced-motion:reduce){
+ .hero::before,.btn::after,.icon-btn::after,.tab-add::after,.fchip::after,.effect-ripple{display:none}
+ .nav-item .ic,.btn .ic,.icon-btn .ic,.tab-add .ic,.chip .ic,.fchip .ic,
+ .seg .ic,.tx-ic,.bar-name i,.empty-art,.balance{transform:none!important}
+}
+@media (forced-colors:active){
+ .effect-ripple,.hero::before,.btn::after,.icon-btn::after,.tab-add::after,.fchip::after{display:none}
+}
+@media print{
+ *,*::before,*::after{animation:none!important;transition:none!important}
+ .effect-ripple,.hero::before{display:none!important}
+}
