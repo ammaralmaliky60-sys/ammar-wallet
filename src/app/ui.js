@@ -88,12 +88,18 @@
     });
   });
 
-  WR.download = (filename, text, type = 'application/json') => {
-    const url = URL.createObjectURL(new Blob([text], { type }));
+  // On Android, a WebView cannot reliably download blob: URLs. The native
+  // bridge exposes a share/save chooser; the browser retains its old behavior.
+  WR.downloadBlob = (filename, blob) => {
+    if (window.WRNative?.isNative) return window.WRNative.saveFile(filename, blob);
+    const url = URL.createObjectURL(blob);
     const a = Object.assign(document.createElement('a'), { href: url, download: filename });
     document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return Promise.resolve();
   };
+  WR.download = (filename, text, type = 'application/json') =>
+    WR.downloadBlob(filename, new Blob([text], { type }));
 
   /** Reusable form controls. */
   WR.field = ({ label, name, value = '', type = 'text', attrs = '', hint = '' }) =>

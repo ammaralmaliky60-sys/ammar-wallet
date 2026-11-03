@@ -8,3 +8,13 @@ thukhr-*.json
 thukhr-*.csv
 mizan-ledger-*.csv
 mizan-*.json
+
+# Generated Capacitor Android project, dependencies and local signing material.
+mobile/node_modules/
+mobile/www/
+mobile/android/
+mobile/assets/
+*.jks
+*.keystore
+*.aab
+*.apk

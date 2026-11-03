@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'weenrahat-static-v3.0.0';
+const CACHE = 'weenrahat-static-v3.0.1';
 // Older prefixes stay listed so their caches are removed after the update.
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-'];
 
@@ -26,31 +26,31 @@ const ASSETS = [
   './icon-maskable-512.png',
 
   // Styles and font
-  './fonts.css?v=3.0.0',
-  './styles.css?v=3.0.0',
+  './fonts.css?v=3.0.1',
+  './styles.css?v=3.0.1',
   './fonts/readex-pro/ReadexPro-arabic.woff2',
   './fonts/readex-pro/ReadexPro-latin.woff2',
   './fonts/readex-pro/ReadexPro-latin-ext.woff2',
 
   // Core (order mirrors index.html)
-  './src/core/format.js?v=3.0.0',
-  './src/core/ledger.js?v=3.0.0',
-  './src/core/migrate.js?v=3.0.0',
-  './report-pdf.js?v=3.0.0',
+  './src/core/format.js?v=3.0.1',
+  './src/core/ledger.js?v=3.0.1',
+  './src/core/migrate.js?v=3.0.1',
+  './report-pdf.js?v=3.0.1',
 
   // App
-  './src/app/icons.js?v=3.0.0',
-  './src/app/ui.js?v=3.0.0',
-  './src/app/store.js?v=3.0.0',
-  './src/app/main.js?v=3.0.0',
-  './src/app/views/entry.js?v=3.0.0',
-  './src/app/views/home.js?v=3.0.0',
-  './src/app/views/transactions.js?v=3.0.0',
-  './src/app/views/budget.js?v=3.0.0',
-  './src/app/views/reports.js?v=3.0.0',
-  './src/app/views/settings.js?v=3.0.0',
-  './src/app/views/onboarding.js?v=3.0.0',
-  './src/app/start.js?v=3.0.0'
+  './src/app/icons.js?v=3.0.1',
+  './src/app/ui.js?v=3.0.1',
+  './src/app/store.js?v=3.0.1',
+  './src/app/main.js?v=3.0.1',
+  './src/app/views/entry.js?v=3.0.1',
+  './src/app/views/home.js?v=3.0.1',
+  './src/app/views/transactions.js?v=3.0.1',
+  './src/app/views/budget.js?v=3.0.1',
+  './src/app/views/reports.js?v=3.0.1',
+  './src/app/views/settings.js?v=3.0.1',
+  './src/app/views/onboarding.js?v=3.0.1',
+  './src/app/start.js?v=3.0.1'
 ];
 
 const isOwnCache = key => CACHE_PREFIXES.some(prefix => key.startsWith(prefix));

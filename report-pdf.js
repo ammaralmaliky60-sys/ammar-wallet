@@ -200,9 +200,8 @@ async function download(report){
   if(blob.size<3000)throw Error('لم يكتمل توليد ملف PDF.');
   const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,13);
   const filename=(report.brand==='ميزان'?'Mizan':'Ween-Rahat')+'_Statement_'+fmt(report.period).replace(/[^0-9-]/g,'')+'_'+stamp+'.pdf';
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=filename;a.style.display='none';document.body.appendChild(a);
-  try{a.click();}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+  if (!window.WR?.downloadBlob) throw Error('مكوّن حفظ الملفات غير متاح.');
+  await window.WR.downloadBlob(filename,blob);
   return {filename,bytes:blob.size,pages:pages.length};
 }
 root.ThukhrPDF={download,buildPDF};

@@ -1,0 +1,23 @@
+{
+  "name": "ween-rahat-android",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Android wrapper for the existing offline-first financial PWA.",
+  "scripts": {
+    "web": "node scripts/prepare-web.mjs",
+    "native:configure": "node scripts/prepare-native.mjs",
+    "check:syntax": "node --check scripts/prepare-web.mjs && node --check scripts/prepare-native.mjs && node --check native-bridge.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.0.0",
+    "@capacitor/core": "8.0.0",
+    "@capacitor/filesystem": "8.0.0",
+    "@capacitor/share": "8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.0.0",
+    "@capacitor/assets": "^3.0.0",
+    "esbuild": "^0.25.0"
+  }
+}
