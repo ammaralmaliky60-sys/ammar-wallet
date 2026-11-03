@@ -46,9 +46,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      # GitHub ubuntu-latest includes Android command-line tools already.
+      # Avoid setup-android@v3: its obsolete 'tools' package install now fails.
       - name: Install Android API 36
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Test web app
         run: |
           npm ci
