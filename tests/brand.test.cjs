@@ -60,7 +60,7 @@ test('dark tokens are exactly the specified palette, also when the device prefer
 test('theme-color follows light and dark',()=>{
  assert.match(html,/<meta name="theme-color" content="#F4F8FF" media="\(prefers-color-scheme: light\)">/);
  assert.match(html,/<meta name="theme-color" content="#080F20" media="\(prefers-color-scheme: dark\)">/);
- assert.match(read('src/app/main.js'),/dark \? '#14201F' : '#F6F2EA'/);
+ assert.match(read('src/app/main.js'),/dark \? '#080F20' : '#F4F8FF'/);
 });
 
 // ---- contrast ------------------------------------------------------------
