@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F6F2EA" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#14201F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F8FF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#080F20" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="وين راحت؟ — اعرف فلوسك وين تروح: سجّل مصروف البيت ودخله، وتابع الميزانية والتقارير. بياناتك تبقى على جهازك.">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -12,6 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="stylesheet" href="./fonts.css?v=3.0.0">
 <link rel="stylesheet" href="./styles.css?v=3.0.3">
+<link rel="stylesheet" href="./neo-finance.css?v=3.0.4">
 <title>وين راحت؟ | اعرف فلوسك وين تروح</title>
 </head>
 <body>
@@ -19,14 +20,14 @@
 <a class="skip" href="#main">تخطَّ إلى المحتوى</a>
 <div class="shell">
   <aside class="sidebar" aria-label="التنقل الرئيسي">
-    <a class="brand" href="#home" aria-label="وين راحت؟ — الرئيسية"><svg class="brand-mark" viewBox="16 10 92 90" aria-hidden="true" focusable="false"><circle class="bm-coin" cx="52" cy="68" r="30" fill="#0F5E56"/><circle class="bm-ring" cx="52" cy="68" r="20" fill="none" stroke="#D9A441" stroke-width="5"/><path class="bm-arrow" d="M64 46 C74 30 88 24 100 26" fill="none" stroke="#E0674B" stroke-width="9" stroke-linecap="round"/><path class="bm-arrow" d="M89 16 L102 26 L91 37" fill="none" stroke="#E0674B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b class="brand-name">وين راحت<span class="brand-q">؟</span></b><small>اعرف فلوسك وين تروح</small></span></a>
+    <a class="brand" href="#home" aria-label="وين راحت؟ — الرئيسية"><svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><rect x="18" y="34" width="84" height="60" rx="16" fill="none" stroke="currentColor" stroke-width="8"/><path d="M24 44V29c0-7 5-12 12-12h51" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="67" y="48" width="37" height="29" rx="9" fill="#35E3D0"/><circle cx="78" cy="62" r="4" fill="#080F20"/><path d="M35 79V68m13 11V59m13 20V51" stroke="#35E3D0" stroke-width="6" stroke-linecap="round"/></svg><span><b class="brand-name">وين راحت<span class="brand-q">؟</span></b><small>اعرف فلوسك وين تروح</small></span></a>
     <button type="button" class="btn spend sidebar-add" data-action="add"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>سجّل حركة</button>
     <nav id="sideNav" class="side-nav"></nav>
     <p class="privacy"><i></i>بياناتك محفوظة على جهازك</p>
   </aside>
   <div class="content">
     <header class="topbar">
-      <a class="mobile-brand" href="#home" aria-label="وين راحت؟"><svg class="brand-mark" viewBox="16 10 92 90" aria-hidden="true" focusable="false"><circle class="bm-coin" cx="52" cy="68" r="30" fill="#0F5E56"/><circle class="bm-ring" cx="52" cy="68" r="20" fill="none" stroke="#D9A441" stroke-width="5"/><path class="bm-arrow" d="M64 46 C74 30 88 24 100 26" fill="none" stroke="#E0674B" stroke-width="9" stroke-linecap="round"/><path class="bm-arrow" d="M89 16 L102 26 L91 37" fill="none" stroke="#E0674B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg><b class="brand-name">وين راحت<span class="brand-q">؟</span></b></a>
+      <a class="mobile-brand" href="#home" aria-label="وين راحت؟"><svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><rect x="18" y="34" width="84" height="60" rx="16" fill="none" stroke="currentColor" stroke-width="8"/><path d="M24 44V29c0-7 5-12 12-12h51" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="67" y="48" width="37" height="29" rx="9" fill="#35E3D0"/><circle cx="78" cy="62" r="4" fill="#080F20"/><path d="M35 79V68m13 11V59m13 20V51" stroke="#35E3D0" stroke-width="6" stroke-linecap="round"/></svg><b class="brand-name">وين راحت<span class="brand-q">؟</span></b></a>
       <span id="pageTitle" class="page-title"></span>
       <div class="top-actions">
         <button type="button" class="icon-btn" id="themeBtn" aria-label="المظهر"></button>
@@ -46,10 +47,10 @@
 <script src="./src/core/migrate.js?v=3.0.0"></script>
 <script src="./report-pdf.js?v=3.0.0"></script>
 <!-- App -->
-<script src="./src/app/icons.js?v=3.0.0"></script>
+<script src="./src/app/icons.js?v=3.0.4"></script>
 <script src="./src/app/ui.js?v=3.0.0"></script>
 <script src="./src/app/store.js?v=3.0.0"></script>
-<script src="./src/app/main.js?v=3.0.3"></script>
+<script src="./src/app/main.js?v=3.0.4"></script>
 <script src="./src/app/views/entry.js?v=3.0.0"></script>
 <script src="./src/app/views/home.js?v=3.0.3"></script>
 <script src="./src/app/views/transactions.js?v=3.0.0"></script>

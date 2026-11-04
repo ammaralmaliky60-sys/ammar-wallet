@@ -58,8 +58,8 @@ test('dark tokens are exactly the specified palette, also when the device prefer
 });
 
 test('theme-color follows light and dark',()=>{
- assert.match(html,/<meta name="theme-color" content="#F6F2EA" media="\(prefers-color-scheme: light\)">/);
- assert.match(html,/<meta name="theme-color" content="#14201F" media="\(prefers-color-scheme: dark\)">/);
+ assert.match(html,/<meta name="theme-color" content="#F4F8FF" media="\(prefers-color-scheme: light\)">/);
+ assert.match(html,/<meta name="theme-color" content="#080F20" media="\(prefers-color-scheme: dark\)">/);
  assert.match(read('src/app/main.js'),/dark \? '#14201F' : '#F6F2EA'/);
 });
 
@@ -108,8 +108,8 @@ test('Readex Pro is self-hosted and used everywhere, with tabular figures',()=>{
 
 test('icon.svg is the supplied app icon and the PNG sizes exist',()=>{
  const icon=read('icon.svg');
- assert.match(icon,/<rect width="120" height="120" rx="28" fill="#0F5E56"\/>/);
- assert.match(icon,/<circle cx="52" cy="68" r="30" fill="#D9A441"\/>/);
+ assert.match(icon,/<rect width="512" height="512" rx="116" fill="#080F20"\/>/);
+ assert.match(icon,/<rect x="67" y="48" width="37" height="29" rx="9" fill="#35E3D0"\/>/);
  const png=(f,size)=>{const b=fs.readFileSync(path.join(root,f));assert.equal(b.readUInt32BE(16),size,f);assert.equal(b.readUInt32BE(20),size,f)};
  png('icon-192.png',192);png('icon-512.png',512);png('icon-maskable-512.png',512);png('apple-touch-icon.png',180);
  assert.ok(manifest.icons.some(i=>i.purpose==='maskable'&&i.src==='./icon-maskable-512.png'));

@@ -70,7 +70,7 @@
   function applyTheme() {
     const chosen = WR.store.theme(), dark = chosen ? chosen === 'night' : matchMedia('(prefers-color-scheme: dark)').matches;
     document.body.dataset.theme = dark ? 'dark' : 'light';
-    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', dark ? '#14201F' : '#F6F2EA'));
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', dark ? '#080F20' : '#F4F8FF'));
     const btn = $('#themeBtn');
     if (btn) { btn.innerHTML = WR.icon(dark ? 'sun' : 'moon'); btn.setAttribute('aria-label', dark ? 'المظهر الفاتح' : 'المظهر الداكن'); }
   }
