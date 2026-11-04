@@ -2,7 +2,7 @@
 (function (WR) {
   'use strict';
   const L = window.WRLedger, F = window.WRFormat;
-  const PACE = { ok: ['check', 'ضمن الخطة'], fast: ['clock', 'أسرع من الخطة'], over: ['alert', 'تجاوزت الميزانية'] };
+  const PACE = { ok: ['check', 'صرفك مضبوط'], fast: ['clock', 'صرفك سريع!'], over: ['alert', 'تعدّيت الميزانية!'] };
   const INCOME = { received: ['check', 'تم الاستلام'], due: ['clock', 'موعده اليوم'], late: ['alert', 'تأخر'], upcoming: ['calendar', 'متوقع'] };
 
   function greeting(name) {
@@ -46,8 +46,8 @@
       <span class="eyebrow">صرفت ${isCurrent ? 'هذا الشهر' : 'في هذا الشهر'}</span>
       <strong class="hero-amount">${WR.money(m.expense)}</strong>
       <div class="hero-split">
-        <span><small>الدخل</small><b>${m.income ? WR.money(m.income) : 'لم يُسجّل بعد'}</b></span>
-        ${m.income ? `<span><small>${m.net >= 0 ? 'المتبقي من الدخل' : 'صرفت أكثر من دخلك بـ'}</small><b class="${m.net < 0 ? 'neg' : ''}">${WR.money(Math.abs(m.net))}</b></span>`
+        <span><small>الدخل</small><b>${m.income ? WR.money(m.income) : 'بعدك ما سجّلت دخل'}</b></span>
+        ${m.income ? `<span><small>${m.net >= 0 ? 'باقيلك من دخلك' : (isCurrent ? 'صرفك زايد هالشهر!' : 'صرفك زايد بهالشهر!')}</small><b class="${m.net < 0 ? 'neg' : ''}">${WR.money(Math.abs(m.net))}</b></span>`
           : `<span><small>رصيدك الكلي الآن</small><b>${WR.money(b.total)}</b></span>`}
       </div>
       ${m.budgetTotal ? `<div class="hero-budget">
