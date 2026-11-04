@@ -37,7 +37,7 @@
     const m = L.monthSummary(s, key, { today }), cmp = L.compare(s, key), days = L.dailyExpense(s, key), tr = L.trend(s, key, 6);
     const spentDays = days.filter(d => F.daysBetween(d.date, today) >= 0).length || 1;
     const rate = m.income ? Math.round(m.net / m.income * 100) : null;
-    const netText = m.net > 0 ? `وفّرت ${rate}% من دخلك` : m.net < 0 ? 'صرفت أكثر من دخلك' : 'تساوى الدخل والمصروف';
+    const netText = !m.income ? 'بعدك ما سجّلت دخل' : m.net > 0 ? `باقيلك ${rate}% من دخلك` : m.net < 0 ? (key === app.currentKey() ? 'صرفك زايد هالشهر!' : 'صرفك زايد بهالشهر!') : 'صرفك كدّ دخلك';
     return WR.pageHead('التقارير', 'وين راحت فلوسك هذا الشهر، وكيف تقارن بما قبله.',
       '<button type="button" class="btn ghost" data-action="export-csv">' + WR.icon('download') + 'CSV</button><button type="button" class="btn primary" data-action="export-pdf">' + WR.icon('download') + 'PDF</button>') +
       WR.monthBar() +
@@ -45,7 +45,7 @@
         <div><span>الدخل</span><b class="pos">${WR.money(m.income)}</b></div>
         <div><span>المصروف</span><b class="neg">${WR.money(m.expense)}</b></div>
         <div><span>الصافي</span><b>${WR.money(m.net, { sign: m.net > 0 ? '+' : m.net < 0 ? '−' : '' })}</b></div></div>
-        <p class="net-note"><span class="pill" data-tone="${m.net >= 0 ? 'ok' : 'over'}">${WR.icon(m.net >= 0 ? 'check' : 'alert')}${netText}</span></p></section>
+        <p class="net-note"><span class="pill" data-tone="${!m.income ? 'muted' : m.net >= 0 ? 'ok' : 'over'}">${WR.icon(!m.income ? 'clock' : m.net >= 0 ? 'check' : 'alert')}${netText}</span></p></section>
       <div class="report-grid">
         <section class="card"><header class="card-head"><h2>وين راحت فلوسك؟</h2><span class="muted">${WR.money(m.expense)}</span></header>
           ${m.ranked.length ? WR.categoryBars(m.ranked, m.expense) + '<p class="hint">اضغط على أي فئة لعرض حركاتها.</p>' : WR.empty('pie', 'لا يوجد مصروف في هذا الشهر', 'عند تسجيل مصروف يظهر هنا توزيعه على الفئات.')}</section>
