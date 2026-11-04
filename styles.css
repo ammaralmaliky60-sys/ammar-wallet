@@ -648,3 +648,76 @@ body[data-effects-paused] *,body[data-effects-paused] *::before,body[data-effect
  *,*::before,*::after{animation:none!important;transition:none!important}
  .effect-ripple,.hero::before{display:none!important}
 }
+
+/* Motion system v3.0.3 — short, composited microinteractions. No finance logic. */
+.tabbar .liquid-indicator{display:none}
+@media (max-width:899px){
+ .tabbar{isolation:isolate}
+ .tabbar>.liquid-indicator{
+  display:block;position:absolute;left:0;top:0;z-index:0;pointer-events:none;
+  width:var(--liquid-w,0px);height:var(--liquid-h,0px);
+  transform:translate3d(var(--liquid-x,0px),var(--liquid-y,0px),0);
+  border-radius:16px;background:linear-gradient(135deg,
+   color-mix(in srgb,var(--brand-green) 16%,var(--surface)),
+   color-mix(in srgb,#38bdf8 9%,var(--surface)));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand-green) 22%,transparent),
+   0 4px 12px color-mix(in srgb,var(--brand-green) 10%,transparent);
+  transition:transform .4s cubic-bezier(.18,.85,.28,1.12),
+   width .3s ease,height .3s ease,opacity .16s ease;
+  will-change:transform;
+ }
+ .tabbar .nav-item,.tabbar .tab-add{z-index:1;position:relative}
+ .tabbar .nav-item.active{background:transparent;box-shadow:none}
+ .tabbar .nav-item.active .ic{animation:micro-spring .38s cubic-bezier(.2,.8,.25,1) both}
+}
+.hero-budget{position:relative;padding-inline-end:77px;min-height:74px}
+.hero-budget>.motion-progress-ring{position:absolute;inset-inline-end:0;top:0}
+.motion-progress-ring{width:66px;height:66px;display:grid;place-items:center;position:relative;flex:none}
+.motion-progress-ring svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.motion-progress-ring circle{fill:none;stroke-width:5;stroke-linecap:round}
+.motion-progress-track{stroke:color-mix(in srgb,currentColor 25%,transparent)}
+.motion-progress-value{
+ stroke:var(--brand-gold);stroke-dasharray:var(--progress) 100;
+ animation:micro-ring-fill .65s cubic-bezier(.2,.75,.2,1) both;
+}
+.motion-progress-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-variant-numeric:tabular-nums}
+.hero .motion-progress-ring{color:#fff}
+.hero .motion-progress-track{stroke:#ffffff42}
+.hero .motion-progress-value{stroke:#F6C96B}
+body[data-page="reports"] .nav-item.active[href="#reports"] .ic path{
+ animation:micro-draw .5s ease-out both
+}
+body[data-page="settings"] .nav-item.active[href="#settings"] .ic{
+ animation:micro-rotate .55s cubic-bezier(.2,.8,.2,1) both
+}
+body[data-page="reports"] .motion-enter .chart .bar,
+body[data-page="reports"] .motion-enter .chart .bar-income,
+body[data-page="reports"] .motion-enter .chart .bar-expense{
+ transform-box:fill-box;transform-origin:center bottom;animation:micro-bar .45s ease-out both
+}
+.pill[data-tone="fast"]>.ic,.pill[data-tone="warn"]>.ic{animation:micro-pulse 1.1s ease-in-out 2}
+.pill[data-tone="over"]>.ic{animation:micro-wiggle .42s ease-out both}
+#toast:has(.motion-morph)::before{display:none}
+.motion-morph{width:22px;height:22px;flex:none;display:inline-grid;place-items:center;position:relative}
+.motion-morph .ic{position:absolute;inset:0;width:22px;height:22px}
+.motion-morph-plus{animation:micro-plus-out .24s ease-in both}
+.motion-morph-check{animation:micro-check-in .38s .12s cubic-bezier(.2,.8,.25,1) both}
+#toast.motion-alert.show{animation:micro-wiggle .4s ease-out both}
+@keyframes micro-spring{
+ 0%{transform:scale(.84)}55%{transform:scale(1.16)}77%{transform:scale(.96)}100%{transform:scale(1)}
+}
+@keyframes micro-ring-fill{from{stroke-dasharray:0 100}to{stroke-dasharray:var(--progress) 100}}
+@keyframes micro-draw{from{stroke-dasharray:0 220;opacity:.35}to{stroke-dasharray:220 0;opacity:1}}
+@keyframes micro-rotate{0%{transform:rotate(-52deg) scale(.82)}65%{transform:rotate(11deg) scale(1.08)}100%{transform:none}}
+@keyframes micro-bar{from{transform:scaleY(.1);opacity:.5}to{transform:scaleY(1);opacity:1}}
+@keyframes micro-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}
+@keyframes micro-wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}50%{transform:rotate(7deg)}75%{transform:rotate(-3deg)}}
+@keyframes micro-plus-out{0%{transform:rotate(0) scale(1);opacity:1}100%{transform:rotate(70deg) scale(.38);opacity:0}}
+@keyframes micro-check-in{0%{transform:scale(.45) rotate(-18deg);opacity:0}65%{transform:scale(1.2);opacity:1}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){
+ .tabbar>.liquid-indicator{transition:none!important;will-change:auto}
+ .motion-progress-value,.motion-morph .ic,#toast.motion-alert.show{animation:none!important}
+ .motion-morph-plus{display:none}
+ .motion-morph-check{opacity:1!important;transform:none!important}
+}
+@media print{.tabbar .liquid-indicator{display:none!important}}

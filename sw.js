@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'weenrahat-static-v3.0.2';
+const CACHE = 'weenrahat-static-v3.0.3';
 // Older prefixes stay listed so their caches are removed after the update.
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-'];
 
@@ -27,7 +27,7 @@ const ASSETS = [
 
   // Styles and font
   './fonts.css?v=3.0.0',
-  './styles.css?v=3.0.2',
+  './styles.css?v=3.0.3',
   './fonts/readex-pro/ReadexPro-arabic.woff2',
   './fonts/readex-pro/ReadexPro-latin.woff2',
   './fonts/readex-pro/ReadexPro-latin-ext.woff2',
@@ -42,15 +42,16 @@ const ASSETS = [
   './src/app/icons.js?v=3.0.0',
   './src/app/ui.js?v=3.0.0',
   './src/app/store.js?v=3.0.0',
-  './src/app/main.js?v=3.0.0',
+  './src/app/main.js?v=3.0.3',
   './src/app/views/entry.js?v=3.0.0',
-  './src/app/views/home.js?v=3.0.0',
+  './src/app/views/home.js?v=3.0.3',
   './src/app/views/transactions.js?v=3.0.0',
   './src/app/views/budget.js?v=3.0.0',
   './src/app/views/reports.js?v=3.0.0',
   './src/app/views/settings.js?v=3.0.0',
   './src/app/views/onboarding.js?v=3.0.0',
   './src/app/effects.js?v=3.0.2',
+  './src/app/motion.js?v=3.0.3',
   './src/app/start.js?v=3.0.0'
 ];
 
