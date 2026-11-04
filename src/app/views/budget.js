@@ -2,11 +2,11 @@
 (function (WR) {
   'use strict';
   const L = window.WRLedger, F = window.WRFormat;
-  const LEVEL = { ok: ['check', 'ضمن السقف'], warn: ['clock', 'قارب السقف'], over: ['alert', 'تجاوز السقف'] };
+  const LEVEL = { ok: ['check', 'صرفك مضبوط'], warn: ['clock', 'قربت توصل للسقف!'], over: ['alert', 'فاتك السقف!'] };
 
   function row(c) {
     const pct = c.budget ? Math.min(100, Math.round(c.spent / c.budget * 100)) : 0;
-    const status = c.budget ? (c.remaining >= 0 ? `باقي ${WR.money(c.remaining)}` : `زاد ${WR.money(-c.remaining)}`) : 'بدون سقف';
+    const status = c.budget ? (c.remaining >= 0 ? `باقيلك ${WR.money(c.remaining)}` : `زايد ${WR.money(-c.remaining)}`) : 'بدون سقف';
     return `<button type="button" class="budget-row" data-action="edit-category" data-id="${WR.safe(c.id)}" data-level="${c.level}">
       <span class="tx-ic" style="--c:${c.color}">${WR.icon(c.icon)}</span>
       <span class="budget-main"><span class="budget-top"><b>${WR.safe(c.name)}</b>
@@ -27,7 +27,7 @@
       `<section class="card budget-summary">
         <div class="kpis"><div><span>الميزانية</span><b>${WR.money(m.budgetTotal)}</b></div>
           <div><span>صرفت منها</span><b>${WR.money(m.budgetedSpent)}</b></div>
-          <div><span>${m.remainingBudget || !m.budgetTotal ? 'المتبقي' : 'تجاوزت بـ'}</span><b>${WR.money(m.remainingBudget || Math.max(0, m.budgetedSpent - m.budgetTotal))}</b></div></div>
+          <div><span>${m.remainingBudget || !m.budgetTotal ? 'الباقي' : 'الزايد'}</span><b>${WR.money(m.remainingBudget || Math.max(0, m.budgetedSpent - m.budgetTotal))}</b></div></div>
         ${m.budgetTotal ? `<span class="meter big" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${usedPct}" aria-label="نسبة المصروف من الميزانية"><i style="width:${usedPct}%" data-level="${m.pace.status}"></i></span>
           <p class="muted">مضى ${m.pace.elapsed}% من الشهر واستخدمت ${m.pace.used}% من الميزانية.${m.income ? ` الميزانية تساوي ${Math.round(m.budgetTotal / m.income * 100)}% من دخل الشهر.` : ''}</p>` :
           '<p class="muted">اضغط على أي فئة لتحدد سقفها الشهري.</p>'}
