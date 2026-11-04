@@ -51,7 +51,7 @@
           : `<span><small>رصيدك الكلي الآن</small><b>${WR.money(b.total)}</b></span>`}
       </div>
       ${m.budgetTotal ? `<div class="hero-budget">
-        <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${usedPct}" aria-label="نسبة المصروف من الميزانية"><i style="width:${usedPct}%" data-level="${m.pace.status}"></i></div>
+        ${WR.progressRing(usedPct)}\n        <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${usedPct}" aria-label="نسبة المصروف من الميزانية"><i style="width:${usedPct}%" data-level="${m.pace.status}"></i></div>
         <p>استخدمت <b>${m.pace.used}%</b> من ميزانية ${WR.money(m.budgetTotal)}${isCurrent && m.pace.status !== 'over' ? ` · تقدر تصرف <b>${WR.money(m.pace.daily)}</b> يومياً` : ''}</p>
         ${isCurrent ? `<span class="pill" data-tone="${m.pace.status}">${WR.icon(PACE[m.pace.status][0])}${PACE[m.pace.status][1]}</span>` : ''}
       </div>` : `<p class="hero-hint">ما حددت ميزانية بعد. <a href="#budget">حدد سقفاً لكل فئة</a> حتى تعرف وين وصلت.</p>`}
