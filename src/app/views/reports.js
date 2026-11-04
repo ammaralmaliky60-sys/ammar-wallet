@@ -81,7 +81,7 @@
     const m = L.monthSummary(s, key, { today }), p = m.period, end = p.end < today ? p.end : today;
     const list = L.transactionsIn(s, key).slice().sort((a, b) => a.date.localeCompare(b.date));
     const data = {
-      period: key, from: p.start, to: end, // the key ("2026-11") also names the downloaded file issuedAt: new Date().toLocaleString('ar-IQ'),
+      period: key, from: p.start, to: end, ownerName: s.settings.name || '',
       currency: WR.cur().unit, brand: 'وين راحت؟',
       stats: { opening: WR.fmt(L.balances(s, F.addDays(p.start, -1)).total), income: WR.fmt(m.income), expenses: WR.fmt(m.expense),
         net: WR.fmt(m.net), total: WR.fmt(L.balances(s, end).total), count: String(list.length) },
