@@ -1,4 +1,5 @@
 /* WEEN RAHAT — Neo Finance A. Appearance only; no page structure or ledger logic. */
+:root{--neo-blue:#3B82F6;--neo-success:#16B88A;--neo-expense:#F16B78;--neo-warning:#F4B544}
 :root,
 body[data-theme="light"]{
   --brand-green:#35E3D0;--brand-coral:#F16B78;--brand-gold:#F4B544;
