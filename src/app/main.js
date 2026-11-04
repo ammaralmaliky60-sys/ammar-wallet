@@ -40,9 +40,15 @@
   function renderNav() {
     const link = ([page, icon, label]) => `<a href="#${page}" class="nav-item ${app.page === page ? 'active' : ''}" ${app.page === page ? 'aria-current="page"' : ''}>${WR.icon(icon)}<span>${label}</span></a>`;
     $('#sideNav').innerHTML = NAV.map(link).join('') + link(['settings', 'settings', 'الإعدادات']);
-    $('#tabbar').innerHTML = NAV.slice(0, 2).map(link).join('') +
+    const tab = $('#tabbar');
+    const tabs = NAV.slice(0, 2).map(link).join('') +
       `<button type="button" class="tab-add" data-action="add" aria-label="سجّل حركة">${WR.icon('plus')}<span>سجّل</span></button>` +
       NAV.slice(2).map(link).join('');
+    // Preserve the liquid indicator across re-renders so it can slide between tabs.
+    if (!tab.querySelector('.liquid-indicator')) tab.innerHTML = '<span class="liquid-indicator" aria-hidden="true"></span>';
+    else tab.querySelectorAll('.nav-item,.tab-add').forEach(item => item.remove());
+    tab.insertAdjacentHTML('beforeend', tabs);
+    WR.motion?.syncTabIndicator();
   }
   function render() {
     if (!app.state) return;
