@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'weenrahat-static-v3.1.1';
+const CACHE = 'weenrahat-static-v3.1.2';
 // Older prefixes stay listed so their caches are removed after the update.
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-'];
 
@@ -29,7 +29,7 @@ const ASSETS = [
   './fonts.css?v=3.0.0',
   './styles.css?v=3.0.3',
   './neo-finance.css?v=3.0.4',
-  './ui-polish.css?v=3.1.1',
+  './ui-polish.css?v=3.1.2',
   './fonts/readex-pro/ReadexPro-arabic.woff2',
   './fonts/readex-pro/ReadexPro-latin.woff2',
   './fonts/readex-pro/ReadexPro-latin-ext.woff2',
