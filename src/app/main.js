@@ -58,7 +58,8 @@
     document.body.dataset.page = app.page;
     renderNav();
     const view = WR.views[app.page];
-    $('#pageTitle').textContent = app.page === 'settings' ? 'الإعدادات' : NAV.find(n => n[0] === app.page)[2];
+    const pageLabel = app.page === 'settings' ? 'الإعدادات' : NAV.find(n => n[0] === app.page)[2];
+    $('#pageTitle').textContent = 'وين راحت؟ / ' + pageLabel;
     const main = $('#main');
     main.innerHTML = view.render(app);
     WR.wireAmounts(main);
