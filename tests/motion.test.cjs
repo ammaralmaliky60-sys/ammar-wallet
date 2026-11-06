@@ -18,7 +18,7 @@ test('motion script loads after effects and before start, and is cached offline'
   const start = html.indexOf('src/app/start.js?v=3.0.0');
   assert.ok(effects >= 0 && effects < animations && animations < start);
   assert.match(sw, /'\.\/src\/app\/motion\.js\?v=3\.0\.3'/);
-  assert.match(sw, /weenrahat-static-v3\.1\.2/);
+  assert.match(sw, /weenrahat-static-v3\.1\.3/);
 });
 
 test('animated navigation retains its indicator between page renders', () => {
