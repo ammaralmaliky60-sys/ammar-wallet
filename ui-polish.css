@@ -73,3 +73,14 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 @media (forced-colors:active){
   :where(input,textarea,select){border:1px solid CanvasText}
 }
+
+/* Requested typography: bold text throughout every page, form, dialog, chart and navigation.
+ * Readex Pro is already self-hosted with variable weight support up to 700.
+ * Presentation only: this rule does not touch financial records or calculations.
+ */
+body,
+body *,
+body input::placeholder,
+body textarea::placeholder{
+  font-weight:700!important;
+}
