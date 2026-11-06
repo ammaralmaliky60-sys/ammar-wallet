@@ -1,0 +1,75 @@
+/* وين راحت؟ — UI readability and desktop polish (appearance only).
+ * Keeps existing pages, navigation, calculations, themes and local data untouched.
+ * Loaded after neo-finance.css to avoid rewriting the original design system.
+ */
+body[data-theme="dark"]{
+  --text-muted:#CBD5E1;
+  --border:#425877;
+}
+
+/* Clear affordances and readable helper text in both themes. */
+:where(input,textarea)::placeholder{
+  color:var(--text-muted);
+  opacity:1;
+}
+body[data-theme="dark"] :where(input,textarea)::placeholder{
+  color:#AEBED3;
+}
+:where(.field input,.field select,.search input,dialog input[type="date"],dialog textarea){
+  background:var(--surface-2);
+  color:var(--text);
+  border:1px solid var(--border);
+  min-height:44px;
+}
+body[data-theme="dark"] :where(.field input,.field select,.search input,dialog input[type="date"],dialog textarea){
+  border-color:#425877;
+}
+:where(.btn,.icon-btn,.nav-item,.tab-add,.fchip,.seg button,.field input,.field select,.search input,dialog input[type="date"],dialog textarea):focus-visible{
+  outline:2px solid var(--brand-green);
+  outline-offset:2px;
+}
+:where(.field select,input[type="date"]){
+  direction:rtl;
+  text-align:right;
+}
+input[type="date"]{
+  color-scheme:light;
+  min-width:0;
+}
+body[data-theme="dark"] input[type="date"]{color-scheme:dark}
+input[type="date"]::-webkit-calendar-picker-indicator{
+  opacity:.85;
+  cursor:pointer;
+}
+.sheet-body{
+  min-height:0;
+  scroll-padding-block-end:24px;
+}
+.page-head p,.sheet-head p,.hint{color:var(--text-muted)}
+.page-title{font-size:13px;font-weight:500;color:var(--text-muted)}
+
+/* Keep all navigation labels visible on desktop; compact the existing filters. */
+@media (min-width:900px){
+  .shell{grid-template-columns:17rem minmax(0,1fr)}
+  .sidebar{min-width:17rem}
+  main{padding-bottom:4rem}
+  .filters{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:center;
+    gap:14px;
+  }
+  .filters>.search,.filters>.seg{min-width:0}
+  .filters>.scroll-chips{grid-column:1 / -1;min-width:0}
+}
+@media (min-width:1280px){
+  .filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .filters>.search{grid-column:span 2}
+  .filters>.seg{grid-column:span 1}
+}
+@media (max-width:899px){
+  /* Existing bottom tabs remain fixed and the final card stays reachable. */
+  main{padding-bottom:calc(var(--tabbar-h) + 46px + env(safe-area-inset-bottom))}
+}
+@media (forced-colors:active){
+  :where(input,textarea,select){border:1px solid CanvasText}
+}
