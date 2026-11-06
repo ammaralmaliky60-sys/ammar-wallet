@@ -7,9 +7,9 @@ const read = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
 test('appearance polish loads last, and is available offline', () => {
   const html = read('index.html'), sw = read('sw.js');
-  assert.ok(html.indexOf('neo-finance.css?v=3.0.4') < html.indexOf('ui-polish.css?v=3.1.2'));
-  assert.match(sw, /\.\/ui-polish\.css\?v=3\.1\.2/);
-  assert.match(sw, /weenrahat-static-v3\.1\.2/);
+  assert.ok(html.indexOf('neo-finance.css?v=3.0.4') < html.indexOf('ui-polish.css?v=3.1.3'));
+  assert.match(sw, /\.\/ui-polish\.css\?v=3\.1\.3/);
+  assert.match(sw, /weenrahat-static-v3\.1\.3/);
 });
 
 test('desktop filters and sidebar are responsive while mobile tabs remain untouched', () => {
@@ -38,9 +38,7 @@ test('page context is a breadcrumb, but page heading remains the only H1', () =>
   assert.match(html, /<span id="pageTitle" class="page-title"><\/span>/);
 });
 
-test('Readex Pro displays all website text in bold, including forms and placeholders', () => {
-  const css = read('ui-polish.css');
-  const fonts = read('fonts.css');
-  assert.match(css, /body,\s*body \*,\s*body input::placeholder,\s*body textarea::placeholder\s*\{\s*font-weight:700!important;/);
-  assert.match(fonts, /font-weight:400 700/);
+test('site-wide forced bold styling has been reverted', () => {
+ const css = read('ui-polish.css');
+ assert.doesNotMatch(css, /body,\s*body \*,\s*body input::placeholder/);
 });
