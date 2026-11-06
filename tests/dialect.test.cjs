@@ -30,5 +30,5 @@ test('budget-limit language stays distinct from income overrun', () => {
 
 test('no storage or calculation code is altered in this wording change', () => {
   assert.match(read('src/app/store.js'), /const KEY = 'weenrahat-v3'/);
-  assert.match(read('sw.js'), /weenrahat-static-v3\.1\.2/);
+  assert.match(read('sw.js'), /weenrahat-static-v3\.1\.3/);
 });
