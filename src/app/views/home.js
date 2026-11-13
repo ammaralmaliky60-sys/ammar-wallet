@@ -65,6 +65,7 @@
         <button type="button" class="btn small ghost" data-action="receive" data-id="${WR.safe(x.source.id)}">${WR.icon('check')}استلمت</button></div>`).join('')}
     </section>` : '';
 
+    const bySrc = {}; L.transactionsIn(s, key).filter(t => t.type === 'income').forEach(t => { const n = WR.source(t.sourceId)?.name || 'دخل آخر'; bySrc[n] = (bySrc[n] || 0) + t.amount; }); const srcRows = Object.entries(bySrc).sort((a, c) => c[1] - a[1]); const incomeBySource = srcRows.length ? `<section class="card"><header class="card-head"><h2>دخلك حسب المصدر</h2><span class="muted">${WR.money(m.income)}</span></header><div class="tx-list">${srcRows.map(([n, v]) => `<div class="income-row"><span class="tx-ic" style="--c:var(--brand-gold)">${WR.icon('income')}</span><span class="tx-text"><b>${WR.safe(n)}</b><small>${m.income ? Math.round(v / m.income * 100) : 0}% من دخل الشهر</small></span><b class="tx-amount" style="color:var(--green-text)">+${WR.money(v)}</b></div>`).join('')}</div></section>` : '';
     const accounts = `<section class="card">
       <header class="card-head"><h2>أرصدتك الآن</h2><a href="#settings" class="link">الحسابات</a></header>
       <div class="balances">${s.accounts.filter(a => !a.archived).map(a => `<div class="balance ${b.accounts[a.id] < 0 ? 'neg' : ''}">
@@ -85,7 +86,7 @@
 
     return WR.pageHead(greeting(s.settings.name), WR.safe(F.dateLabel(today, { long: true, digits: s.settings.digits })),
       '<button type="button" class="btn spend desktop-only" data-action="add">' + WR.icon('plus') + 'سجّل مصروف</button>') +
-      WR.monthBar() + `<div class="home-grid"><div class="col">${hero}${incomeCard}${where}</div><div class="col">${accounts}${latest}</div></div>`;
+      WR.monthBar() + `<div class="home-grid"><div class="col">${hero}${incomeBySource}${incomeCard}${where}</div><div class="col">${accounts}${latest}</div></div>`;
   }
 
   WR.views = WR.views || {};
