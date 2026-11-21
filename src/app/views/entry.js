@@ -8,24 +8,35 @@
   /** The account used most recently for this type (a sensible default). */
   function lastAccount(state, type) {
     const t = L.sortNewest(state.transactions).find(x => x.type === type);
-    const active = state.accounts.filter(a => !a.archived);
+    const active = state.accounts.filter(a => !a.archived && a.reserveTarget === undefined);
     return active.some(a => a.id === t?.accountId) ? t.accountId : active[0].id;
   }
 
-  function open({ type = 'expense', tx = null, preset = {} } = {}) {
+  function open({ type = 'expense', tx = null, preset = {}, title, fixedAccounts } = {}) {
     const app = WR.app, s = app.state, today = app.today();
     const v = tx ? { ...tx } : { type, date: today, accountId: lastAccount(s, type), ...preset };
     if (!v.type) v.type = type;
     const accounts = s.accounts.filter(a => !a.archived || a.id === v.accountId || a.id === v.toAccountId);
-    const accountChips = (name, value, label) => WR.chips({ name, value, label, cls: 'chips-row',
-      options: accounts.map(a => ({ value: a.id, label: a.name, icon: a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet' })) });
+    function accountChips(name, value, label) {
+      const fixed = fixedAccounts?.[name];
+      const other = name === 'fromAccountId' ? fixedAccounts?.toAccountId :
+        name === 'toAccountId' ? fixedAccounts?.fromAccountId : null;
+      const choices = accounts.filter(a => {
+        if (fixed) return a.id === fixed;
+        if (name === 'accountId') return a.reserveTarget === undefined || a.id === value;
+        return a.id !== other;
+      });
+      return WR.chips({ name, value: fixed || value, label, cls: 'chips-row',
+        options: choices.map(a => ({ value: a.id, label: a.name, icon: a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet' })) });
+    }
     const categories = s.categories.filter(c => !c.archived || c.id === v.categoryId);
     const sources = s.incomeSources.filter(x => !x.archived || x.id === v.sourceId);
     const dateChoice = v.date === today ? 'today' : v.date === F.addDays(today, -1) ? 'yesterday' : 'other';
 
     const body = `<div class="entry" data-type="${v.type}">
-      <fieldset class="seg" role="radiogroup"><legend class="sr-only">نوع الحركة</legend>${TYPES.map(([id, label, icon]) =>
-        `<label><input type="radio" name="type" value="${id}" ${v.type === id ? 'checked' : ''}><span>${WR.icon(icon)}${label}</span></label>`).join('')}</fieldset>
+      ${fixedAccounts ? `<input type="hidden" name="type" value="${v.type}">` :
+      `<fieldset class="seg" role="radiogroup"><legend class="sr-only">نوع الحركة</legend>${TYPES.map(([id, label, icon]) =>
+        `<label><input type="radio" name="type" value="${id}" ${v.type === id ? 'checked' : ''}><span>${WR.icon(icon)}${label}</span></label>`).join('')}</fieldset>`}
       ${WR.amountField({ big: true, value: v.amount ? F.amountInputValue(v.amount, WR.cur().dec) : '', attrs: 'required autofocus' })}
       <div class="quick-amounts" aria-label="إضافة مبلغ سريع">${quickSteps().map(n => `<button type="button" data-quick="${n}">+${WR.fmt(n * 10 ** WR.cur().dec)}</button>`).join('')}</div>
       <div class="when-expense">${WR.chips({ name: 'categoryId', value: v.categoryId, label: 'الفئة', cls: 'chips-grid',
@@ -45,7 +56,7 @@
     </div>`;
 
     WR.sheet({
-      title: tx ? 'تعديل الحركة' : 'سجّل حركة', body, submitLabel: tx ? 'حفظ التعديل' : 'حفظ',
+      title: title || (tx ? 'تعديل الحركة' : 'سجّل حركة'), body, submitLabel: tx ? 'حفظ التعديل' : 'حفظ',
       secondary: tx ? { label: 'حذف', danger: true, run: () => remove(tx) } : null,
       onOpen: form => {
         const root = form.querySelector('.entry'), date = form.querySelector('input[name=date]');
@@ -62,20 +73,26 @@
         });
       },
       onSubmit: (data, form, close) => {
-        const t = data.type, amount = WR.parseAmount(data.amount || '');
+        const t = fixedAccounts ? type : data.type, amount = WR.parseAmount(data.amount || '');
         const date = data.when === 'today' ? today : data.when === 'yesterday' ? F.addDays(today, -1) : data.date;
         if (!F.isDate(date)) throw new Error('اختر تاريخاً صحيحاً.');
         const entry = { type: t, amount, date, note: data.note || '' };
-        if (t === 'expense') { if (!data.categoryId) throw new Error('اختر فئة المصروف.'); Object.assign(entry, { categoryId: data.categoryId, accountId: data.accountId }); }
+        if (t === 'expense') { if (!data.categoryId) throw new Error('اختر فئة المصروف.'); Object.assign(entry, { categoryId: data.categoryId, accountId: fixedAccounts?.accountId || data.accountId }); }
         if (t === 'income') Object.assign(entry, { sourceId: data.sourceId || null, accountId: data.accountId });
         if (t === 'transfer') {
-          if (data.fromAccountId === data.toAccountId) throw new Error('اختر حسابين مختلفين للتحويل.');
-          Object.assign(entry, { accountId: data.fromAccountId, toAccountId: data.toAccountId });
+          const from = fixedAccounts?.fromAccountId || data.fromAccountId;
+          const to = fixedAccounts?.toAccountId || data.toAccountId;
+          if (!from || !to || from === to) throw new Error('اختر حسابين مختلفين للتحويل.');
+          Object.assign(entry, { accountId: from, toAccountId: to });
         }
         if (!entry.accountId) throw new Error('اختر الحساب.');
-        const next = tx ? L.updateTransaction(s, tx.id, entry, { today }) : L.addTransaction(s, entry, { today }).state;
-        close();
+        const current = app.state;
+        if (fixedAccounts && Object.values(fixedAccounts).some(id => !current.accounts.some(a => a.id === id && !a.archived))) {
+          throw new Error('هذا المبلغ المعزول غير متاح.');
+        }
+        const next = tx ? L.updateTransaction(current, tx.id, entry, { today }) : L.addTransaction(current, entry, { today }).state;
         app.commit(next, message(entry, !!tx, next), { tone: warning(next, entry) ? 'warn' : 'ok' });
+        close();
       }
     });
   }
@@ -92,9 +109,11 @@
     return `${verb} ${what}` + (negative ? ` · تنبيه: رصيد «${WR.account(negative).name}» صار سالباً، راجع رصيد البداية من الإعدادات.` : '');
   }
 
-  function remove(tx) {
-    WR.confirm({ title: 'حذف الحركة؟', text: `ستُحذف الحركة (${WR.moneyText(tx.amount)}) ويُعاد حساب الأرصدة.`, confirmLabel: 'حذف', danger: true })
-      .then(ok => { if (ok) WR.app.commit(L.removeTransaction(WR.app.state, tx.id), 'تم حذف الحركة'); });
+  async function remove(tx) {
+    const ok = await WR.confirm({ title: 'حذف الحركة؟', text: `ستُحذف الحركة (${WR.moneyText(tx.amount)}) ويُعاد حساب الأرصدة.`, confirmLabel: 'حذف', danger: true });
+    if (!ok) return;
+    try { WR.app.commit(L.removeTransaction(WR.app.state, tx.id), 'تم حذف الحركة'); }
+    catch (error) { WR.toast(error.message, { tone: 'error' }); }
   }
 
   WR.entry = { open };

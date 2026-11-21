@@ -75,5 +75,5 @@
   const theme = () => { const v = read(THEME_KEY); return v === 'classic' || v === 'night' ? v : null; };
   function setTheme(value) { try { value ? localStorage.setItem(THEME_KEY, value) : localStorage.removeItem(THEME_KEY); } catch { /* ignore */ } }
 
-  WR.store = { KEY, load, save, snapshot, clear, backupText, parseBackup, legacyKey, legacyRaw, theme, setTheme };
+  WR.store = { KEY, THEME_KEY, load, save, snapshot, clear, backupText, parseBackup, legacyKey, legacyRaw, theme, setTheme };
 })(window.WR = window.WR || {});

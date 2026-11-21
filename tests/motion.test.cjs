@@ -13,12 +13,14 @@ const main = read('src/app/main.js');
 const home = read('src/app/views/home.js');
 
 test('motion script loads after effects and before start, and is cached offline', () => {
-  const effects = html.indexOf('src/app/effects.js?v=3.0.2');
-  const animations = html.indexOf('src/app/motion.js?v=3.0.3');
-  const start = html.indexOf('src/app/start.js?v=3.0.0');
+  const effects = html.indexOf('src/app/effects.js?');
+  const animations = html.indexOf('src/app/motion.js?');
+  const start = html.indexOf('src/app/start.js?');
   assert.ok(effects >= 0 && effects < animations && animations < start);
-  assert.match(sw, /'\.\/src\/app\/motion\.js\?v=3\.0\.3'/);
-  assert.match(sw, /weenrahat-static-v3\.1\.3/);
+  for (const file of ['effects', 'motion', 'start']) {
+    const asset = html.match(new RegExp('src="(\\./src/app/' + file + '\\.js[^"]*)"'));
+    assert.ok(asset && sw.includes("'" + asset[1] + "'"));
+  }
 });
 
 test('animated navigation retains its indicator between page renders', () => {

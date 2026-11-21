@@ -65,8 +65,12 @@
       return ids;
     };
     const accounts = unique(state.accounts, 'الحساب'), categories = unique(state.categories, 'الفئة'), sources = unique(state.incomeSources, 'مصدر الدخل');
-    if (!state.accounts.some(a => !a.archived)) fail('يجب أن يبقى حساب واحد على الأقل.');
-    for (const a of state.accounts) if (!name(a.name) || !money(a.opening, { negative: true }) || typeof a.archived !== 'boolean') fail('بيانات حساب غير صالحة.');
+    const reserves = state.accounts.filter(a => a.reserveTarget !== undefined);
+    if (!state.accounts.some(a => !a.archived && a.reserveTarget === undefined)) fail('يجب أن يبقى حساب عادي واحد على الأقل.');
+    for (const a of state.accounts) {
+      if (!name(a.name) || !money(a.opening, { negative: true }) || typeof a.archived !== 'boolean') fail('بيانات حساب غير صالحة.');
+      if (a.reserveTarget !== undefined && !money(a.reserveTarget)) fail('المبلغ المطلوب للعزل يجب أن يكون أكبر من صفر.');
+    }
     for (const c of state.categories) {
       if (!name(c.name) || !ICONS.includes(c.icon) || !/^#[0-9A-Fa-f]{6}$/.test(c.color) || !money(c.budget, { zero: true }) || typeof c.archived !== 'boolean') fail(`بيانات الفئة «${c.name || c.id}» غير صالحة.`);
     }
@@ -82,6 +86,13 @@
       if (t.type === 'expense' && !categories.has(t.categoryId)) fail('فئة المصروف غير موجودة.');
       if (t.type === 'income' && t.sourceId != null && !sources.has(t.sourceId)) fail('مصدر الدخل غير موجود.');
       if (t.type === 'transfer' && (!accounts.has(t.toAccountId) || t.toAccountId === t.accountId)) fail('التحويل يحتاج حسابين مختلفين.');
+    }
+    if (reserves.length) {
+      const held = balances(state).accounts;
+      for (const reserve of reserves) {
+        if (held[reserve.id] < 0) fail(`المبلغ أكبر من الرصيد المعزول في «${reserve.name}».`);
+        if (reserve.archived && held[reserve.id]) fail(`رجّع أو سدّد الرصيد المعزول في «${reserve.name}» قبل الأرشفة.`);
+      }
     }
     return true;
   }
@@ -136,6 +147,10 @@
     return withChange(state, s => { s.incomeSources = s.incomeSources.filter(x => x.id !== id); });
   }
   function removeAccount(state, id) {
+    const account = state.accounts.find(a => a.id === id);
+    if (account?.reserveTarget !== undefined && balances(state).accounts[id]) {
+      fail(`رجّع أو سدّد الرصيد المعزول في «${account.name}» قبل الأرشفة.`);
+    }
     const used = state.transactions.some(t => t.accountId === id || t.toAccountId === id) || state.incomeSources.some(x => x.accountId === id && !x.archived);
     if (used) return withChange(state, s => { s.accounts.find(a => a.id === id).archived = true; });
     return withChange(state, s => { s.accounts = s.accounts.filter(a => a.id !== id); });
@@ -163,6 +178,19 @@
   function transactionsIn(state, key) {
     const p = F.periodByKey(key, startDay(state));
     return state.transactions.filter(t => inPeriod(t, p));
+  }
+  function reserves(state, key) {
+    const active = state.accounts.filter(a => !a.archived && a.reserveTarget !== undefined);
+    if (!active.length) return [];
+    const held = balances(state).accounts;
+    const paid = new Map();
+    for (const t of transactionsIn(state, key)) {
+      if (t.type === 'expense') paid.set(t.accountId, (paid.get(t.accountId) || 0) + t.amount);
+    }
+    return active.map(account => {
+      const balance = held[account.id], paidThisMonth = paid.get(account.id) || 0;
+      return { account, balance, paidThisMonth, needed: Math.max(0, account.reserveTarget - paidThisMonth - balance) };
+    });
   }
   function budgetLevel(spent, budget) {
     if (!budget) return spent ? 'unplanned' : 'empty';
@@ -239,5 +267,5 @@
   return { VERSION, TYPES, COLORS, ICONS, DEFAULT_CATEGORIES, DEFAULT_ACCOUNTS, uid, clone, createState, validate,
     addTransaction, updateTransaction, removeTransaction, saveCategory, saveAccount, saveIncomeSource,
     removeCategory, removeIncomeSource, removeAccount, updateSettings,
-    balances, currentKey, transactionsIn, sortNewest, monthSummary, incomeStatus, trend, dailyExpense, compare, budgetLevel };
+    balances, currentKey, transactionsIn, reserves, sortNewest, monthSummary, incomeStatus, trend, dailyExpense, compare, budgetLevel };
 });

@@ -8,10 +8,10 @@ const walk=dir=>fs.readdirSync(path.join(root,dir),{withFileTypes:true}).flatMap
 const shipped=['index.html','manifest.webmanifest','report-pdf.js','sw.js','styles.css','fonts.css',...walk('src')];
 
 // ---- helpers -------------------------------------------------------------
-const block=selector=>{
- const at=css.indexOf(selector+'{');
+const block=(selector, source = css)=>{
+ const at=source.indexOf(selector+'{');
  assert.ok(at>=0,`styles.css block not found: ${selector}`);
- const body=css.slice(at+selector.length+1,css.indexOf('}',at));
+ const body=source.slice(at+selector.length+1,source.indexOf('}',at));
  return Object.fromEntries([...body.matchAll(/--([a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(m=>[m[1],m[2].toUpperCase()]));
 };
 const light=block(':root,\nbody[data-theme="light"]');
@@ -58,8 +58,10 @@ test('dark tokens are exactly the specified palette, also when the device prefer
 });
 
 test('theme-color follows light and dark',()=>{
- assert.match(html,/<meta name="theme-color" content="#F4F8FF" media="\(prefers-color-scheme: light\)">/);
- assert.match(html,/<meta name="theme-color" content="#080F20" media="\(prefers-color-scheme: dark\)">/);
+ assert.equal((html.match(/<meta name="theme-color"/g) || []).length, 1);
+ assert.match(html, /<meta name="theme-color" content="#F4F8FF">/);
+ assert.ok(html.indexOf('document.documentElement.dataset.theme') < html.indexOf('rel="stylesheet"'));
+ assert.match(html, /dark \? '#080F20' : '#F4F8FF'/);
  assert.match(read('src/app/main.js'),/dark \? '#080F20' : '#F4F8FF'/);
 });
 
@@ -83,6 +85,26 @@ for(const [mode,t] of [['light',light],['dark',dark]]){
    }
  });
 }
+
+test('the applied appearance palette meets text contrast in both modes', () => {
+ const theme = read('neo-finance.css');
+ const day = block(':root,\nbody[data-theme="light"] ', theme);
+ const night = { ...day, ...block(':root[data-theme="dark"],\nbody[data-theme="dark"] ', theme) };
+ for (const [mode, tokens] of [['light', day], ['dark', night]]) {
+   for (const [fg, bg] of [
+     ['text', 'bg'], ['text', 'surface'], ['text-muted', 'bg'],
+     ['text-muted', 'surface'], ['text-muted', 'surface-2'],
+     ['green-text', 'surface'], ['green-text', 'selected'],
+     ['coral-text', 'surface'], ['gold-text', 'surface'],
+     ['hero-text', 'hero-1'], ['hero-text', 'hero-2'], ['hero-muted', 'hero-2'],
+     ['on-green', 'brand-green'], ['on-coral', 'brand-coral']
+   ]) {
+     assert.ok(tokens[fg] && tokens[bg], mode + ': missing ' + fg + ' or ' + bg);
+     const contrast = ratio(rgb(tokens[fg]), rgb(tokens[bg]));
+     assert.ok(contrast >= 4.5, mode + ': ' + fg + ' on ' + bg + ' is ' + contrast.toFixed(2) + ':1');
+   }
+ }
+});
 
 test('white text never sits on coral: the spend buttons use dark text',()=>{
  assert.ok(ratio(rgb('#FFFFFF'),rgb(light['brand-coral']))<4.5,'sanity: white on coral fails');

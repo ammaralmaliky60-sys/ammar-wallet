@@ -1,65 +1,73 @@
-/* WEEN RAHAT — Neo Finance A. Appearance only; no page structure or ledger logic. */
-:root{--neo-blue:#3B82F6;--neo-success:#16B88A;--neo-expense:#F16B78;--neo-warning:#F4B544}
+/* وين راحت؟ — theme tokens shared by every screen and the installed app. */
 :root,
-body[data-theme="light"]{
-  --brand-green:#35E3D0;--brand-coral:#F16B78;--brand-gold:#F4B544;
-  --bg:#F4F8FF;--surface:#FFFFFF;--surface-2:#EAF2FC;
-  --text:#12243B;--text-muted:#52647E;--border:#CBD7E7;
-  --green-text:#09665B;--coral-text:#9D273F;--gold-text:#80530F;
-  --on-green:#052D32;--on-coral:#112136;--mark-coin:#10263B;
-  --hero-1:#102F53;--hero-2:#0C1D37;--hero-text:#F2F8FF;
-  --shadow:0 8px 28px #243F5A14;
-  --ring:0 0 0 3px #35E3D078;
-  color-scheme:light;
+body[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F4F8FF;
+  --surface: #FFFFFF;
+  --surface-2: #EEF4F7;
+  --text: #132435;
+  --text-muted: #526477;
+  --border: #DCE6ED;
+  --input-border: #B4C5D0;
+  --brand-green: #08745C;
+  --brand-coral: #E87383;
+  --brand-gold: #EFB853;
+  --green-text: #08634F;
+  --coral-text: #9A324A;
+  --gold-text: #774A0C;
+  --on-green: #FFFFFF;
+  --on-coral: #2D1019;
+  --mark-coin: #104337;
+  --hero-1: #102B30;
+  --hero-2: #146451;
+  --hero-text: #FFFFFF;
+  --hero-muted: #D4E9E5;
+  --selected: #E2F4ED;
+  --focus: #08745C;
+  --shadow: 0 2px 5px #13243508, 0 12px 32px #193B4F08;
+  --nav-shadow: 0 12px 36px #17344726;
+  --hero-shadow: 0 14px 34px #0B53462B;
 }
-@media (prefers-color-scheme:dark){
-  :root{
-    --brand-green:#35E3D0;--brand-coral:#F16B78;--brand-gold:#F4B544;
-    --bg:#080F20;--surface:#121F35;--surface-2:#1A2D47;
-    --text:#F2F8FF;--text-muted:#B1C1D6;--border:#2A415C;
-    --green-text:#8FF5E9;--coral-text:#FF9EA9;--gold-text:#FFDA8B;
-    --on-green:#052D32;--on-coral:#112136;--mark-coin:#F2F8FF;
-    --hero-1:#153557;--hero-2:#0C1C34;--hero-text:#F2F8FF;
-    --shadow:0 8px 28px #00000035;
-    --ring:0 0 0 3px #35E3D078;
-    color-scheme:dark;
-  }
+
+:root[data-theme="dark"],
+body[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #080F20;
+  --surface: #121F35;
+  --surface-2: #1A2940;
+  --text: #F1F7FB;
+  --text-muted: #B3C2D2;
+  --border: #2B3C53;
+  --input-border: #496078;
+  --brand-green: #64E5BD;
+  --brand-coral: #F38D9B;
+  --brand-gold: #F2C16D;
+  --green-text: #83ECCD;
+  --coral-text: #FFA5B3;
+  --gold-text: #FFD58F;
+  --on-green: #082B22;
+  --on-coral: #2D1019;
+  --mark-coin: #ECF9F6;
+  --hero-1: #112A37;
+  --hero-2: #155A4D;
+  --hero-muted: #C2E6DF;
+  --selected: #1B3D3D;
+  --focus: #83ECCD;
+  --shadow: 0 3px 10px #0000002B, 0 12px 30px #0000001C;
+  --nav-shadow: 0 12px 36px #00000065;
+  --hero-shadow: 0 14px 36px #00000040;
 }
-body[data-theme="dark"]{
-  --brand-green:#35E3D0;--brand-coral:#F16B78;--brand-gold:#F4B544;
-  --bg:#080F20;--surface:#121F35;--surface-2:#1A2D47;
-  --text:#F2F8FF;--text-muted:#B1C1D6;--border:#2A415C;
-  --green-text:#8FF5E9;--coral-text:#FF9EA9;--gold-text:#FFDA8B;
-  --on-green:#052D32;--on-coral:#112136;--mark-coin:#F2F8FF;
-  --hero-1:#153557;--hero-2:#0C1C34;--hero-text:#F2F8FF;
-  --shadow:0 8px 28px #00000035;
-  --ring:0 0 0 3px #35E3D078;
-  color-scheme:dark;
+
+:root {
+  --r-card: 22px;
+  --r-btn: 13px;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--focus) 38%, transparent);
 }
-:root{--r-card:20px;--r-btn:14px;--ease:cubic-bezier(.22,1,.36,1)}
-html:has(>body[data-theme="dark"]){background:#080F20}
-html:has(>body[data-theme="light"]){background:#F4F8FF}
-.brand-mark{color:var(--mark-coin)}
-.brand-q{color:var(--green-text)}
-.sidebar{background:var(--surface);border-color:var(--border)}
-.topbar{background:color-mix(in srgb,var(--surface) 84%,transparent);border-color:var(--border)}
-.card,.monthbar{border-color:var(--border)}
-.card{box-shadow:var(--shadow)}
-.hero{background:linear-gradient(133deg,var(--hero-1),var(--hero-2));box-shadow:0 12px 34px #00000016}
-.hero-amount{letter-spacing:-.025em}
-.btn.primary,.btn.spend,.btn.ghost,.icon-btn,.tab-add,.nav-item,.chip>span,.fchip{
-  transition:transform .22s var(--ease),background-color .22s var(--ease),border-color .22s var(--ease),color .22s var(--ease),box-shadow .22s var(--ease)
-}
-.btn.primary{background:var(--brand-green);color:var(--on-green);box-shadow:0 5px 18px #35E3D025}
-.btn.spend,.tab-add{background:var(--brand-coral);color:var(--on-coral)}
-.btn.ghost,.icon-btn{background:var(--surface);color:var(--text);border-color:var(--border)}
-.nav-item.active{background:color-mix(in srgb,var(--brand-green) 13%,var(--surface));color:var(--green-text)}
-.tabbar .nav-item.active{background:color-mix(in srgb,var(--brand-green) 13%,var(--surface));color:var(--green-text)}
-.tx-amount.neg,.balance.neg b{color:var(--coral-text)}
-:focus-visible{box-shadow:var(--ring)}
-@media (max-width:899px){
- .tabbar{background:color-mix(in srgb,var(--surface) 94%,transparent);border-top-color:var(--border);box-shadow:0 -5px 24px #00000012;border-radius:18px 18px 0 0}
-}
-@media (prefers-reduced-motion:reduce){
- .btn,.icon-btn,.tab-add,.nav-item,.chip>span,.fchip{transition:none!important}
+
+html[data-theme] { background-color: var(--bg); }
+body[data-theme] {
+  background: var(--bg);
+  --glass: color-mix(in srgb, var(--surface) 94%, transparent);
+  --glass-line: var(--border);
+  --glass-shadow: var(--shadow);
 }

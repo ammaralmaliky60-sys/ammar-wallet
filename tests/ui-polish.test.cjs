@@ -7,27 +7,28 @@ const read = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
 test('appearance polish loads last, and is available offline', () => {
   const html = read('index.html'), sw = read('sw.js');
-  assert.ok(html.indexOf('neo-finance.css?v=3.0.4') < html.indexOf('ui-polish.css?v=3.1.3'));
-  assert.match(sw, /\.\/ui-polish\.css\?v=3\.1\.3/);
-  assert.match(sw, /weenrahat-static-v3\.1\.3/);
+  const asset = html.match(/href="(\.\/ui-polish\.css[^"]*)"/);
+  assert.ok(asset && html.indexOf('./neo-finance.css?') < asset.index);
+  assert.ok(sw.includes("'" + asset[1] + "'"));
 });
 
-test('desktop filters and sidebar are responsive while mobile tabs remain untouched', () => {
+test('desktop has a sidebar and mobile has floating tabs with a safe-area inset', () => {
   const css = read('ui-polish.css');
-  assert.match(css, /@media \(min-width:900px\)/);
-  assert.match(css, /grid-template-columns:17rem minmax\(0,1fr\)/);
-  assert.match(css, /\.filters>\.scroll-chips\{grid-column:1 \/ -1/);
-  assert.match(css, /@media \(min-width:1280px\)/);
-  assert.doesNotMatch(css, /\.tabbar\s*\{\s*display:none/);
+  assert.match(css, /@media \(min-width: 900px\)/);
+  assert.match(css, /\.shell \{ grid-template-columns: 232px minmax\(0, 1fr\)/);
+  assert.match(css, /\.filters > \.scroll-chips \{ grid-column: 1 \/ -1/);
+  assert.match(css, /@media \(max-width: 899px\)/);
+  assert.match(css, /env\(safe-area-inset-bottom\)/);
+  assert.match(css, /\.tabbar > \.liquid-indicator/);
 });
 
-test('improved dark contrast, dates, placeholders and keyboard focus', () => {
+test('dates, placeholders, focus and selected controls use theme tokens', () => {
   const css = read('ui-polish.css');
-  assert.match(css, /--text-muted:#CBD5E1/);
-  assert.match(css, /--border:#425877/);
-  assert.match(css, /::placeholder/);
+  assert.match(css, /::placeholder \{ color: var\(--text-muted\)/);
   assert.match(css, /input\[type="date"\]/);
   assert.match(css, /focus-visible/);
+  assert.match(css, /background: var\(--selected\)/);
+  assert.match(css, /prefers-reduced-motion: no-preference/);
   assert.doesNotMatch(css, /localStorage|indexedDB|WRLedger|transactionsIn/);
 });
 

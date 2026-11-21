@@ -3,6 +3,8 @@
   'use strict';
   const L = window.WRLedger, F = window.WRFormat;
   const $ = sel => document.querySelector(sel);
+  const systemAppearance = matchMedia('(prefers-color-scheme: dark)');
+  const settingsLink = $('#mobileSettings');
 
   const NAV = [['home', 'home', 'الرئيسية'], ['transactions', 'list', 'الحركات'], ['budget', 'pie', 'الميزانية'], ['reports', 'chart', 'التقارير']];
   const PAGES = ['home', 'transactions', 'budget', 'reports', 'settings'];
@@ -27,7 +29,7 @@
     const s = app.state.settings, key = app.monthKey, current = app.currentKey();
     return `<div class="monthbar" role="group" aria-label="الشهر">
       <button type="button" class="icon-btn" data-action="month" data-step="-1" aria-label="الشهر السابق">${WR.icon('prev')}</button>
-      <div class="monthbar-label"><b>${WR.safe(F.periodTitle(key, s.monthStartDay, s.digits))}</b>${s.monthStartDay !== 1 ? `<small>${WR.safe(F.periodLabel(key, s.monthStartDay, s.digits))}</small>` : ''}</div>
+      <div class="monthbar-label">${WR.icon('calendar')}<span><b>${WR.safe(F.periodTitle(key, s.monthStartDay, s.digits))}</b>${s.monthStartDay !== 1 ? `<small>${WR.safe(F.periodLabel(key, s.monthStartDay, s.digits))}</small>` : ''}</span></div>
       <button type="button" class="icon-btn" data-action="month" data-step="1" aria-label="الشهر التالي" ${key >= current ? 'disabled' : ''}>${WR.icon('next')}</button></div>`;
   };
   WR.pageHead = (title, sub = '', actions = '') => `<header class="page-head"><div><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div>${actions ? `<div class="page-actions">${actions}</div>` : ''}</header>`;
@@ -38,16 +40,23 @@
 
   // ---- rendering ----
   function renderNav() {
-    const link = ([page, icon, label]) => `<a href="#${page}" class="nav-item ${app.page === page ? 'active' : ''}" ${app.page === page ? 'aria-current="page"' : ''}>${WR.icon(icon)}<span>${label}</span></a>`;
-    $('#sideNav').innerHTML = NAV.map(link).join('') + link(['settings', 'settings', 'الإعدادات']);
-    const tab = $('#tabbar');
-    const tabs = NAV.slice(0, 2).map(link).join('') +
-      `<button type="button" class="tab-add" data-action="add" aria-label="سجّل حركة">${WR.icon('plus')}<span>سجّل</span></button>` +
-      NAV.slice(2).map(link).join('');
-    // Preserve the liquid indicator across re-renders so it can slide between tabs.
-    if (!tab.querySelector('.liquid-indicator')) tab.innerHTML = '<span class="liquid-indicator" aria-hidden="true"></span>';
-    else tab.querySelectorAll('.nav-item,.tab-add').forEach(item => item.remove());
-    tab.insertAdjacentHTML('beforeend', tabs);
+    const side = $('#sideNav'), tab = $('#tabbar');
+    if (!tab.querySelector('.liquid-indicator')) {
+      const link = ([page, icon, label]) => `<a href="#${page}" class="nav-item">${WR.icon(icon)}<span>${label}</span></a>`;
+      side.innerHTML = NAV.map(link).join('') + link(['settings', 'settings', 'الإعدادات']);
+      tab.innerHTML = '<span class="liquid-indicator" aria-hidden="true"></span>' +
+        NAV.slice(0, 2).map(link).join('') +
+        `<button type="button" class="tab-add" data-action="add" aria-label="سجّل حركة">${WR.icon('plus')}<span>سجّل</span></button>` +
+        NAV.slice(2).map(link).join('');
+    }
+    document.querySelectorAll('#sideNav .nav-item, #tabbar .nav-item').forEach(link => {
+      const active = link.hash === '#' + app.page;
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    if (app.page === 'settings') settingsLink.setAttribute('aria-current', 'page');
+    else settingsLink.removeAttribute('aria-current');
     WR.motion?.syncTabIndicator();
   }
   function render() {
@@ -59,7 +68,7 @@
     renderNav();
     const view = WR.views[app.page];
     const pageLabel = app.page === 'settings' ? 'الإعدادات' : NAV.find(n => n[0] === app.page)[2];
-    $('#pageTitle').textContent = 'وين راحت؟ / ' + pageLabel;
+    $('#pageTitle').innerHTML = 'وين راحت؟ / <strong>' + pageLabel + '</strong>';
     const main = $('#main');
     main.innerHTML = view.render(app);
     WR.wireAmounts(main);
@@ -69,14 +78,26 @@
 
   // ---- theme: follows the device unless chosen ----
   function applyTheme() {
-    const chosen = WR.store.theme(), dark = chosen ? chosen === 'night' : matchMedia('(prefers-color-scheme: dark)').matches;
-    document.body.dataset.theme = dark ? 'dark' : 'light';
-    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', dark ? '#080F20' : '#F4F8FF'));
+    const chosen = WR.store.theme();
+    const dark = chosen ? chosen === 'night' : systemAppearance.matches;
+    const theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.theme = document.body.dataset.theme = theme;
+    $('meta[name="theme-color"]').content = dark ? '#080F20' : '#F4F8FF';
+
     const btn = $('#themeBtn');
-    if (btn) { btn.innerHTML = WR.icon(dark ? 'sun' : 'moon'); btn.setAttribute('aria-label', dark ? 'المظهر الفاتح' : 'المظهر الداكن'); }
+    if (btn.dataset.theme !== theme) {
+      const label = dark ? 'المظهر الفاتح' : 'المظهر الداكن';
+      btn.dataset.theme = theme;
+      btn.innerHTML = WR.icon(dark ? 'sun' : 'moon') + '<span>' + label + '</span>';
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    }
+    document.querySelectorAll('[data-action="set-theme"]').forEach(option => {
+      option.setAttribute('aria-pressed', String(option.dataset.id === (chosen || 'auto')));
+    });
   }
   WR.applyTheme = applyTheme;
-  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
+  systemAppearance.addEventListener?.('change', applyTheme);
 
   // ---- global actions ----
   WR.actions = Object.assign(WR.actions || {}, {
@@ -99,6 +120,7 @@
   window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); $('#main').focus({ preventScroll: true }); });
   // Another tab saved: pick up its data.
   window.addEventListener('storage', e => {
+    if (e.key === WR.store.THEME_KEY || e.key === null) applyTheme();
     if (e.key !== WR.store.KEY || !e.newValue) return;
     try { const next = JSON.parse(e.newValue); L.validate(next); app.state = next; render(); WR.toast('تم تحديث البيانات من نافذة أخرى'); } catch { /* ignore partial writes */ }
   });
@@ -106,7 +128,6 @@
   // ---- start-up ----
   function start() {
     applyTheme();
-    $('#themeBtn').onclick = () => WR.actions.theme();
     const result = app.boot = WR.store.load();
     if (result.status === 'ok' || result.status === 'migrated') {
       app.state = result.state;

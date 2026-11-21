@@ -22,8 +22,8 @@
 
       <section class="card"><header class="card-head"><h2>الحسابات</h2><button type="button" class="btn small ghost" data-action="edit-account">${WR.icon('plus')}حساب</button></header>
         <p class="muted">أماكن المال: النقد في يدك، البطاقة أو الحساب البنكي، أو أي محفظة إلكترونية.</p>
-        <div class="list">${s.accounts.filter(a => !a.archived).map(a => `<button type="button" class="list-row" data-action="edit-account" data-id="${WR.safe(a.id)}">
-          <span class="tx-ic" style="--c:var(--brand-green)">${WR.icon(acctIcon(a))}</span><span class="tx-text"><b>${WR.safe(a.name)}</b><small>رصيد البداية ${WR.safe(WR.moneyText(a.opening))}</small></span>
+        <div class="list">${s.accounts.filter(a => !a.archived).map(a => `<button type="button" class="list-row" data-action="${a.reserveTarget === undefined ? 'edit-account' : 'edit-reserve'}" data-id="${WR.safe(a.id)}">
+          <span class="tx-ic" style="--c:var(--brand-green)">${WR.icon(acctIcon(a))}</span><span class="tx-text"><b>${WR.safe(a.name)}</b><small>${a.reserveTarget === undefined ? 'رصيد البداية ' + WR.safe(WR.moneyText(a.opening)) : 'مبلغ معزول'}</small></span>
           <span class="tx-amount ${b.accounts[a.id] < 0 ? 'neg' : ''}">${WR.money(b.accounts[a.id])}</span></button>`).join('')}</div></section>
 
       <section class="card"><header class="card-head"><h2>مصادر الدخل</h2><button type="button" class="btn small ghost" data-action="edit-source">${WR.icon('plus')}مصدر</button></header>
@@ -36,8 +36,8 @@
         <p class="muted">${s.categories.filter(c => !c.archived).length} فئة نشطة. أضف فئة أو عدّل اسمها وسقفها من صفحة الميزانية.</p></section>
 
       <section class="card"><header class="card-head"><h2>المظهر</h2></header>
-        <div class="seg" role="group" aria-label="المظهر">${[['auto', 'حسب الجهاز'], ['classic', 'فاتح'], ['night', 'داكن']].map(([v, l]) =>
-          `<button type="button" data-action="set-theme" data-id="${v}" aria-pressed="${theme === v}">${l}</button>`).join('')}</div></section>
+        <div class="seg appearance-options" role="group" aria-label="المظهر">${[['auto', 'phone', 'حسب الجهاز'], ['classic', 'sun', 'فاتح'], ['night', 'moon', 'داكن']].map(([v, icon, label]) =>
+          `<button type="button" data-action="set-theme" data-id="${v}" aria-pressed="${theme === v}">${WR.icon(icon)}${label}</button>`).join('')}</div></section>
 
       <section class="card"><header class="card-head"><h2>بياناتك</h2></header>
         <p class="muted">نزّل نسخة احتياطية كل أسبوع واحفظها خارج الجوال. الاستعادة تستبدل كل البيانات الحالية.</p>
@@ -61,13 +61,14 @@
 
   function editAccount(id) {
     const s = WR.app.state, a = id ? s.accounts.find(x => x.id === id) : { name: '', opening: 0 };
+    if (!a || a.reserveTarget !== undefined) return;
     const used = id && (s.transactions.some(t => t.accountId === id || t.toAccountId === id));
     WR.sheet({
       title: id ? `حساب «${a.name}»` : 'حساب جديد', subtitle: 'رصيد البداية هو المبلغ الموجود فعلاً في هذا الحساب قبل أول حركة سجلتها.',
       body: WR.field({ label: 'اسم الحساب', name: 'name', value: a.name, attrs: 'required maxlength="40" placeholder="مثلاً: زين كاش"' }) +
         WR.amountField({ label: 'رصيد البداية', name: 'opening', value: a.opening > 0 ? F.amountInputValue(a.opening, WR.cur().dec) : '', attrs: '' }),
       secondary: id ? { label: used ? 'أرشفة الحساب' : 'حذف الحساب', danger: true, run: close => {
-        if (s.accounts.filter(x => !x.archived).length <= 1) throw new Error('يجب أن يبقى حساب واحد على الأقل.');
+        if (s.accounts.filter(x => !x.archived && x.reserveTarget === undefined).length <= 1) throw new Error('يجب أن يبقى حساب عادي واحد على الأقل.');
         close(); WR.app.commit(L.removeAccount(s, id), used ? 'أُرشف الحساب وتبقى حركاته في السجل' : 'حُذف الحساب');
       } } : null,
       onSubmit: (d, form, close) => {
@@ -142,7 +143,7 @@
   WR.views.settings = { render, bind, migrationNotice };
   WR.actions = Object.assign(WR.actions || {}, {
     'edit-account': d => editAccount(d.id), 'edit-source': d => editSource(d.id),
-    'set-theme': d => { WR.store.setTheme(d.id === 'auto' ? null : d.id); WR.applyTheme(); WR.render(); },
+    'set-theme': d => { WR.store.setTheme(d.id === 'auto' ? null : d.id); WR.applyTheme(); },
     backup: () => { WR.download(`ween-rahat-backup-${F.today()}.json`, WR.store.backupText(WR.app.state)); WR.toast('تم تنزيل النسخة الاحتياطية. احفظها في مكان آمن.'); },
     restore, wipe,
     'legacy-download': () => { const raw = WR.store.legacyRaw(); if (raw) WR.download(`ween-rahat-previous-version-${F.today()}.json`, raw); }

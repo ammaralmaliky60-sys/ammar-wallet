@@ -7,6 +7,7 @@
   function frame(html) {
     document.body.dataset.page = 'welcome';
     $('#sideNav').innerHTML = ''; $('#tabbar').innerHTML = '';
+    $('#mobileSettings').removeAttribute('aria-current');
     $('#pageTitle').textContent = 'أهلاً بك';
     $('#main').innerHTML = html;
   }

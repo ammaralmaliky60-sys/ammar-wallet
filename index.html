@@ -3,22 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F4F8FF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#080F20" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F8FF">
 <meta name="color-scheme" content="light dark">
+<script>
+  (() => {
+    let saved = null;
+    try { saved = localStorage.getItem('thukhr-appearance-v1'); } catch { /* use device setting */ }
+    const dark = saved === 'night' || (saved !== 'classic' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.querySelector('meta[name="theme-color"]').content = dark ? '#080F20' : '#F4F8FF';
+  })();
+</script>
 <meta name="description" content="وين راحت؟ — اعرف فلوسك وين تروح: سجّل مصروف البيت ودخله، وتابع الميزانية والتقارير. بياناتك تبقى على جهازك.">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="stylesheet" href="./fonts.css?v=3.0.0">
 <link rel="stylesheet" href="./styles.css?v=3.0.3">
-<link rel="stylesheet" href="./neo-finance.css?v=3.0.4">
-<link rel="stylesheet" href="./ui-polish.css?v=3.1.5">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="./neo-finance.css?v=3.2.0">
+<link rel="stylesheet" href="./ui-polish.css?v=3.2.1">
 <title>وين راحت؟ | اعرف فلوسك وين تروح</title>
 </head>
 <body>
-<script>/* Appearance only: apply the saved or device light/dark setting before first paint. */(function(){var t=null;try{t=localStorage.getItem('thukhr-appearance-v1')}catch(e){}var dark=t==='night'||(t!=='classic'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.body.setAttribute('data-theme',dark?'dark':'light')})();</script>
+<script>document.body.dataset.theme = document.documentElement.dataset.theme;</script>
 <a class="skip" href="#main">تخطَّ إلى المحتوى</a>
 <div class="shell">
   <aside class="sidebar" aria-label="التنقل الرئيسي">
@@ -32,8 +39,8 @@
       <a class="mobile-brand" href="#home" aria-label="وين راحت؟"><svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><rect x="18" y="34" width="84" height="60" rx="16" fill="none" stroke="currentColor" stroke-width="8"/><path d="M24 44V29c0-7 5-12 12-12h51" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="67" y="48" width="37" height="29" rx="9" fill="#35E3D0"/><circle cx="78" cy="62" r="4" fill="#080F20"/><path d="M35 79V68m13 11V59m13 20V51" stroke="#35E3D0" stroke-width="6" stroke-linecap="round"/></svg><b class="brand-name">وين راحت<span class="brand-q">؟</span></b></a>
       <span id="pageTitle" class="page-title"></span>
       <div class="top-actions">
-        <button type="button" class="icon-btn" id="themeBtn" aria-label="المظهر"></button>
-        <a class="icon-btn mobile-only" href="#settings" aria-label="الإعدادات"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>
+        <button type="button" class="icon-btn" id="themeBtn" data-action="theme" aria-label="المظهر"></button>
+        <a class="icon-btn mobile-only" id="mobileSettings" href="#settings" aria-label="الإعدادات"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a>
       </div>
     </header>
     <main id="main" tabindex="-1"></main>
@@ -45,22 +52,22 @@
 <input id="restoreFile" type="file" accept=".json,application/json" hidden>
 <!-- Core (pure, also tested in Node) -->
 <script src="./src/core/format.js?v=3.0.0"></script>
-<script src="./src/core/ledger.js?v=3.0.0"></script>
+<script src="./src/core/ledger.js?v=3.2.1"></script>
 <script src="./src/core/migrate.js?v=3.0.0"></script>
 <script src="./report-pdf.js?v=3.1.0"></script>
 <!-- App -->
 <script src="./src/app/icons.js?v=3.0.4"></script>
 <script src="./src/app/ui.js?v=3.0.0"></script>
-<script src="./src/app/store.js?v=3.0.0"></script>
-<script src="./src/app/main.js?v=3.0.5"></script>
-<script src="./src/app/views/entry.js?v=3.0.0"></script>
-<script src="./src/app/views/home.js?v=3.0.5"></script>
+<script src="./src/app/store.js?v=3.2.0"></script>
+<script src="./src/app/main.js?v=3.2.0"></script>
+<script src="./src/app/views/entry.js?v=3.2.1"></script>
+<script src="./src/app/views/home.js?v=3.2.1"></script>
 <script src="./src/app/views/transactions.js?v=3.0.0"></script>
-<script src="./src/app/views/budget.js?v=3.0.4"></script>
+<script src="./src/app/views/budget.js?v=3.2.1"></script>
 <script src="./src/app/views/reports.js?v=3.1.0"></script>
-<script src="./src/app/views/settings.js?v=3.0.0"></script>
-<script src="./src/app/views/onboarding.js?v=3.0.0"></script>
-<script src="./src/app/effects.js?v=3.0.2"></script>
+<script src="./src/app/views/settings.js?v=3.2.1"></script>
+<script src="./src/app/views/onboarding.js?v=3.2.0"></script>
+<script src="./src/app/effects.js?v=3.2.0"></script>
 <script src="./src/app/motion.js?v=3.0.3"></script>
 <script src="./src/app/start.js?v=3.0.0"></script>
 </body>

@@ -28,7 +28,6 @@ test('budget-limit language stays distinct from income overrun', () => {
   assert.doesNotMatch(budget, /صرفك زايد هالشهر!/);
 });
 
-test('no storage or calculation code is altered in this wording change', () => {
+test('the ledger keeps its existing storage key', () => {
   assert.match(read('src/app/store.js'), /const KEY = 'weenrahat-v3'/);
-  assert.match(read('sw.js'), /weenrahat-static-v3\.1\.3/);
 });

@@ -131,3 +131,55 @@ test('settings keep the start day within 1–28',()=>{
  const s=L.updateSettings(L.createState(),{monthStartDay:31,name:'أم علي'});
  assert.equal(s.settings.monthStartDay,28);assert.equal(s.settings.name,'أم علي');
 });
+
+test('setting aside and withdrawing money leaves spending unchanged until the installment is paid', () => {
+ let s = L.saveAccount(L.createState(), { id: 'cash', opening: 300000 });
+ s = L.saveAccount(s, { id: 'advance', name: 'سلفة الدوام', opening: 0, reserveTarget: 500000 });
+ s = L.saveCategory(s, { id: 'advance-payment', name: 'سلفة الدوام', icon: 'wallet', color: L.COLORS[0], budget: 500000 });
+ const add = tx => { s = L.addTransaction(s, { date: today, ...tx }, opts).state; };
+ const reserve = () => {
+   const { balance, needed, paidThisMonth } = L.reserves(s, '2026-11')[0];
+   return [balance, needed, paidThisMonth];
+ };
+
+ add({ type: 'transfer', accountId: 'cash', toAccountId: 'advance', amount: 250000 });
+ assert.deepEqual(reserve(), [250000, 250000, 0]);
+ add({ type: 'transfer', accountId: 'advance', toAccountId: 'cash', amount: 50000 });
+ assert.deepEqual(reserve(), [200000, 300000, 0]);
+ assert.equal(L.balances(s).total, 300000);
+ assert.equal(L.monthSummary(s, '2026-11', opts).expense, 0);
+ add({ type: 'income', accountId: 'card', amount: 300000 });
+ add({ type: 'transfer', accountId: 'card', toAccountId: 'advance', amount: 250000 });
+ assert.deepEqual(reserve(), [450000, 50000, 0]);
+ add({ type: 'transfer', accountId: 'cash', toAccountId: 'advance', amount: 50000 });
+ assert.deepEqual(reserve(), [500000, 0, 0]);
+ add({ type: 'expense', accountId: 'advance', categoryId: 'advance-payment', amount: 500000 });
+ assert.deepEqual(reserve(), [0, 0, 500000]);
+ assert.equal(L.reserves(s, '2026-12')[0].needed, 500000);
+ assert.equal(L.monthSummary(s, '2026-11', opts).expense, 500000);
+ assert.equal(L.balances(s).total, 100000);
+});
+
+test('the reserved balance is protected when withdrawing, editing a transfer, or removing the reserve', () => {
+ const s = L.saveAccount(L.createState(), { id: 'advance', name: 'سلفة الدوام', opening: 0, reserveTarget: 500000 });
+ const funded = L.addTransaction(s, { type: 'transfer', date: today, accountId: 'cash', toAccountId: 'advance', amount: 250000 }, opts);
+ const withdrawal = amount => ({ type: 'transfer', date: today, accountId: 'advance', toAccountId: 'cash', amount });
+ assert.throws(() => L.removeAccount(funded.state, 'advance'), /قبل الأرشفة/);
+ assert.throws(() => L.addTransaction(funded.state, withdrawal(260000), opts), /أكبر من الرصيد المعزول/);
+ const used = L.addTransaction(funded.state, withdrawal(200000), opts).state;
+ assert.throws(() => L.updateTransaction(used, funded.transaction.id, { amount: 190000 }, opts), /أكبر من الرصيد المعزول/);
+ assert.throws(() => L.removeTransaction(used, funded.transaction.id), /أكبر من الرصيد المعزول/);
+ assert.equal(L.balances(used).accounts.advance, 50000);
+});
+
+test('an open category tracks its monthly spending outside the capped totals', () => {
+ let s = L.saveCategory(sample(), { id: 'health', budget: 25000 });
+ s = L.addTransaction(s, { type: 'expense', date: today, accountId: 'cash', categoryId: 'health', amount: 40000 }, opts).state;
+ s = L.saveCategory(s, { id: 'health', budget: 0 });
+ const summary = L.monthSummary(s, '2026-11', opts);
+ const medicine = summary.categories.find(c => c.id === 'health');
+ assert.equal(medicine.spent, 40000);
+ assert.equal(medicine.budget, 0);
+ assert.equal(summary.expense, 220000);
+ assert.equal(summary.budgetedSpent, 180000);
+});

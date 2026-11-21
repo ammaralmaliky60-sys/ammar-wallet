@@ -109,12 +109,12 @@
     if (page === lastPage) return;
     lastPage = page;
     cancelAnimationFrame(pageFrame);
+    clearTimeout(pageTimer);
+    const main = document.querySelector('#main');
+    main.classList.remove('motion-enter');
     if (!enabled()) return;
     pageFrame = requestAnimationFrame(() => {
       if (!enabled()) return;
-      const main = document.querySelector('#main');
-      if (!main) return;
-      clearTimeout(pageTimer);
       main.classList.add('motion-enter');
       pageTimer = setTimeout(() => main.classList.remove('motion-enter'), 650);
       document.querySelectorAll('.nav-item.active').forEach(select);
