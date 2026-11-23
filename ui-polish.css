@@ -307,6 +307,7 @@ main:focus-visible { box-shadow: none; }
 .optional-field summary { padding: 4px 0; cursor: pointer; color: var(--green-text); font-size: 13px; }
 .optional-field > .field { margin-top: 8px; }
 #toast { width: max-content; }
+#toast > span { min-width: 0; overflow-wrap: anywhere; }
 
 :where(input, textarea)::placeholder { color: var(--text-muted); opacity: 1; }
 .field input, .field select, .search input, .date-pick input[type="date"] {
@@ -388,7 +389,15 @@ dialog#sheet::backdrop { background: #080F2082; }
     border-radius: 16px;
   }
   .tab-add .ic { width: 22px; height: 22px; }
-  #toast { bottom: calc(var(--tabbar-h) + 9px + env(safe-area-inset-bottom)); }
+  #toast {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    width: auto;
+    max-width: none;
+    bottom: calc(var(--tabbar-h) + 9px + env(safe-area-inset-bottom));
+    transform: translateY(20px);
+  }
+  #toast.show { transform: translateY(0); }
   .reserve-item .btn-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .reserve-item .btn { gap: 4px; padding-inline: 5px; font-size: 12px; }
   .sheet-head { padding: 23px 16px 13px; }
