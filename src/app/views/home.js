@@ -7,7 +7,8 @@
 
   function greeting(name) {
     const hour = new Date().getHours();
-    return (hour < 12 ? 'صباح الخير' : 'مساء الخير') + (name ? '، ' + WR.safe(name) : '');
+    const isMorning = hour < 12;
+    return `<span class="home-greeting">${WR.icon(isMorning ? 'sun' : 'moon')}<span class="home-greeting-copy"><span>${isMorning ? 'صباح الخير' : 'مساء الخير'}</span>${name ? `<strong>${WR.safe(name)}</strong>` : ''}</span></span>`;
   }
 
   /** A transaction row, reused by the transactions page. */

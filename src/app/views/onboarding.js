@@ -14,9 +14,21 @@
 
   function show() {
     const days = Array.from({ length: 28 }, (_, i) => i + 1);
-    frame(`<section class="welcome card">
-      <div class="welcome-head">${WR.MARK}<div><h1>وين راحت<span class="brand-q">؟</span></h1><p>اعرف فلوسك وين تروح: سجّل مصروفك بثوانٍ، وشوف وين يروح كل دينار، وخطط شهرك.</p></div></div>
-      <form id="welcomeForm" class="form-stack" novalidate>
+    frame(`<section class="welcome card cinematic-welcome">
+      <div class="cinematic-hero">
+        <div class="cinematic-glow" aria-hidden="true"></div>
+        <div class="cinematic-orbit cinematic-orbit-one" aria-hidden="true"></div><div class="cinematic-orbit cinematic-orbit-two" aria-hidden="true"></div>
+        <div class="cinematic-mark" aria-hidden="true">${WR.MARK}</div>
+        <div class="cinematic-preview" aria-hidden="true">
+          <div class="cinematic-screen cinematic-screen-balance"><span class="cinematic-label">ملخص الشهر</span><b>نظرة أوضح</b><div class="cinematic-mini-row"><i></i><i></i><i></i></div><small>مصروفاتك في مكان واحد</small></div>
+          <div class="cinematic-screen cinematic-screen-budget"><span class="cinematic-label">الميزانية</span><b>خطتك تمشي وياك</b><div class="cinematic-progress"><i></i></div><small>تابع تقدمك بسهولة</small></div>
+          <div class="cinematic-screen cinematic-screen-report"><span class="cinematic-label">التقارير</span><b>صورة أوضح لفلوسك</b><div class="cinematic-bars"><i></i><i></i><i></i><i></i><i></i></div><small>حركات • ميزانية • تقارير</small></div>
+        </div>
+        <div class="cinematic-spark cinematic-spark-one" aria-hidden="true"></div><div class="cinematic-spark cinematic-spark-two" aria-hidden="true"></div>
+      </div>
+      <div class="cinematic-welcome-copy"><h1>وين راحت<span class="brand-q">؟</span></h1><p>اعرف فلوسك وين تروح</p></div>
+      <div class="cinematic-actions"><button type="button" id="startWelcome" class="btn primary big">ابدأ الآن</button><button type="button" class="btn ghost" data-action="restore">${WR.icon('upload')}عندي نسخة احتياطية</button></div>
+      <form id="welcomeForm" class="form-stack" hidden novalidate>
         <h2>1. عنك</h2>
         ${WR.field({ label: 'اسمك (اختياري)', name: 'name', attrs: 'maxlength="40" placeholder="مثلاً: عمار"' })}
         <div class="form-row">
@@ -32,10 +44,15 @@
           ${WR.amountField({ label: 'مبلغ الراتب التقريبي', name: 'salary', attrs: '' })}</div>
         <p class="form-error" role="alert" hidden></p>
         <button type="submit" class="btn primary big">ابدأ</button>
-        <button type="button" class="btn ghost" data-action="restore">${WR.icon('upload')}عندي نسخة احتياطية</button>
       </form></section>`);
     WR.applyTheme();
     const form = $('#welcomeForm'), error = form.querySelector('.form-error');
+    $('#startWelcome').onclick = () => {
+      form.hidden = false;
+      $('#startWelcome').closest('.cinematic-actions').hidden = true;
+      form.querySelector('[name="name"]').focus({ preventScroll: true });
+      form.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+    };
     WR.wireAmounts(form);
     form.querySelector('select[name=currency]').onchange = e => {
       // Amount fields show the chosen currency's unit (no state exists yet).
