@@ -4,25 +4,7 @@
   const L = window.WRLedger, F = window.WRFormat;
   const acctIcon = a => a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet';
 
-  const releases = [
-    ['v0.012', '2026-11-23', 'رقم النسخة', 'إظهار رقم النسخة في الواجهة بصيغة v0.012.'],
-    ['3.2.5', '2026-11-23', 'سجل التحديثات', 'عرض عدد التحديثات الأخيرة وتواريخها وتفاصيلها من الرئيسية والإعدادات.'],
-    ['3.2.4', '2026-11-23', 'ربط الدخل القديم والجديد', 'الدخل الإضافي في الرئيسية مع مجموع الشهر وكل الأشهر، وربط الملاحظات الواضحة بالمصدر وإمكانية تعديل مصدر الحركة.'],
-    ['3.2.3', '2026-11-23', 'مساهمة الزوجة وتقرير PDF', 'تسجيل مساهمة الزوجة وجمع مبالغها حسب الشهر، وترتيب تقرير PDF وتقليل الصفحات الفارغة.'],
-    ['3.2.2', '2026-11-23', 'فلوسي وتبسيط المبالغ المعزولة', 'رصيد موحّد مع إجراءات اعزل ورجّع وسدّد، وإمكانية إظهار النقد والبطاقة من الإعدادات.'],
-    ['3.2.0', '2026-11-21', 'تحديث الواجهة والميزانيات', 'تصميم حديث وانتقالات ووضع فاتح وداكن وتلقائي، وميزانيات مفتوحة ومبالغ معزولة قابلة للإضافة والسحب والتسديد.']
-  ];
-  WR.releaseSummary = () => `<section class="card"><header class="card-head"><h2>نسخة التطبيق <b dir="ltr">${releases[0][0]}</b></h2>
-    <button type="button" class="btn small ghost" data-action="release-history" aria-haspopup="dialog">سجل التحديثات</button></header></section>`;
-  function releaseHistory() {
-    WR.sheet({ title: 'سجل التحديثات', subtitle: 'النسخة الحالية ' + releases[0][0],
-      body: releases.map(([version, date, title, description]) => `<section class="note">
-          <h3>${WR.safe(title)}</h3><p><b dir="ltr">${version}</b> · <time datetime="${date}">${WR.safe(F.dateLabel(date, { long: true, digits: WR.app.state.settings.digits }))}</time></p>
-          <p>${WR.safe(description)}</p></section>`).join('') +
-        '<p><a class="link" href="https://github.com/ammaralmaliky60-sys/ammar-wallet/commits/main/" target="_blank" rel="noopener noreferrer">سجل المشروع الكامل على GitHub</a></p>'
-    });
-  }
-  WR.actions = Object.assign(WR.actions || {}, { 'release-history': releaseHistory });
+  WR.releaseSummary = () => '<p class="muted" dir="ltr">v0.045</p>';
 
   function render(app) {
     const s = app.state, set = s.settings, b = L.balances(s), hasTx = s.transactions.length > 0;
