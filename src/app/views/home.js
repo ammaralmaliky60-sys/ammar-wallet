@@ -131,7 +131,7 @@
     return WR.pageHead(greeting(s.settings.name), WR.safe(F.dateLabel(today, { long: true, digits: s.settings.digits })),
       WR.monthBar()) + `<div class="home-grid">
         <div class="col">${hero}${additionalIncome}${latest}</div>
-        <div class="col">${accounts}${where}${incomeCard}</div>
+        <div class="col">${accounts}${where}${incomeCard}${WR.releaseSummary()}</div>
       </div>`;
   }
 

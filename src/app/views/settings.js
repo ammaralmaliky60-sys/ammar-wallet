@@ -4,6 +4,27 @@
   const L = window.WRLedger, F = window.WRFormat;
   const acctIcon = a => a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet';
 
+  const releases = [
+    ['3.2.5', '2026-11-23', 'سجل التحديثات', 'عرض عدد التحديثات الأخيرة وتواريخها وتفاصيلها من الرئيسية والإعدادات.'],
+    ['3.2.4', '2026-11-23', 'ربط الدخل القديم والجديد', 'الدخل الإضافي في الرئيسية مع مجموع الشهر وكل الأشهر، وربط الملاحظات الواضحة بالمصدر وإمكانية تعديل مصدر الحركة.'],
+    ['3.2.3', '2026-11-23', 'مساهمة الزوجة وتقرير PDF', 'تسجيل مساهمة الزوجة وجمع مبالغها حسب الشهر، وترتيب تقرير PDF وتقليل الصفحات الفارغة.'],
+    ['3.2.2', '2026-11-23', 'فلوسي وتبسيط المبالغ المعزولة', 'رصيد موحّد مع إجراءات اعزل ورجّع وسدّد، وإمكانية إظهار النقد والبطاقة من الإعدادات.'],
+    ['3.2.0', '2026-11-21', 'تحديث الواجهة والميزانيات', 'تصميم حديث وانتقالات ووضع فاتح وداكن وتلقائي، وميزانيات مفتوحة ومبالغ معزولة قابلة للإضافة والسحب والتسديد.']
+  ];
+  WR.releaseSummary = () => `<section class="card"><header class="card-head"><h2>تحديثات التطبيق</h2>
+    <button type="button" class="btn small ghost" data-action="release-history" aria-haspopup="dialog">سجل التحديثات</button></header>
+    <p>الإصدار <b dir="ltr">${releases[0][0]}</b> · ${releases.length} تحديثات منذ تطوير الواجهة في 21 تشرين الثاني 2026</p></section>`;
+  function releaseHistory() {
+    WR.sheet({ title: 'سجل التحديثات', subtitle: '5 تحديثات منذ تطوير الواجهة في 21 تشرين الثاني 2026.',
+      body: '<p class="muted">سجل المشروع يحتوي على 264 عملية حفظ للتعديلات حتى هذا الإصدار. التحديث الواحد قد يجمع أكثر من عملية حفظ.</p>' +
+        releases.map(([version, date, title, description]) => `<section class="note">
+          <h3>${WR.safe(title)}</h3><p><b dir="ltr">${version}</b> · <time datetime="${date}">${WR.safe(F.dateLabel(date, { long: true, digits: WR.app.state.settings.digits }))}</time></p>
+          <p>${WR.safe(description)}</p></section>`).join('') +
+        '<p><a class="link" href="https://github.com/ammaralmaliky60-sys/ammar-wallet/commits/main/" target="_blank" rel="noopener noreferrer">سجل المشروع الكامل على GitHub</a></p>'
+    });
+  }
+  WR.actions = Object.assign(WR.actions || {}, { 'release-history': releaseHistory });
+
   function render(app) {
     const s = app.state, set = s.settings, b = L.balances(s), hasTx = s.transactions.length > 0;
     const theme = WR.store.theme() || 'auto', legacy = WR.store.legacyRaw(), unified = L.unifiedWallet(s);
@@ -53,7 +74,7 @@
         ${legacy ? `<div class="note"><b>بيانات الإصدار السابق</b><p>محفوظة كما هي على هذا الجهاز${s.meta.migratedFrom ? '، ونُقلت منها حركاتك' : ''}. يمكنك تنزيلها للاحتفاظ بها.</p>
           <button type="button" class="btn small ghost" data-action="legacy-download">${WR.icon('download')}تنزيل بيانات الإصدار السابق</button></div>` : ''}
         <div class="danger-zone"><button type="button" class="btn danger" data-action="wipe">${WR.icon('trash')}حذف كل البيانات والبدء من جديد</button></div>
-      </section></div>`;
+      </section>${WR.releaseSummary()}</div>`;
   }
 
   function bind(root) {
