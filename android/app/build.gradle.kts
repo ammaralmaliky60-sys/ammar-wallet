@@ -7,6 +7,11 @@ android {
     namespace = "com.ammaralmaliky.wainrahat"
     compileSdk = 35
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
     defaultConfig {
         applicationId = "com.ammaralmaliky.wainrahat"
         minSdk = 23
@@ -16,6 +21,12 @@ android {
     }
 
     sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/webAssets"))
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 dependencies {
