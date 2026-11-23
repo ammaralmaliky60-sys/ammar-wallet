@@ -135,6 +135,11 @@
       app.state = result.state;
       render();
       if (result.status === 'migrated') WR.views.settings.migrationNotice(result.report);
+      else {
+        const hello = new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير';
+        const name = app.state.settings.name?.trim();
+        WR.toast(name ? `${hello}، ${name}` : hello);
+      }
     } else if (result.status === 'new') {
       WR.views.onboarding.show();
     } else {
