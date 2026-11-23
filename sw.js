@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'weenrahat-static-v3.2.5';
+const CACHE = 'weenrahat-static-v3.2.6';
 // Older prefixes stay listed so their caches are removed after the update.
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-'];
 
@@ -50,7 +50,7 @@ const ASSETS = [
   './src/app/views/transactions.js?v=3.2.4',
   './src/app/views/budget.js?v=3.2.2',
   './src/app/views/reports.js?v=3.2.4',
-  './src/app/views/settings.js?v=3.2.5',
+  './src/app/views/settings.js?v=3.2.6',
   './src/app/views/onboarding.js?v=3.2.2',
   './src/app/effects.js?v=3.2.0',
   './src/app/motion.js?v=3.0.3',
