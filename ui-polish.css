@@ -206,6 +206,36 @@ main:focus-visible { box-shadow: none; }
   box-shadow: none;
 }
 .tx[data-type="income"] .tx-amount { color: var(--green-text); }
+.extra-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--selected);
+  border-radius: 12px;
+  color: var(--green-text);
+}
+.extra-total > span { font-size: 13px; }
+.extra-total strong { font-size: 19px; }
+.extra-source + .extra-source { border-top: 1px solid var(--border); }
+.extra-source summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+.extra-source summary::-webkit-details-marker { display: none; }
+.extra-source summary > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.extra-source summary .ic, .extra-source .tx > .ic { width: 15px; height: 15px; flex: none; color: var(--text-muted); }
+.extra-source[open] summary .ic { transform: rotate(-90deg); }
+.extra-source .tx-list { padding-inline-start: 10px; margin-bottom: 6px; border-inline-start: 2px solid var(--border); }
+.extra-source .tx-text small { white-space: normal; overflow-wrap: anywhere; }
 .bar-track, .meter { height: 7px; }
 .bar-track { background: var(--surface-2); }
 .bar-value { display: inline-flex; align-items: baseline; gap: 8px; }

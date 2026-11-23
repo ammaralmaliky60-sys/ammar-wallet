@@ -242,3 +242,29 @@ test('irregular contributions total by source and month without creating a remin
  s = L.removeIncomeSource(s, 'spouse');
  assert.deepEqual(L.incomeBySource(s, '2026-11'), [{ name: 'مساهمة الزوجة', amount: 75000 }]);
 });
+
+test('extra income respects linked sources, whole labels and manual source corrections', () => {
+ let s = L.createState();
+ for (const [id, name] of [['salary', 'دفعة الدائرة'], ['fee', 'أجور تصميم']]) {
+   s = L.saveIncomeSource(s, { id, name, accountId: 'cash', amount: 0, day: 1 });
+ }
+ const add = (id, note, amount, sourceId = null) => {
+   s = L.addTransaction(s, { id, type: 'income', date: today, accountId: 'cash', note, amount, sourceId }, opts).state;
+ };
+ add('pay', 'مساعدة من زوجتي', 1000, 'salary');
+ add('bonus', 'الحَافِز الشهري', 500);
+ add('job', 'أجور تصميم', 100);
+ add('wife', 'فلوس من مرتي', 50);
+ add('unclear', 'هدية بعد استلام الراتب', 10);
+ add('linked', 'مساهمة الزوجة', 20, 'fee');
+ const breakdown = () => L.additionalIncome(s).groups.map(g => [g.name, g.amount]);
+ assert.deepEqual(breakdown(), [['أجور تصميم', 120], ['مساهمة الزوجة', 50], ['دخل آخر', 10]]);
+ const reminder = L.incomeStatus(s, '2026-11', opts).find(x => x.source.id === 'fee');
+ assert.equal(reminder.amount, 120);
+ s = L.updateTransaction(s, 'wife', { sourceId: null, inferIncomeSource: false }, opts);
+ s = L.updateTransaction(s, 'wife', { amount: 55 }, opts);
+ assert.deepEqual(breakdown(), [['أجور تصميم', 120], ['دخل آخر', 65]]);
+ s = L.updateTransaction(s, 'wife', { sourceId: 'fee' }, opts);
+ assert.deepEqual(breakdown(), [['أجور تصميم', 175], ['دخل آخر', 10]]);
+ assert.equal(s.transactions.find(t => t.id === 'wife').inferIncomeSource, undefined);
+});

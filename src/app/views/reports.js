@@ -68,7 +68,7 @@
   }
 
   const TYPE_LABEL = { expense: 'مصروف', income: 'دخل', transfer: 'تحويل' };
-  const detail = t => t.type === 'expense' ? WR.category(t.categoryId).name : t.type === 'income' ? (WR.source(t.sourceId)?.name || 'دخل آخر') : `${WR.account(t.accountId).name} ← ${WR.account(t.toAccountId).name}`;
+  const detail = t => t.type === 'expense' ? WR.category(t.categoryId).name : t.type === 'income' ? L.incomeSourceName(WR.app.state, t) : `${WR.account(t.accountId).name} ← ${WR.account(t.toAccountId).name}`;
 
   function exportCsv() {
     const app = WR.app, s = app.state, list = L.transactionsIn(s, app.monthKey).slice().sort((a, b) => a.date.localeCompare(b.date));

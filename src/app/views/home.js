@@ -21,9 +21,9 @@
       icon = c.icon; color = c.color; title = t.note || c.name; sign = '−';
       sub = [t.note ? c.name : '', method === c.name ? '' : method].filter(Boolean).join(' · ');
     } else if (t.type === 'income') {
-      const source = WR.source(t.sourceId)?.name;
-      icon = 'income'; color = 'var(--brand-gold)'; title = t.note || source || 'دخل'; sign = '+';
-      sub = [t.note ? source : '', method].filter(Boolean).join(' · ');
+      const source = L.incomeSourceName(s, t);
+      icon = 'income'; color = 'var(--brand-gold)'; title = t.note || source; sign = '+';
+      sub = [source !== title ? source : '', method].filter(Boolean).join(' · ');
     } else {
       icon = 'transfer'; color = 'var(--text-muted)'; title = t.note || 'تحويل'; sign = '';
       sub = `${account.name} ← ${WR.account(t.toAccountId).name}`;
@@ -45,6 +45,19 @@
       <span class="bar-value">${WR.money(c.spent)}<small dir="ltr">${Math.round(c.share * 100)}%</small></span></span>
       <span class="bar-track"><span class="bar-fill" style="width:${Math.max(2, Math.round(c.spent / max * 100))}%"></span></span></button>`).join('');
   };
+
+  function additionalIncomeRows(state, key) {
+    const { total, groups } = L.additionalIncome(state, key);
+    const rows = groups.map(({ name, amount, transactions }) => `<details class="extra-source"${key && name === 'دخل آخر' ? ' open' : ''}>
+      <summary><span>${WR.safe(name)}</span><b>${WR.money(amount)}</b>${WR.icon('next')}</summary>
+      <div class="tx-list">${transactions.map(t => `<button type="button" class="tx" data-type="income" data-action="edit-tx" data-id="${WR.safe(t.id)}">
+        <span class="tx-text"><span class="sr-only">تعديل الحركة</span><time datetime="${WR.safe(t.date)}">${WR.safe(F.dateLabel(t.date, { digits: state.settings.digits, long: true }))}</time>
+          ${t.note && t.note !== name ? `<small>${WR.safe(t.note)}</small>` : ''}</span>
+        <span class="tx-amount">${WR.money(t.amount)}</span>${WR.icon('edit')}</button>`).join('')}</div>
+    </details>`).join('');
+    return `<div class="extra-total"><span>${key ? 'مجموع الشهر' : 'مجموع كل الأشهر'}</span><strong>${WR.money(total)}</strong></div>
+      ${rows || `<p class="muted">${key ? 'ما عندك دخل إضافي مسجّل بهالشهر.' : 'ما عندك دخل إضافي مسجّل لحد الآن.'}</p>`}`;
+  }
 
   function render(app) {
     const s = app.state, today = app.today(), key = app.monthKey, isCurrent = key === app.currentKey();
@@ -80,15 +93,11 @@
         <button type="button" class="btn small ghost" data-action="receive" data-id="${WR.safe(x.source.id)}">${WR.icon('check')}استلمت</button></div>`).join('')}
     </section>` : '';
 
-    const srcRows = L.incomeBySource(s, key);
-    const incomeBySource = srcRows.length ? `<section class="card">
-      <header class="card-head"><h2>دخلك حسب المصدر</h2><span class="muted">${WR.money(m.income)}</span></header>
-      <div class="tx-list">${srcRows.map(({ name, amount }) => `<div class="income-row">
-        <span class="tx-ic" style="--c:var(--brand-gold)">${WR.icon('income')}</span>
-        <span class="tx-text"><b>${WR.safe(name)}</b><small>${Math.round(amount / m.income * 100)}% من دخل الشهر</small></span>
-        <b class="tx-amount" style="color:var(--green-text)">${WR.money(amount, { sign: '+' })}</b>
-      </div>`).join('')}</div>
-    </section>` : '';
+    const additionalIncome = `<section class="card" aria-labelledby="extra-income-title">
+      <header class="card-head"><h2 id="extra-income-title">الدخل الإضافي</h2>
+        <button type="button" class="btn small ghost" data-action="income-history" aria-haspopup="dialog">كل الأشهر</button></header>
+      ${additionalIncomeRows(s, key)}
+    </section>`;
     const unified = L.unifiedWallet(s);
     const { available, reserved } = L.walletTotals(s, b);
     const hasReserve = s.accounts.some(a => !a.archived && a.reserveTarget !== undefined);
@@ -121,7 +130,7 @@
 
     return WR.pageHead(greeting(s.settings.name), WR.safe(F.dateLabel(today, { long: true, digits: s.settings.digits })),
       WR.monthBar()) + `<div class="home-grid">
-        <div class="col">${hero}${latest}${incomeBySource}</div>
+        <div class="col">${hero}${additionalIncome}${latest}</div>
         <div class="col">${accounts}${where}${incomeCard}</div>
       </div>`;
   }
@@ -129,6 +138,7 @@
   WR.views = WR.views || {};
   WR.views.home = { render };
   WR.actions = Object.assign(WR.actions || {}, {
+    'income-history': () => WR.sheet({ title: 'الدخل الإضافي لكل الأشهر', body: additionalIncomeRows(WR.app.state, null) }),
     receive: d => {
       const src = WR.source(d.id); if (!src) return;
       WR.entry.open({ type: 'income', preset: { sourceId: src.id, accountId: src.accountId, amount: src.amount || undefined } });

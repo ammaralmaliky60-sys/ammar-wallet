@@ -10,7 +10,7 @@
     return L.sortNewest(L.transactionsIn(app.state, app.monthKey)).filter(t =>
       (f.type === 'all' || t.type === f.type) &&
       (!f.categoryId || t.categoryId === f.categoryId) &&
-      (!q || [t.note, t.type === 'expense' && WR.category(t.categoryId).name, t.type === 'income' && WR.source(t.sourceId)?.name,
+      (!q || [t.note, t.type === 'expense' && WR.category(t.categoryId).name, t.type === 'income' && L.incomeSourceName(app.state, t),
         WR.account(t.accountId).name, String(t.amount)].filter(Boolean).join(' ').toLowerCase().includes(q)));
   }
 

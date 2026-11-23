@@ -3,7 +3,7 @@
   'use strict';
   const L = window.WRLedger, F = window.WRFormat;
   const TYPES = [['expense', 'مصروف', 'expense'], ['income', 'دخل', 'income'], ['transfer', 'تحويل', 'transfer']];
-  const SPOUSE_OPTION = '@spouse', SPOUSE_NAME = 'مساهمة الزوجة';
+  const SPOUSE_OPTION = '@spouse', INFERRED_OPTION = '@inferred';
   const quickSteps = () => WR.cur().dec ? [1, 5, 10, 50] : [1000, 5000, 10000, 25000];
 
   /** The account used most recently for this type (a sensible default). */
@@ -11,6 +11,26 @@
     const t = L.sortNewest(state.transactions).find(x => x.type === type);
     const active = state.accounts.filter(a => !a.archived && a.reserveTarget === undefined);
     return active.some(a => a.id === t?.accountId) ? t.accountId : active[0].id;
+  }
+
+  function incomeChoices(state, entry) {
+    const resolved = entry.type === 'income' ? L.resolveIncomeSource(state, entry) : null;
+    const sources = state.incomeSources.filter(s => !s.archived || s.id === resolved?.sourceId);
+    const spouseSources = sources.filter(s => L.isSpouseIncomeName(s.name) && !L.resolveIncomeSource(state, { sourceId: s.id }).payroll);
+    const spouse = spouseSources.find(s => s.id === resolved?.sourceId) || spouseSources.find(s => s.name === L.SPOUSE_INCOME_NAME) || spouseSources[0];
+    const options = sources.filter(s => !spouseSources.includes(s) || s === spouse)
+      .map(s => ({ value: s.id, label: s === spouse ? L.SPOUSE_INCOME_NAME : s.name, icon: s === spouse ? 'home' : 'income' }));
+    if (!spouse) options.push({ value: SPOUSE_OPTION, label: L.SPOUSE_INCOME_NAME, icon: 'home' });
+    let selected = resolved?.sourceId || '';
+    if (!selected && resolved && resolved.name !== 'دخل آخر') {
+      if (resolved.name === L.SPOUSE_INCOME_NAME) selected = spouse?.id || SPOUSE_OPTION;
+      else {
+        selected = INFERRED_OPTION;
+        options.push({ value: selected, label: resolved.name, icon: 'income' });
+      }
+    }
+    options.push({ value: '', label: 'دخل آخر', icon: 'dots' });
+    return { options, selected };
   }
 
   function open({ type = 'expense', tx = null, preset = {} } = {}) {
@@ -34,10 +54,7 @@
           `<option value="${WR.safe(a.id)}" ${a.id === accountId ? 'selected' : ''}>${WR.safe(a.name)}</option>`).join('')}
       </select></label></details>` : '') : WR.chips({ name: 'accountId', value: accountId, label: 'الحساب', options: regular.map(accountOption) });
     const categories = s.categories.filter(c => !c.archived || c.id === v.categoryId);
-    const sources = s.incomeSources.filter(x => !x.archived || x.id === v.sourceId);
-    const incomeOptions = sources.map(x => ({ value: x.id, label: x.name, icon: 'income' }));
-    if (!sources.some(x => x.name === SPOUSE_NAME)) incomeOptions.push({ value: SPOUSE_OPTION, label: SPOUSE_NAME, icon: 'home' });
-    incomeOptions.push({ value: '', label: 'دخل آخر', icon: 'dots' });
+    const income = incomeChoices(s, v);
     const dateChoice = v.date === today ? 'today' : v.date === F.addDays(today, -1) ? 'yesterday' : 'other';
 
     const body = `<div class="entry" data-type="${v.type}">
@@ -48,8 +65,8 @@
       <div class="quick-amounts" aria-label="إضافة مبلغ سريع">${quickSteps().map(n => `<button type="button" data-quick="${n}">+${WR.fmt(n * 10 ** WR.cur().dec)}</button>`).join('')}</div>
       <div class="when-expense">${WR.chips({ name: 'categoryId', value: v.categoryId, label: 'الفئة', cls: 'chips-grid',
         options: categories.map(c => ({ value: c.id, label: c.name, icon: c.icon, color: c.color })) })}</div>
-      <div class="when-income">${WR.chips({ name: 'sourceId', value: v.sourceId || '', label: 'مصدر الدخل', cls: 'chips-row',
-        options: incomeOptions })}</div>
+      <div class="when-income">${WR.chips({ name: 'sourceId', value: income.selected, label: 'مصدر الدخل', cls: 'chips-row',
+        options: income.options })}</div>
       ${reservePayment ? '' : `<div class="when-money">${payment}</div>`}
       ${unified ? '' : `<div class="when-transfer">
         ${WR.chips({ name: 'fromAccountId', value: transferFrom, label: 'من حساب', options: accounts.map(accountOption) })}
@@ -98,11 +115,16 @@
           if (!accountId) throw new Error('اختر الحساب.');
           entry.accountId = accountId;
           if (t === 'expense') entry.categoryId = data.categoryId;
-          else if (data.sourceId === SPOUSE_OPTION) {
-            const source = current.incomeSources.find(x => !x.archived && x.name === SPOUSE_NAME);
+          else if (data.sourceId === INFERRED_OPTION || (tx?.type === 'income' && !tx.sourceId && data.sourceId === income.selected)) {
+            entry.sourceId = null;
+          } else if (data.sourceId === SPOUSE_OPTION) {
+            const source = current.incomeSources.find(x => !x.archived && x.name === L.SPOUSE_INCOME_NAME);
             entry.sourceId = source?.id || L.uid();
-            if (!source) current = L.saveIncomeSource(current, { id: entry.sourceId, name: SPOUSE_NAME, day: null, amount: 0, accountId });
-          } else entry.sourceId = data.sourceId || null;
+            if (!source) current = L.saveIncomeSource(current, { id: entry.sourceId, name: L.SPOUSE_INCOME_NAME, day: null, amount: 0, accountId });
+          } else {
+            entry.sourceId = data.sourceId || null;
+            if (!entry.sourceId && income.selected) entry.inferIncomeSource = false;
+          }
         }
         const next = tx ? L.updateTransaction(current, tx.id, entry, { today }) : L.addTransaction(current, entry, { today }).state;
         const negative = warning(next, entry);

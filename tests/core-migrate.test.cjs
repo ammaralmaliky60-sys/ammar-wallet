@@ -69,6 +69,26 @@ test('the cash withdrawal becomes a transfer between accounts',()=>{
  assert.deepEqual({type:t.type,accountId:t.accountId,toAccountId:t.toAccountId,amount:t.amount},{type:'transfer',accountId:'card',toAccountId:'cash',amount:100000});
 });
 
+test('receipts from before and after migration are grouped without rewriting or duplicating history', () => {
+ const old = v2();
+ old.transactions.push({id:'old-spouse',type:'income',date:'2026-10-18',amount:50000,method:'cash',note:'مساعدة من زوجتي'});
+ let {state} = M.fromV2(old);
+ state = L.saveIncomeSource(state, {id:'wife',name:'مساهمة الزوجة',day:null,amount:0,accountId:'cash'});
+ state = L.addTransaction(state, {id:'new-spouse',type:'income',date:'2026-11-01',amount:25000,accountId:'cash',sourceId:'wife'}, {today:'2026-11-03'}).state;
+ state = L.updateSettings(state, {monthStartDay:23});
+ const original = JSON.stringify(state);
+ const {total, groups} = L.additionalIncome(state);
+ assert.equal(total, 100000);
+ assert.deepEqual(groups.map(g => [g.name,g.amount,g.transactions.map(t => t.id)]), [
+   ['مساهمة الزوجة',75000,['new-spouse','old-spouse']], ['دخل آخر',25000,['v2tx18']]
+ ]);
+ assert.equal(L.additionalIncome(state,'2026-10').total, 25000, 'period starts October 23');
+ assert.equal(L.additionalIncome(state,'2026-09').total, 75000);
+ assert.deepEqual(L.additionalIncome(state,'2026-11'), {total:0,groups:[]});
+ assert.equal(JSON.stringify(state), original);
+ assert.deepEqual(L.balances(state).accounts, {cash:M.v2Balances(old).cash+25000,card:M.v2Balances(old).card});
+});
+
 test('settings carry over; the month starts on day 1 until the user changes it',()=>{
  const {state}=run();
  assert.deepEqual(state.settings,{name:'عمار',currency:'IQD',digits:'en',monthStartDay:1});

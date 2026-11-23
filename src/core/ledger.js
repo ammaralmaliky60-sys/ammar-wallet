@@ -89,6 +89,7 @@
       if (!TYPES.includes(t.type) || !F.isDate(t.date) || !money(t.amount) || !accounts.has(t.accountId) || !text(t.note || '', 140)) fail('حركة غير صالحة.');
       if (t.type === 'expense' && !categories.has(t.categoryId)) fail('فئة المصروف غير موجودة.');
       if (t.type === 'income' && t.sourceId != null && !sources.has(t.sourceId)) fail('مصدر الدخل غير موجود.');
+      if (t.inferIncomeSource !== undefined && typeof t.inferIncomeSource !== 'boolean') fail('خيار ربط مصدر الدخل غير صالح.');
       if (t.type === 'transfer' && (!accounts.has(t.toAccountId) || t.toAccountId === t.accountId)) fail('التحويل يحتاج حسابين مختلفين.');
     }
     if (reserves.length) {
@@ -105,7 +106,10 @@
   function normaliseTx(tx) {
     const base = { id: tx.id || uid(), type: tx.type, date: tx.date, amount: tx.amount, accountId: tx.accountId, note: (tx.note || '').trim() };
     if (tx.type === 'expense') base.categoryId = tx.categoryId;
-    if (tx.type === 'income') base.sourceId = tx.sourceId || null;
+    if (tx.type === 'income') {
+      base.sourceId = tx.sourceId || null;
+      if (!base.sourceId && tx.inferIncomeSource === false) base.inferIncomeSource = false;
+    }
     if (tx.type === 'transfer') base.toAccountId = tx.toAccountId;
     return base;
   }
@@ -265,9 +269,57 @@
         status: !budgetTotal ? 'none' : budgetedSpent > budgetTotal ? 'over' : (budgetedSpent / budgetTotal * 100) > (elapsedDays / period.days * 100) + 10 ? 'fast' : 'ok' }
     };
   }
+  const SPOUSE_INCOME_NAME = 'مساهمة الزوجة';
+  const OTHER_INCOME_NAME = 'دخل آخر';
+  // Older "other income" entries stored only a description. Match whole source labels,
+  // so an unrelated note mentioning a salary or spouse never changes the source.
+  const incomeLabel = label => (label || '').normalize('NFKC').replace(/[\u0640\u064B-\u065F\u0670]/g, '')
+    .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').trim().replace(/\s+/g, ' ');
+  const spouseLabel = /^(?:(?:مساهمه|مساعده|دعم|دخل|مبلغ|فلوس) (?:من )?|من )?(?:زوجتي|الزوجه|مرتي)$/;
+  const isSpouseIncomeName = name => spouseLabel.test(incomeLabel(name));
+  function payrollKind(label, id) {
+    if (id === 'salary' || id === 'incentives') return id;
+    if (/^(?:الراتب|راتبي?)(?: الشهري| الدوام)?$/.test(label)) return 'salary';
+    if (/^(?:ال)?(?:حافز|حوافز)ي?(?: الشهري| الشهريه| الدوام)?$/.test(label)) return 'incentives';
+    return '';
+  }
+  function resolveIncomeSource(state, tx) {
+    const linked = tx.sourceId && state.incomeSources.find(s => s.id === tx.sourceId);
+    if (linked) {
+      const label = incomeLabel(linked.name), payroll = !!payrollKind(label, linked.id);
+      return { name: !payroll && spouseLabel.test(label) ? SPOUSE_INCOME_NAME : linked.name, sourceId: linked.id, payroll };
+    }
+    const label = incomeLabel(tx.note);
+    if (tx.inferIncomeSource === false || !label || /^(?:اخر|اخري|اخرى|دخل(?: اخر| اضافي)?)$/.test(label)) {
+      return { name: OTHER_INCOME_NAME, sourceId: null, payroll: false };
+    }
+    const spouse = spouseLabel.test(label), kind = payrollKind(label);
+    let matches = state.incomeSources.filter(s => incomeLabel(s.name) === label);
+    if (!matches.length && (spouse || kind)) {
+      matches = state.incomeSources.filter(s => spouse
+        ? isSpouseIncomeName(s.name) && !payrollKind(incomeLabel(s.name), s.id)
+        : payrollKind(incomeLabel(s.name), s.id) === kind);
+    }
+    const active = matches.filter(s => !s.archived), candidates = active.length ? active : matches;
+    const candidate = candidates[0];
+    const payroll = candidate ? !!payrollKind(incomeLabel(candidate.name), candidate.id) : !!kind;
+    const fallback = kind === 'salary' ? 'الراتب' : kind === 'incentives' ? 'الحافز' : OTHER_INCOME_NAME;
+    return { name: spouse && !payroll ? SPOUSE_INCOME_NAME : candidate?.name || fallback,
+      sourceId: candidates.length === 1 ? candidate.id : null, payroll };
+  }
+  const incomeSourceName = (state, tx) => resolveIncomeSource(state, tx).name;
+
   /** Expected income for the month: each active source on its day, and whether it has been recorded. */
   function incomeStatus(state, key, { today = F.today() } = {}) {
     const period = F.periodByKey(key, startDay(state)), list = transactionsIn(state, key);
+    const receipts = new Map();
+    for (const t of list) {
+      if (t.type !== 'income') continue;
+      const { sourceId } = resolveIncomeSource(state, t);
+      if (!sourceId) continue;
+      if (!receipts.has(sourceId)) receipts.set(sourceId, []);
+      receipts.get(sourceId).push(t);
+    }
     return state.incomeSources.filter(s => !s.archived && s.day !== null).map(source => {
       // The source's day inside this period (a day before the start day falls in the next calendar month).
       const [y, m] = period.start.split('-').map(Number), startD = Number(period.start.slice(8));
@@ -275,21 +327,30 @@
       if (source.day < startD) { month += 1; if (month > 12) { month = 1; year += 1; } }
       const day = Math.min(source.day, F.monthLength(year, month));
       const expected = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const received = list.filter(t => t.type === 'income' && t.sourceId === source.id);
+      const received = receipts.get(source.id) || [];
       const amount = received.reduce((n, t) => n + t.amount, 0);
       const status = received.length ? 'received' : today > expected ? 'late' : today === expected ? 'due' : 'upcoming';
       return { source, expected, received, amount, status };
     });
   }
-  function incomeBySource(state, key) {
-    const names = new Map(state.incomeSources.map(s => [s.id, s.name]));
-    const amounts = new Map();
-    for (const t of transactionsIn(state, key)) {
+  function groupIncome(state, key, additionalOnly) {
+    const groups = new Map();
+    for (const t of key == null ? state.transactions : transactionsIn(state, key)) {
       if (t.type !== 'income') continue;
-      const name = names.get(t.sourceId) || 'دخل آخر';
-      amounts.set(name, (amounts.get(name) || 0) + t.amount);
+      const { name, payroll } = resolveIncomeSource(state, t);
+      if (additionalOnly && payroll) continue;
+      if (!groups.has(name)) groups.set(name, { name, amount: 0 });
+      const group = groups.get(name);
+      group.amount += t.amount;
+      if (additionalOnly) (group.transactions ||= []).push(t);
     }
-    return [...amounts].sort((a, b) => b[1] - a[1]).map(([name, amount]) => ({ name, amount }));
+    return [...groups.values()].sort((a, b) => b.amount - a.amount);
+  }
+  const incomeBySource = (state, key) => groupIncome(state, key, false);
+  function additionalIncome(state, key) {
+    const groups = groupIncome(state, key, true);
+    for (const group of groups) group.transactions = sortNewest(group.transactions);
+    return { total: groups.reduce((sum, group) => sum + group.amount, 0), groups };
   }
   function trend(state, key, months = 6) {
     const out = [];
@@ -318,5 +379,6 @@
     addTransaction, updateTransaction, removeTransaction, saveCategory, saveAccount, saveIncomeSource,
     removeCategory, removeIncomeSource, removeAccount, updateSettings,
     unifiedWallet, ensureWallet, walletTotals, moveReserve, balances, currentKey, transactionsIn, reserves, sortNewest,
-    monthSummary, incomeStatus, incomeBySource, trend, dailyExpense, compare, budgetLevel };
+    monthSummary, incomeStatus, incomeBySource, additionalIncome, resolveIncomeSource, incomeSourceName,
+    SPOUSE_INCOME_NAME, isSpouseIncomeName, trend, dailyExpense, compare, budgetLevel };
 });
