@@ -308,6 +308,18 @@ main:focus-visible { box-shadow: none; }
 .optional-field > .field { margin-top: 8px; }
 #toast { width: max-content; }
 #toast > span { min-width: 0; overflow-wrap: anywhere; }
+.app-signature {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin: 30px auto 16px;
+  padding: 16px 20px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.app-signature > span { font-size: 12px; }
+.app-signature strong { color: var(--green-text); font-size: 17px; }
+.app-signature small { font-size: 11px; opacity: .8; }
 .tabbar .nav-item, .tabbar .tab-add {
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;

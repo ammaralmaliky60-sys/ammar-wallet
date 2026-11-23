@@ -4,8 +4,6 @@
   const L = window.WRLedger, F = window.WRFormat;
   const acctIcon = a => a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet';
 
-  WR.releaseSummary = () => '<p class="muted" dir="ltr">v0.045</p>';
-
   function render(app) {
     const s = app.state, set = s.settings, b = L.balances(s), hasTx = s.transactions.length > 0;
     const theme = WR.store.theme() || 'auto', legacy = WR.store.legacyRaw(), unified = L.unifiedWallet(s);
@@ -55,7 +53,7 @@
         ${legacy ? `<div class="note"><b>بيانات الإصدار السابق</b><p>محفوظة كما هي على هذا الجهاز${s.meta.migratedFrom ? '، ونُقلت منها حركاتك' : ''}. يمكنك تنزيلها للاحتفاظ بها.</p>
           <button type="button" class="btn small ghost" data-action="legacy-download">${WR.icon('download')}تنزيل بيانات الإصدار السابق</button></div>` : ''}
         <div class="danger-zone"><button type="button" class="btn danger" data-action="wipe">${WR.icon('trash')}حذف كل البيانات والبدء من جديد</button></div>
-      </section>${WR.releaseSummary()}</div>`;
+      </section></div>`;
   }
 
   function bind(root) {

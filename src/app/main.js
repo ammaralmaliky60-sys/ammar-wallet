@@ -70,7 +70,9 @@
     const pageLabel = app.page === 'settings' ? 'الإعدادات' : NAV.find(n => n[0] === app.page)[2];
     $('#pageTitle').innerHTML = 'وين راحت؟ / <strong>' + pageLabel + '</strong>';
     const main = $('#main');
-    main.innerHTML = view.render(app);
+    main.innerHTML = view.render(app) + `<footer class="app-signature" aria-label="معلومات التطبيق">
+      <span>إعداد وتنفيذ وتصميم</span><strong>عمار عبدالجبار</strong><small dir="ltr">v0.045</small>
+    </footer>`;
     WR.wireAmounts(main);
     view.bind?.(main, app);
   }
