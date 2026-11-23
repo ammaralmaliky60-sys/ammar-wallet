@@ -1,0 +1,62 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* AppDelegate.swift */; };
+		A10000000000000000000002 /* WalletViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* WalletViewController.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* WalletViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletViewController.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 /* WainRahat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WainRahat.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A50000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A30000000000000000000001 = {isa = PBXGroup; children = (A30000000000000000000002 /* WainRahat */, A30000000000000000000003 /* Products */, ); sourceTree = "<group>"; };
+		A30000000000000000000002 /* WainRahat */ = {isa = PBXGroup; path = WainRahat; sourceTree = "<group>"; children = (A20000000000000000000001, A20000000000000000000002, ); };
+		A30000000000000000000003 /* Products */ = {isa = PBXGroup; name = Products; sourceTree = "<group>"; children = (A20000000000000000000003, ); };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A40000000000000000000001 /* WainRahat */ = {isa = PBXNativeTarget; buildConfigurationList = A60000000000000000000002; buildPhases = (A70000000000000000000001 /* Sources */, A50000000000000000000001 /* Frameworks */, A70000000000000000000002 /* Copy Web App Assets */, ); buildRules = (); dependencies = (); name = WainRahat; productName = WainRahat; productReference = A20000000000000000000003; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A80000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 1600; TargetAttributes = {A40000000000000000000001 = {CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = A60000000000000000000001; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base, ar, ); mainGroup = A30000000000000000000001; productRefGroup = A30000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (A40000000000000000000001, ); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A90000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A70000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A70000000000000000000002 /* Copy Web App Assets */ = {isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); name = "Copy Web App Assets"; outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/WebApp/index.html", ); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\nREPO_ROOT=\"${SRCROOT}/..\"\nWEB_ROOT=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/WebApp\"\nmkdir -p \"${WEB_ROOT}\"\ncp \"${REPO_ROOT}/index.html\" \"${REPO_ROOT}/report-pdf.js\" \"${REPO_ROOT}/icon.svg\" \"${REPO_ROOT}/icon-192.png\" \"${REPO_ROOT}/icon-512.png\" \"${REPO_ROOT}/icon-maskable-512.png\" \"${REPO_ROOT}/manifest.webmanifest\" \"${WEB_ROOT}/\"\ncp \"${REPO_ROOT}\"/*.css \"${WEB_ROOT}/\"\nmkdir -p \"${WEB_ROOT}/src\" \"${WEB_ROOT}/fonts\"\ncp -R \"${REPO_ROOT}/src/app\" \"${REPO_ROOT}/src/core\" \"${WEB_ROOT}/src/\"\ncp -R \"${REPO_ROOT}/fonts/readex-pro\" \"${WEB_ROOT}/fonts/\"\n"; };
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AB00000000000000000000001 /* Project Debug */ = {isa = XCBuildConfiguration; buildSettings = {IPHONEOS_DEPLOYMENT_TARGET = 15.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Debug; };
+		AB00000000000000000000002 /* Project Release */ = {isa = XCBuildConfiguration; buildSettings = {IPHONEOS_DEPLOYMENT_TARGET = 15.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Release; };
+		AB00000000000000000000003 /* Target Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "وين راحت؟"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = com.ammaralmaliky.wainrahat; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; VERSIONING_SYSTEM = apple-generic; MARKETING_VERSION = 1.0.0; CURRENT_PROJECT_VERSION = 1; }; name = Debug; };
+		AB00000000000000000000004 /* Target Release */ = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "وين راحت؟"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = com.ammaralmaliky.wainrahat; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; VERSIONING_SYSTEM = apple-generic; MARKETING_VERSION = 1.0.0; CURRENT_PROJECT_VERSION = 1; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A60000000000000000000001 /* Project configuration list */ = {isa = XCConfigurationList; buildConfigurations = (AB00000000000000000000001, AB00000000000000000000002, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A60000000000000000000002 /* Target configuration list */ = {isa = XCConfigurationList; buildConfigurations = (AB00000000000000000000003, AB00000000000000000000004, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = A80000000000000000000001 /* Project object */;
+}

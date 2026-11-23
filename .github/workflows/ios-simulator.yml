@@ -1,0 +1,46 @@
+name: iOS Simulator Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ios/**'
+      - 'index.html'
+      - '*.css'
+      - 'report-pdf.js'
+      - 'src/app/**'
+      - 'src/core/**'
+      - 'fonts/**'
+      - 'icon.svg'
+      - 'icon-192.png'
+      - 'icon-512.png'
+      - 'icon-maskable-512.png'
+      - 'manifest.webmanifest'
+      - '.github/workflows/ios-simulator.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+      - name: Build simulator app
+        run: >-
+          xcodebuild -project ios/WainRahat.xcodeproj
+          -scheme WainRahat
+          -sdk iphonesimulator
+          -configuration Debug
+          -derivedDataPath /tmp/WainRahatDerivedData
+          CODE_SIGNING_ALLOWED=NO
+          build
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wain-Rahat-iOS-Simulator
+          path: /tmp/WainRahatDerivedData/Build/Products/Debug-iphonesimulator/WainRahat.app
+          if-no-files-found: error
+          retention-days: 14
