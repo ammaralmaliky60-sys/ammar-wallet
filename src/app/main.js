@@ -71,7 +71,7 @@
     $('#pageTitle').innerHTML = 'وين راحت؟ / <strong>' + pageLabel + '</strong>';
     const main = $('#main');
     main.innerHTML = view.render(app) + `<footer class="app-signature" aria-label="معلومات التطبيق">
-      <span>إعداد وتنفيذ وتصميم</span><strong>عمار عبدالجبار</strong><small dir="ltr">v0.045</small>
+      <span>إعداد وتنفيذ وتصميم</span><strong>عمار عبدالجبار هاشم</strong><small dir="ltr">v0.045</small>
     </footer>`;
     WR.wireAmounts(main);
     view.bind?.(main, app);
