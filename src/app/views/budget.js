@@ -23,16 +23,14 @@
       ${items.length ? items.map(({ account, balance, paidThisMonth, needed }) => `<article class="reserve-item">
         <header class="reserve-head">
           <span class="tx-ic">${WR.icon('wallet')}</span>
-          <div><h3>${WR.safe(account.name)}</h3><small>الهدف الشهري ${WR.money(account.reserveTarget)}</small></div>
+          <h3>${WR.safe(account.name)}</h3>
           <button type="button" class="icon-btn" data-action="edit-reserve" data-id="${WR.safe(account.id)}" aria-label="${WR.safe('تعديل ' + account.name)}">${WR.icon('edit')}</button>
         </header>
-        <dl class="reserve-amounts">
-          <div><dt>المعزول الآن</dt><dd data-reserve-value="balance">${WR.money(balance)}</dd></div>
-          <div><dt>مدفوع هالشهر</dt><dd data-reserve-value="paid">${WR.money(paidThisMonth)}</dd></div>
-          <div><dt>باقي تعزله</dt><dd data-reserve-value="needed">${WR.money(needed)}</dd></div>
-        </dl>
+        <div class="reserve-balance"><span>المعزول الآن</span><strong data-reserve-value="balance">${WR.money(balance)}</strong></div>
+        ${account.reserveTarget ? `<p class="muted reserve-status">الهدف ${WR.money(account.reserveTarget)} · <span data-reserve-value="needed">${needed ? 'باقي ' + WR.money(needed) : 'اكتمل لهذا الشهر'}</span></p>` : ''}
+        ${paidThisMonth ? `<p class="muted reserve-status">تسدّد هالشهر <span data-reserve-value="paid">${WR.money(paidThisMonth)}</span></p>` : ''}
         <div class="btn-row">
-          ${[['fund', 'plus', 'أضف مبلغ', 'primary'], ['withdraw', 'transfer', 'اسحب مبلغ', 'ghost'], ['pay', 'check', 'سدّد', 'ghost']].map(([mode, icon, label, style]) =>
+          ${[['fund', 'plus', 'اعزل', 'primary'], ['withdraw', 'transfer', 'رجّع', 'ghost'], ['pay', 'check', 'سدّد', 'ghost']].map(([mode, icon, label, style]) =>
             `<button type="button" class="btn small ${style}" data-action="reserve-move" data-mode="${mode}" data-id="${WR.safe(account.id)}" ${mode !== 'fund' && !balance ? 'disabled' : ''}>${WR.icon(icon)}${label}</button>`).join('')}
         </div>
       </article>`).join('') : '<p class="muted">اعزل مبلغ من رصيدك لدفعة مثل سلفة الدوام. تقدر تزيده أو ترجع منه لحسابك عند الحاجة.</p>'}
@@ -46,10 +44,8 @@
     const currency = WR.cur(), balance = account ? L.balances(state).accounts[id] : 0;
     WR.sheet({
       title: account ? `تعديل «${account.name}»` : 'مبلغ معزول جديد',
-      subtitle: 'العزل والسحب تحويلات بين حساباتك. التسديد يُسجّل مصروفاً.',
       body: WR.field({ label: 'الاسم', name: 'name', value: account?.name, attrs: 'required maxlength="40" placeholder="مثلاً: سلفة الدوام"' }) +
-        WR.amountField({ label: 'المبلغ المطلوب شهرياً', name: 'target', value: account ? F.amountInputValue(account.reserveTarget, currency.dec) : '' }) +
-        (account ? '' : '<p class="muted">نستخدم فئة بنفس الاسم عند التسديد. إذا ما موجودة، نضيفها بدون سقف.</p>'),
+        WR.amountField({ label: 'الهدف الشهري (اختياري)', name: 'target', value: account?.reserveTarget ? F.amountInputValue(account.reserveTarget, currency.dec) : '', attrs: '' }),
       secondary: account && !balance ? { label: 'إزالة المبلغ المعزول', danger: true, run: close => {
         app.commit(L.removeAccount(app.state, id), 'أُزيل المبلغ المعزول');
         close();
@@ -57,13 +53,10 @@
       onSubmit: (data, form, close) => {
         const current = app.state, name = (data.name || '').trim();
         if (!name) throw new Error('اكتب اسم المبلغ المعزول.');
-        const reserveTarget = WR.parseAmount(data.target || '');
+        const reserveTarget = data.target ? WR.parseAmount(data.target, { allowZero: true }) : 0;
         if (current.accounts.some(a => a.id !== id && !a.archived && a.name === name)) throw new Error('يوجد حساب أو مبلغ معزول بهذا الاسم.');
         if (id && !current.accounts.some(a => a.id === id && !a.archived && a.reserveTarget !== undefined)) throw new Error('هذا المبلغ المعزول غير متاح.');
-        let next = L.saveAccount(current, id ? { id, name, reserveTarget } : { name, reserveTarget, opening: 0 });
-        if (!id && !next.categories.some(c => !c.archived && c.name === name)) {
-          next = L.saveCategory(next, { name, budget: 0, icon: 'wallet', color: L.COLORS[next.categories.length % L.COLORS.length] });
-        }
+        const next = L.saveAccount(current, id ? { id, name, reserveTarget } : { name, reserveTarget, opening: 0 });
         app.commit(next, id ? 'تم حفظ المبلغ المعزول' : 'أُضيف المبلغ المعزول');
         close();
       }
@@ -71,23 +64,32 @@
   }
 
   function reserveMove(id, mode) {
+    const actions = { fund: ['اعزل من فلوسك', 'اعزل', 'تم عزل المبلغ'],
+      withdraw: ['رجّع لفلوسك', 'رجّع', 'تم إرجاع المبلغ'], pay: ['سدّد', 'سدّد', 'تم تسجيل التسديد'] };
     const app = WR.app, state = app.state;
     const reserve = L.reserves(state, app.currentKey()).find(x => x.account.id === id);
-    if (!reserve) return;
+    if (!reserve || !Object.hasOwn(actions, mode)) return;
+    const [title, submitLabel, message] = actions[mode];
     const { account, balance, paidThisMonth } = reserve;
-    const regular = state.accounts.find(a => !a.archived && a.reserveTarget === undefined);
-    if (mode === 'fund') {
-      WR.entry.open({ type: 'transfer', title: `أضف إلى «${account.name}»`,
-        fixedAccounts: { toAccountId: id }, preset: { toAccountId: id } });
-    } else if (mode === 'withdraw' && balance) {
-      WR.entry.open({ type: 'transfer', title: `اسحب من «${account.name}»`,
-        fixedAccounts: { fromAccountId: id }, preset: { accountId: id, toAccountId: regular.id } });
-    } else if (mode === 'pay' && balance) {
-      const category = state.categories.find(c => !c.archived && c.name === account.name);
-      const due = Math.max(0, account.reserveTarget - paidThisMonth);
-      WR.entry.open({ type: 'expense', title: `تسديد «${account.name}»`,
-        fixedAccounts: { accountId: id }, preset: { accountId: id, categoryId: category?.id, amount: Math.min(balance, due || balance) } });
-    }
+    const totals = L.balances(state);
+    const needsAccount = mode !== 'pay' && !L.unifiedWallet(state);
+    const accounts = state.accounts.filter(a => !a.archived && a.reserveTarget === undefined);
+    const available = mode === 'fund' ? L.walletTotals(state, totals).available : balance;
+    const due = Math.max(0, account.reserveTarget - paidThisMonth);
+    WR.sheet({
+      title: `${title} · ${account.name}`, submitLabel,
+      subtitle: needsAccount ? '' : (mode === 'fund' ? 'المتاح للصرف ' : 'المعزول الآن ') + WR.moneyText(available),
+      body: WR.amountField({ big: true, attrs: 'required autofocus', value: mode === 'pay' ?
+        F.amountInputValue(Math.min(balance, due || balance), WR.cur().dec) : '' }) +
+        (needsAccount ? `<label class="field"><span>${mode === 'fund' ? 'من حساب' : 'إلى حساب'}</span><select name="accountId">
+          ${accounts.map(a => `<option value="${WR.safe(a.id)}">${WR.safe(a.name)}</option>`).join('')}</select></label>` : ''),
+      onSubmit: (data, form, close) => {
+        const amount = WR.parseAmount(data.amount || '');
+        const next = L.moveReserve(app.state, id, mode, amount, { accountId: data.accountId, today: app.today() });
+        app.commit(next, message);
+        close();
+      }
+    });
   }
 
   function render(app) {

@@ -36,6 +36,7 @@
   const text = (v, max) => typeof v === 'string' && v.length <= max;
   const name = (v, max = 40) => text(v, max) && v.trim().length > 0;
   const money = (v, { zero = false, negative = false } = {}) => Number.isSafeInteger(v) && (negative || v >= (zero ? 0 : 1));
+  const unifiedWallet = state => state.settings.accountMode !== 'split';
 
   function createState({ name: owner = '', currency = 'IQD', digits = 'en', monthStartDay = 1, accounts, categories, incomeSources } = {}) {
     return {
@@ -55,6 +56,7 @@
     const s = state.settings;
     if (!record(s) || !text(s.name, 40) || !F.CURRENCIES[s.currency] || !['en', 'ar'].includes(s.digits) ||
       !Number.isInteger(s.monthStartDay) || s.monthStartDay < 1 || s.monthStartDay > 28) fail('إعدادات غير صالحة.');
+    if (s.accountMode !== undefined && !['unified', 'split'].includes(s.accountMode)) fail('طريقة عرض الرصيد غير صالحة.');
     for (const key of ['accounts', 'categories', 'incomeSources', 'transactions']) if (!Array.isArray(state[key])) fail('بنية البيانات غير مكتملة.');
     const unique = (list, label) => {
       const ids = new Set();
@@ -69,8 +71,10 @@
     if (!state.accounts.some(a => !a.archived && a.reserveTarget === undefined)) fail('يجب أن يبقى حساب عادي واحد على الأقل.');
     for (const a of state.accounts) {
       if (!name(a.name) || !money(a.opening, { negative: true }) || typeof a.archived !== 'boolean') fail('بيانات حساب غير صالحة.');
-      if (a.reserveTarget !== undefined && !money(a.reserveTarget)) fail('المبلغ المطلوب للعزل يجب أن يكون أكبر من صفر.');
+      if (a.reserveTarget !== undefined && !money(a.reserveTarget, { zero: true })) fail('الهدف الشهري غير صالح.');
     }
+    const wallet = state.accounts.filter(a => a.pooled === true);
+    if (wallet.length > 1 || wallet.some(a => a.archived || a.reserveTarget !== undefined)) fail('حساب فلوسي غير صالح.');
     for (const c of state.categories) {
       if (!name(c.name) || !ICONS.includes(c.icon) || !/^#[0-9A-Fa-f]{6}$/.test(c.color) || !money(c.budget, { zero: true }) || typeof c.archived !== 'boolean') fail(`بيانات الفئة «${c.name || c.id}» غير صالحة.`);
     }
@@ -137,6 +141,12 @@
   const saveCategory = upsert('categories', 'الفئة');
   const saveAccount = upsert('accounts', 'الحساب');
   const saveIncomeSource = upsert('incomeSources', 'مصدر الدخل');
+  function ensureWallet(state, opening = 0) {
+    const account = state.accounts.find(a => a.pooled === true);
+    if (account) return { state, accountId: account.id };
+    const accountId = uid();
+    return { state: saveAccount(state, { id: accountId, name: 'فلوسي', opening, pooled: true }), accountId };
+  }
   function removeCategory(state, id) {
     // Used categories are archived so their history keeps its label; unused ones are deleted.
     if (state.transactions.some(t => t.categoryId === id)) return withChange(state, s => { s.categories.find(c => c.id === id).archived = true; });
@@ -148,6 +158,7 @@
   }
   function removeAccount(state, id) {
     const account = state.accounts.find(a => a.id === id);
+    if (account?.pooled === true) fail('حساب فلوسي مطلوب للحركات بدون طريقة دفع.');
     if (account?.reserveTarget !== undefined && balances(state).accounts[id]) {
       fail(`رجّع أو سدّد الرصيد المعزول في «${account.name}» قبل الأرشفة.`);
     }
@@ -167,6 +178,35 @@
       else { accounts[t.accountId] -= t.amount; accounts[t.toAccountId] += t.amount; }
     }
     return { accounts, total: Object.values(accounts).reduce((n, v) => n + v, 0) };
+  }
+  function walletTotals(state, totals = balances(state)) {
+    const reserved = state.accounts.filter(a => a.reserveTarget !== undefined)
+      .reduce((sum, a) => sum + totals.accounts[a.id], 0);
+    return { total: totals.total, reserved, available: totals.total - reserved };
+  }
+
+  function moveReserve(state, id, mode, amount, { accountId, today = F.today() } = {}) {
+    const reserve = state.accounts.find(a => a.id === id && !a.archived && a.reserveTarget !== undefined);
+    if (!reserve) fail('هذا المبلغ المعزول غير متاح.');
+    if (!money(amount)) fail('اكتب مبلغاً أكبر من صفر.');
+    const totals = balances(state);
+    if (mode === 'pay') {
+      let category = state.categories.find(c => !c.archived && c.name === reserve.name);
+      if (!category) {
+        category = { id: uid(), name: reserve.name, budget: 0, icon: 'wallet', color: COLORS[state.categories.length % COLORS.length] };
+        state = saveCategory(state, category);
+      }
+      return addTransaction(state, { type: 'expense', date: today, amount, accountId: id, categoryId: category.id }, { today }).state;
+    }
+    if (!['fund', 'withdraw'].includes(mode)) fail('عملية العزل غير صالحة.');
+    const unified = unifiedWallet(state);
+    if (unified) ({ state, accountId } = ensureWallet(state));
+    else if (!state.accounts.some(a => a.id === accountId && !a.archived && a.reserveTarget === undefined)) fail('اختر الحساب.');
+    const available = unified ? walletTotals(state, totals).available : totals.accounts[accountId];
+    if (mode === 'fund' && amount > available) fail('المبلغ أكبر من المتاح للصرف.');
+    const from = mode === 'fund' ? accountId : id;
+    const to = mode === 'fund' ? id : accountId;
+    return addTransaction(state, { type: 'transfer', date: today, amount, accountId: from, toAccountId: to }, { today }).state;
   }
   const startDay = state => state.settings.monthStartDay;
   const currentKey = (state, today = F.today()) => F.periodFor(today, startDay(state)).key;
@@ -267,5 +307,6 @@
   return { VERSION, TYPES, COLORS, ICONS, DEFAULT_CATEGORIES, DEFAULT_ACCOUNTS, uid, clone, createState, validate,
     addTransaction, updateTransaction, removeTransaction, saveCategory, saveAccount, saveIncomeSource,
     removeCategory, removeIncomeSource, removeAccount, updateSettings,
-    balances, currentKey, transactionsIn, reserves, sortNewest, monthSummary, incomeStatus, trend, dailyExpense, compare, budgetLevel };
+    unifiedWallet, ensureWallet, walletTotals, moveReserve, balances, currentKey, transactionsIn, reserves, sortNewest,
+    monthSummary, incomeStatus, trend, dailyExpense, compare, budgetLevel };
 });

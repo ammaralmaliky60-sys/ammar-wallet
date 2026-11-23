@@ -25,7 +25,7 @@
         </div>
         <h2>2. فلوسك الموجودة الآن</h2>
         <p class="muted">المبلغ الموجود فعلاً اليوم. إذا ما تعرفه بالضبط اكتب تقديراً وتقدر تعدله لاحقاً.</p>
-        <div class="form-row">${WR.amountField({ label: 'النقد في يدك', name: 'cash', attrs: '' })}${WR.amountField({ label: 'في البطاقة أو البنك', name: 'card', attrs: '' })}</div>
+        ${WR.amountField({ label: 'مجموع فلوسك', name: 'opening', attrs: '' })}
         <h2>3. راتبك (اختياري)</h2>
         <p class="muted">حتى يذكّرك البرنامج بموعده. تقدر تضيف الحوافز أو أي دخل آخر من الإعدادات.</p>
         <div class="form-row">${WR.field({ label: 'يوم وصول الراتب', name: 'salaryDay', type: 'number', attrs: 'min="1" max="31" inputmode="numeric" placeholder="مثلاً: 23"' })}
@@ -47,13 +47,13 @@
       try {
         const d = Object.fromEntries(new FormData(form)), cur = F.currency(d.currency);
         const amount = v => v ? F.parseAmount(v, cur.dec, { allowZero: true }) : 0;
-        let s = L.createState({ name: (d.name || '').trim(), currency: d.currency, monthStartDay: Number(d.monthStartDay) });
-        s = L.saveAccount(s, { id: 'cash', opening: amount(d.cash) });
-        s = L.saveAccount(s, { id: 'card', opening: amount(d.card) });
+        const initial = L.createState({ name: (d.name || '').trim(), currency: d.currency, monthStartDay: Number(d.monthStartDay) });
+        const wallet = L.ensureWallet(initial, amount(d.opening));
+        let s = wallet.state;
         if (d.salaryDay || d.salary) {
           const day = Number(d.salaryDay) || 1;
           if (day < 1 || day > 31) throw new Error('يوم الراتب بين 1 و31.');
-          s = L.saveIncomeSource(s, { id: 'salary', name: 'الراتب', day, amount: amount(d.salary), accountId: 'card', archived: false });
+          s = L.saveIncomeSource(s, { id: 'salary', name: 'الراتب', day, amount: amount(d.salary), accountId: wallet.accountId, archived: false });
         }
         WR.store.save(s);
         WR.app.state = s; WR.app.monthKey = null;

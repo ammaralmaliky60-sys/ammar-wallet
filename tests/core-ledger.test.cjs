@@ -183,3 +183,50 @@ test('an open category tracks its monthly spending outside the capped totals', (
  assert.equal(summary.expense, 220000);
  assert.equal(summary.budgetedSpent, 180000);
 });
+
+test('فلوسي combines existing balances and keeps account history intact when switching views', () => {
+ const original = sample();
+ assert.equal(L.unifiedWallet(original), true);
+ const wallet = L.ensureWallet(original);
+ const updated = L.addTransaction(wallet.state, { type: 'expense', date: today, amount: 17000, accountId: wallet.accountId, categoryId: 'health' }, opts).state;
+ assert.equal(L.walletTotals(updated).available, L.balances(original).total - 17000);
+ assert.deepEqual(updated.transactions.slice(0, -1), original.transactions);
+ assert.equal(L.ensureWallet(updated).accountId, wallet.accountId);
+ assert.equal(L.ensureWallet(updated).state, updated);
+ const split = L.updateSettings(updated, { accountMode: 'split' });
+ assert.equal(L.unifiedWallet(split), false);
+ assert.deepEqual(L.balances(split), L.balances(updated));
+ for (const id of ['cash', 'card']) assert.equal(L.balances(split).accounts[id], L.balances(original).accounts[id]);
+});
+
+test('simple reserves draw from فلوسي and leave transaction totals correct', () => {
+ let s = L.saveAccount(L.createState(), { id: 'cash', opening: 750000 });
+ s = L.saveAccount(s, { id: 'advance', name: 'سلفة الدوام', opening: 0, reserveTarget: 500000 });
+ const fund = () => { s = L.moveReserve(s, 'advance', 'fund', 250000, opts); };
+ fund();
+ assert.deepEqual(L.walletTotals(s), { total: 750000, reserved: 250000, available: 500000 });
+ s = L.moveReserve(s, 'advance', 'withdraw', 50000, opts);
+ assert.equal(L.walletTotals(s).available, 550000);
+ fund();
+ assert.equal(L.reserves(s, '2026-11')[0].needed, 50000);
+ assert.throws(() => L.moveReserve(s, 'advance', 'pay', 500000, opts), /أكبر من الرصيد المعزول/);
+ assert.equal(s.categories.some(c => c.name === 'سلفة الدوام'), false);
+ s = L.moveReserve(s, 'advance', 'fund', 50000, opts);
+ s = L.moveReserve(s, 'advance', 'pay', 500000, opts);
+ assert.deepEqual(L.walletTotals(s), { total: 250000, reserved: 0, available: 250000 });
+ assert.equal(L.monthSummary(s, '2026-11', opts).expense, 500000);
+ assert.equal(L.reserves(s, '2026-11')[0].paidThisMonth, 500000);
+ assert.equal(s.accounts.filter(a => a.pooled).length, 1);
+});
+
+test('targetless reserves and split accounts use the chosen balance when funding', () => {
+ let s = L.updateSettings(L.createState(), { accountMode: 'split' });
+ s = L.saveAccount(s, { id: 'cash', opening: 50000 });
+ s = L.saveAccount(s, { id: 'card', opening: 100000 });
+ s = L.saveAccount(s, { id: 'advance', name: 'دفعة', opening: 0, reserveTarget: 0 });
+ assert.throws(() => L.moveReserve(s, 'advance', 'fund', 80000, { ...opts, accountId: 'cash' }), /أكبر من المتاح/);
+ s = L.moveReserve(s, 'advance', 'fund', 80000, { ...opts, accountId: 'card' });
+ s = L.moveReserve(s, 'advance', 'withdraw', 15000, { ...opts, accountId: 'cash' });
+ assert.deepEqual(L.balances(s).accounts, { cash: 65000, card: 20000, advance: 65000 });
+ assert.equal(L.reserves(s, '2026-11')[0].needed, 0);
+});

@@ -13,14 +13,26 @@
   /** A transaction row, reused by the transactions page. */
   WR.txRow = (t, { showDate = true } = {}) => {
     const s = WR.app.state, digits = s.settings.digits, today = WR.app.today();
+    const account = WR.account(t.accountId);
+    const method = L.unifiedWallet(s) && account.pooled ? '' : account.name;
     let icon, color, title, sub, sign;
-    if (t.type === 'expense') { const c = WR.category(t.categoryId); icon = c.icon; color = c.color; title = t.note || c.name; sub = t.note ? c.name : WR.account(t.accountId).name; sign = '−'; }
-    else if (t.type === 'income') { icon = 'income'; color = 'var(--brand-gold)'; title = t.note || WR.source(t.sourceId)?.name || 'دخل'; sub = (t.note && WR.source(t.sourceId)?.name) || WR.account(t.accountId).name; sign = '+'; }
-    else { icon = 'transfer'; color = 'var(--text-muted)'; title = t.note || 'تحويل'; sub = `${WR.account(t.accountId).name} ← ${WR.account(t.toAccountId).name}`; sign = ''; }
-    const when = showDate ? ' · ' + F.dateLabel(t.date, { digits, relativeTo: today }) : '';
+    if (t.type === 'expense') {
+      const c = WR.category(t.categoryId);
+      icon = c.icon; color = c.color; title = t.note || c.name; sign = '−';
+      sub = [t.note ? c.name : '', method === c.name ? '' : method].filter(Boolean).join(' · ');
+    } else if (t.type === 'income') {
+      const source = WR.source(t.sourceId)?.name;
+      icon = 'income'; color = 'var(--brand-gold)'; title = t.note || source || 'دخل'; sign = '+';
+      sub = [t.note ? source : '', method].filter(Boolean).join(' · ');
+    } else {
+      icon = 'transfer'; color = 'var(--text-muted)'; title = t.note || 'تحويل'; sign = '';
+      sub = `${account.name} ← ${WR.account(t.toAccountId).name}`;
+    }
+    const when = showDate ? F.dateLabel(t.date, { digits, relativeTo: today }) : '';
+    const description = [sub, when].filter(Boolean).join(' · ');
     return `<button type="button" class="tx" data-action="edit-tx" data-id="${WR.safe(t.id)}" data-type="${t.type}">
       <span class="tx-ic" style="--c:${color}">${WR.icon(icon)}</span>
-      <span class="tx-text"><b>${WR.safe(title)}</b><small>${WR.safe(sub + when)}</small></span>
+      <span class="tx-text"><b>${WR.safe(title)}</b>${description ? `<small>${WR.safe(description)}</small>` : ''}</span>
       <span class="tx-amount">${WR.money(t.amount, { sign })}</span></button>`;
   };
 
@@ -69,15 +81,22 @@
     </section>` : '';
 
     const bySrc = {}; L.transactionsIn(s, key).filter(t => t.type === 'income').forEach(t => { const n = WR.source(t.sourceId)?.name || 'دخل آخر'; bySrc[n] = (bySrc[n] || 0) + t.amount; }); const srcRows = Object.entries(bySrc).sort((a, c) => c[1] - a[1]); const incomeBySource = srcRows.length ? `<section class="card"><header class="card-head"><h2>دخلك حسب المصدر</h2><span class="muted">${WR.money(m.income)}</span></header><div class="tx-list">${srcRows.map(([n, v]) => `<div class="income-row"><span class="tx-ic" style="--c:var(--brand-gold)">${WR.icon('income')}</span><span class="tx-text"><b>${WR.safe(n)}</b><small>${m.income ? Math.round(v / m.income * 100) : 0}% من دخل الشهر</small></span><b class="tx-amount" style="color:var(--green-text)">+${WR.money(v)}</b></div>`).join('')}</div></section>` : '';
-    const reserved = s.accounts.filter(a => !a.archived && a.reserveTarget !== undefined)
-      .reduce((total, a) => total + b.accounts[a.id], 0);
-    const accounts = `<section class="card">
-      <header class="card-head"><h2>أرصدتك الآن</h2><a href="#settings" class="link">الحسابات${WR.icon('next')}</a></header>
+    const unified = L.unifiedWallet(s);
+    const { available, reserved } = L.walletTotals(s, b);
+    const hasReserve = s.accounts.some(a => !a.archived && a.reserveTarget !== undefined);
+    const accounts = `<section class="card ${unified ? 'home-wallet' : ''}">
+      <header class="card-head"><h2>${unified ? 'فلوسي' : 'أرصدتك الآن'}</h2>
+        ${!unified ? `<a href="#settings" class="link">الحسابات${WR.icon('next')}</a>` : ''}</header>
       <div class="balances">
-        <div class="balance total ${b.total < 0 ? 'neg' : ''}"><span class="balance-label">${WR.icon('wallet')}المجموع</span><b>${WR.money(b.total)}</b>
-          ${reserved ? `<small class="balance-after-reserve">الرصيد بعد العزل ${WR.money(b.total - reserved)}</small>` : ''}</div>
-        ${s.accounts.filter(a => !a.archived).map(a => `<div class="balance ${b.accounts[a.id] < 0 ? 'neg' : ''}">
-          <span class="balance-label">${WR.icon(a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet')}${WR.safe(a.name)}</span><b>${WR.money(b.accounts[a.id])}</b></div>`).join('')}
+        <div class="balance total ${(unified ? available : b.total) < 0 ? 'neg' : ''}">
+          <span class="balance-label">${WR.icon('wallet')}${unified ? 'المتاح للصرف' : 'المجموع'}</span>
+          <b>${WR.money(unified ? available : b.total)}</b>
+          ${reserved ? `<small class="balance-after-reserve">${unified ? 'المجموع ' + WR.money(b.total) : 'المتاح للصرف ' + WR.money(available)}</small>` : ''}
+        </div>
+        ${unified ? (hasReserve ? `<a href="#budget" class="balance reserve-link"><span class="balance-label">${WR.icon('wallet')}المبالغ المعزولة</span>
+          <b>${WR.money(reserved)}${WR.icon('next')}</b></a>` : '') :
+          s.accounts.filter(a => !a.archived).map(a => `<div class="balance ${b.accounts[a.id] < 0 ? 'neg' : ''}">
+            <span class="balance-label">${WR.icon(a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet')}${WR.safe(a.name)}</span><b>${WR.money(b.accounts[a.id])}</b></div>`).join('')}
       </div>
     </section>`;
 

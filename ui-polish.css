@@ -195,6 +195,10 @@ main:focus-visible { box-shadow: none; }
 .balance.total > b { font-size: clamp(21px, 2.8vw, 29px); }
 .balance.total .money { white-space: normal; overflow-wrap: anywhere; }
 .balance-after-reserve { color: var(--text-muted); font-size: 12px; }
+.reserve-link { color: var(--text); text-decoration: none; }
+.reserve-link:hover { background: var(--selected); }
+.reserve-link b { display: flex; align-items: center; gap: 6px; }
+.reserve-link b .ic { width: 16px; height: 16px; color: var(--green-text); }
 .tx-ic {
   width: 40px;
   height: 40px;
@@ -252,16 +256,26 @@ main:focus-visible { box-shadow: none; }
 }
 .reserve-head { display: flex; align-items: center; gap: 10px; }
 .reserve-head h3 { font-size: 16px; overflow-wrap: anywhere; }
-.reserve-head small, .reserve-amounts dt { font-size: 12px; color: var(--text-muted); }
 .reserve-head .icon-btn { margin-inline-start: auto; flex: none; }
-.reserve-amounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0 0; }
-.reserve-amounts > div { background: var(--surface-2); border-radius: var(--r-btn); padding: 8px 10px; }
-.reserve-amounts > div:first-child { background: var(--selected); }
-.reserve-amounts dd { margin: 2px 0 0; font-weight: 700; }
-.reserve-amounts .money { white-space: normal; overflow-wrap: anywhere; }
-.reserve-amounts .money small { white-space: nowrap; }
+.reserve-balance {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  background: var(--selected);
+  border-radius: var(--r-btn);
+  margin-block: 10px 6px;
+  padding: 8px 12px;
+}
+.reserve-balance > span { color: var(--green-text); font-size: 13px; }
+.reserve-balance strong { font-size: clamp(18px, 3vw, 24px); text-align: end; }
+.reserve-balance .money { white-space: normal; overflow-wrap: anywhere; }
+.reserve-status + .reserve-status { margin-block-start: 3px; }
 .reserve-item .btn-row { gap: 8px; }
 .reserve-item .btn .ic { width: 16px; height: 16px; }
+.optional-field { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-btn); }
+.optional-field summary { padding: 4px 0; cursor: pointer; color: var(--green-text); font-size: 13px; }
+.optional-field > .field { margin-top: 8px; }
 #toast { width: max-content; }
 
 :where(input, textarea)::placeholder { color: var(--text-muted); opacity: 1; }
@@ -309,8 +323,10 @@ dialog#sheet::backdrop { background: #080F2082; }
   .monthbar { width: 100%; }
   .monthbar .icon-btn { width: 44px; height: 44px; }
   .home-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .home-grid .col + .col { margin-top: 0; }
   .card + .card, .col > .card + .card { margin-top: 14px; }
+  .home-grid .col { display: contents; }
+  .home-grid .col > .card { margin-top: 0; }
+  .home-wallet { grid-column: 1; grid-row: 1; }
   .tabbar {
     align-items: center;
     inset: auto max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
@@ -343,8 +359,6 @@ dialog#sheet::backdrop { background: #080F2082; }
   }
   .tab-add .ic { width: 22px; height: 22px; }
   #toast { bottom: calc(var(--tabbar-h) + 9px + env(safe-area-inset-bottom)); }
-  .reserve-amounts > div { padding-inline: 7px; }
-  .reserve-amounts dd { font-size: 13px; }
   .reserve-item .btn-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .reserve-item .btn { gap: 4px; padding-inline: 5px; font-size: 12px; }
   .sheet-head { padding: 23px 16px 13px; }
