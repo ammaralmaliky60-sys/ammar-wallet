@@ -3,6 +3,7 @@
   'use strict';
   const L = window.WRLedger, F = window.WRFormat;
   const TYPES = [['expense', 'مصروف', 'expense'], ['income', 'دخل', 'income'], ['transfer', 'تحويل', 'transfer']];
+  const SPOUSE_OPTION = '@spouse', SPOUSE_NAME = 'مساهمة الزوجة';
   const quickSteps = () => WR.cur().dec ? [1, 5, 10, 50] : [1000, 5000, 10000, 25000];
 
   /** The account used most recently for this type (a sensible default). */
@@ -34,6 +35,9 @@
       </select></label></details>` : '') : WR.chips({ name: 'accountId', value: accountId, label: 'الحساب', options: regular.map(accountOption) });
     const categories = s.categories.filter(c => !c.archived || c.id === v.categoryId);
     const sources = s.incomeSources.filter(x => !x.archived || x.id === v.sourceId);
+    const incomeOptions = sources.map(x => ({ value: x.id, label: x.name, icon: 'income' }));
+    if (!sources.some(x => x.name === SPOUSE_NAME)) incomeOptions.push({ value: SPOUSE_OPTION, label: SPOUSE_NAME, icon: 'home' });
+    incomeOptions.push({ value: '', label: 'دخل آخر', icon: 'dots' });
     const dateChoice = v.date === today ? 'today' : v.date === F.addDays(today, -1) ? 'yesterday' : 'other';
 
     const body = `<div class="entry" data-type="${v.type}">
@@ -45,7 +49,7 @@
       <div class="when-expense">${WR.chips({ name: 'categoryId', value: v.categoryId, label: 'الفئة', cls: 'chips-grid',
         options: categories.map(c => ({ value: c.id, label: c.name, icon: c.icon, color: c.color })) })}</div>
       <div class="when-income">${WR.chips({ name: 'sourceId', value: v.sourceId || '', label: 'مصدر الدخل', cls: 'chips-row',
-        options: [...sources.map(x => ({ value: x.id, label: x.name, icon: 'income' })), { value: '', label: 'دخل آخر', icon: 'dots' }] })}</div>
+        options: incomeOptions })}</div>
       ${reservePayment ? '' : `<div class="when-money">${payment}</div>`}
       ${unified ? '' : `<div class="when-transfer">
         ${WR.chips({ name: 'fromAccountId', value: transferFrom, label: 'من حساب', options: accounts.map(accountOption) })}
@@ -94,7 +98,11 @@
           if (!accountId) throw new Error('اختر الحساب.');
           entry.accountId = accountId;
           if (t === 'expense') entry.categoryId = data.categoryId;
-          else entry.sourceId = data.sourceId || null;
+          else if (data.sourceId === SPOUSE_OPTION) {
+            const source = current.incomeSources.find(x => !x.archived && x.name === SPOUSE_NAME);
+            entry.sourceId = source?.id || L.uid();
+            if (!source) current = L.saveIncomeSource(current, { id: entry.sourceId, name: SPOUSE_NAME, day: null, amount: 0, accountId });
+          } else entry.sourceId = data.sourceId || null;
         }
         const next = tx ? L.updateTransaction(current, tx.id, entry, { today }) : L.addTransaction(current, entry, { today }).state;
         const negative = warning(next, entry);

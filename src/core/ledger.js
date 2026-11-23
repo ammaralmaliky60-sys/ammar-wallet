@@ -79,7 +79,7 @@
       if (!name(c.name) || !ICONS.includes(c.icon) || !/^#[0-9A-Fa-f]{6}$/.test(c.color) || !money(c.budget, { zero: true }) || typeof c.archived !== 'boolean') fail(`بيانات الفئة «${c.name || c.id}» غير صالحة.`);
     }
     for (const src of state.incomeSources) {
-      if (!name(src.name) || !Number.isInteger(src.day) || src.day < 1 || src.day > 31 || !money(src.amount, { zero: true }) ||
+      if (!name(src.name) || (src.day !== null && (!Number.isInteger(src.day) || src.day < 1 || src.day > 31)) || !money(src.amount, { zero: true }) ||
         !accounts.has(src.accountId) || typeof src.archived !== 'boolean') fail(`بيانات مصدر الدخل «${src.name || src.id}» غير صالحة.`);
     }
     const txIds = new Set();
@@ -268,7 +268,7 @@
   /** Expected income for the month: each active source on its day, and whether it has been recorded. */
   function incomeStatus(state, key, { today = F.today() } = {}) {
     const period = F.periodByKey(key, startDay(state)), list = transactionsIn(state, key);
-    return state.incomeSources.filter(s => !s.archived).map(source => {
+    return state.incomeSources.filter(s => !s.archived && s.day !== null).map(source => {
       // The source's day inside this period (a day before the start day falls in the next calendar month).
       const [y, m] = period.start.split('-').map(Number), startD = Number(period.start.slice(8));
       let year = y, month = m;
@@ -280,6 +280,16 @@
       const status = received.length ? 'received' : today > expected ? 'late' : today === expected ? 'due' : 'upcoming';
       return { source, expected, received, amount, status };
     });
+  }
+  function incomeBySource(state, key) {
+    const names = new Map(state.incomeSources.map(s => [s.id, s.name]));
+    const amounts = new Map();
+    for (const t of transactionsIn(state, key)) {
+      if (t.type !== 'income') continue;
+      const name = names.get(t.sourceId) || 'دخل آخر';
+      amounts.set(name, (amounts.get(name) || 0) + t.amount);
+    }
+    return [...amounts].sort((a, b) => b[1] - a[1]).map(([name, amount]) => ({ name, amount }));
   }
   function trend(state, key, months = 6) {
     const out = [];
@@ -308,5 +318,5 @@
     addTransaction, updateTransaction, removeTransaction, saveCategory, saveAccount, saveIncomeSource,
     removeCategory, removeIncomeSource, removeAccount, updateSettings,
     unifiedWallet, ensureWallet, walletTotals, moveReserve, balances, currentKey, transactionsIn, reserves, sortNewest,
-    monthSummary, incomeStatus, trend, dailyExpense, compare, budgetLevel };
+    monthSummary, incomeStatus, incomeBySource, trend, dailyExpense, compare, budgetLevel };
 });

@@ -230,3 +230,15 @@ test('targetless reserves and split accounts use the chosen balance when funding
  assert.deepEqual(L.balances(s).accounts, { cash: 65000, card: 20000, advance: 65000 });
  assert.equal(L.reserves(s, '2026-11')[0].needed, 0);
 });
+
+test('irregular contributions total by source and month without creating a reminder', () => {
+ let s = L.saveIncomeSource(L.createState(), { id: 'spouse', name: 'مساهمة الزوجة', day: null, amount: 0, accountId: 'cash' });
+ for (const [date, amount] of [['2026-10-31', 30000], ['2026-11-01', 50000], ['2026-11-03', 25000]]) {
+   s = L.addTransaction(s, { type: 'income', accountId: 'cash', sourceId: 'spouse', date, amount }, opts).state;
+ }
+ assert.deepEqual(L.incomeStatus(s, '2026-11', opts), []);
+ assert.deepEqual(L.incomeBySource(s, '2026-11'), [{ name: 'مساهمة الزوجة', amount: 75000 }]);
+ assert.deepEqual(L.incomeBySource(s, '2026-10'), [{ name: 'مساهمة الزوجة', amount: 30000 }]);
+ s = L.removeIncomeSource(s, 'spouse');
+ assert.deepEqual(L.incomeBySource(s, '2026-11'), [{ name: 'مساهمة الزوجة', amount: 75000 }]);
+});

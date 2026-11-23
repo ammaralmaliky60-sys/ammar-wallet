@@ -35,6 +35,7 @@
   function render(app) {
     const s = app.state, key = app.monthKey, today = app.today(), digits = s.settings.digits;
     const m = L.monthSummary(s, key, { today }), cmp = L.compare(s, key), days = L.dailyExpense(s, key), tr = L.trend(s, key, 6);
+    const incomeSources = L.incomeBySource(s, key);
     const spentDays = days.filter(d => F.daysBetween(d.date, today) >= 0).length || 1;
     const rate = m.income ? Math.round(m.net / m.income * 100) : null;
     const netText = !m.income ? 'بعدك ما سجّلت دخل' : m.net > 0 ? `باقيلك ${rate}% من دخلك` : m.net < 0 ? (key === app.currentKey() ? 'صرفك زايد هالشهر!' : 'صرفك زايد بهالشهر!') : 'صرفك كدّ دخلك';
@@ -46,7 +47,9 @@
         <div><span>المصروف</span><b class="neg">${WR.money(m.expense)}</b></div>
         <div><span>الصافي</span><b>${WR.money(m.net, { sign: m.net > 0 ? '+' : m.net < 0 ? '−' : '' })}</b></div></div>
         <p class="net-note"><span class="pill" data-tone="${!m.income ? 'muted' : m.net >= 0 ? 'ok' : 'over'}">${WR.icon(!m.income ? 'clock' : m.net >= 0 ? 'check' : 'alert')}${netText}</span></p></section>
-      ${(() => { const by = {}; L.transactionsIn(s, key).filter(t => t.type === 'income').forEach(t => { const n = WR.source(t.sourceId)?.name || 'دخل آخر'; by[n] = (by[n] || 0) + t.amount; }); const rows = Object.entries(by).sort((a, b) => b[1] - a[1]); return rows.length ? `<section class="card"><header class="card-head"><h2>الدخل حسب المصدر</h2><span class="muted">${WR.money(m.income)}</span></header><div class="compare">${rows.map(([n, v]) => `<div class="compare-row"><span class="bar-name">${WR.safe(n)}</span><span class="compare-now">${WR.money(v)}</span></div>`).join('')}</div></section>` : ''; })()}
+      ${incomeSources.length ? `<section class="card"><header class="card-head"><h2>الدخل حسب المصدر</h2><span class="muted">${WR.money(m.income)}</span></header>
+        <div class="compare">${incomeSources.map(({ name, amount }) => `<div class="compare-row">
+          <span class="bar-name">${WR.safe(name)}</span><span class="compare-now">${WR.money(amount)}</span></div>`).join('')}</div></section>` : ''}
       <div class="report-grid">
         <section class="card"><header class="card-head"><h2>وين راحت فلوسك؟</h2><span class="muted">${WR.money(m.expense)}</span></header>
           ${m.ranked.length ? WR.categoryBars(m.ranked, m.expense) + '<p class="hint">اضغط على أي فئة لعرض حركاتها.</p>' : WR.empty('pie', 'لا يوجد مصروف في هذا الشهر', 'عند تسجيل مصروف يظهر هنا توزيعه على الفئات.')}</section>
@@ -86,8 +89,9 @@
       currency: WR.cur().unit, brand: 'وين راحت؟',
       stats: { opening: WR.fmt(L.balances(s, F.addDays(p.start, -1)).total), income: WR.fmt(m.income), expenses: WR.fmt(m.expense),
         net: WR.fmt(m.net), total: WR.fmt(L.balances(s, end).total), count: String(list.length) },
+      incomeSources: L.incomeBySource(s, key).map(({ name, amount }) => ({ name, amount: WR.fmt(amount) })),
       wallets: m.categories.filter(c => c.spent || c.budget).map(c => ({ name: c.name, budget: c.budget ? WR.fmt(c.budget) : '—', spent: WR.fmt(c.spent), balance: c.budget ? WR.fmt(c.remaining) : '—' })),
-      entries: list.map(t => ({ id: t.id, date: t.date, type: TYPE_LABEL[t.type], category: detail(t), note: t.note || detail(t), amount: WR.fmt(t.amount) }))
+      entries: list.map(t => ({ id: t.id, date: t.date, type: TYPE_LABEL[t.type], category: detail(t), note: t.note, amount: WR.fmt(t.amount) }))
     };
     WR.toast('جارٍ إنشاء تقرير PDF…');
     Promise.resolve(window.ThukhrPDF.download(data)).then(info => WR.toast(`تم تنزيل التقرير، عدد الصفحات: ${info.pages}`))

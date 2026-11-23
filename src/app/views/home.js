@@ -80,7 +80,15 @@
         <button type="button" class="btn small ghost" data-action="receive" data-id="${WR.safe(x.source.id)}">${WR.icon('check')}استلمت</button></div>`).join('')}
     </section>` : '';
 
-    const bySrc = {}; L.transactionsIn(s, key).filter(t => t.type === 'income').forEach(t => { const n = WR.source(t.sourceId)?.name || 'دخل آخر'; bySrc[n] = (bySrc[n] || 0) + t.amount; }); const srcRows = Object.entries(bySrc).sort((a, c) => c[1] - a[1]); const incomeBySource = srcRows.length ? `<section class="card"><header class="card-head"><h2>دخلك حسب المصدر</h2><span class="muted">${WR.money(m.income)}</span></header><div class="tx-list">${srcRows.map(([n, v]) => `<div class="income-row"><span class="tx-ic" style="--c:var(--brand-gold)">${WR.icon('income')}</span><span class="tx-text"><b>${WR.safe(n)}</b><small>${m.income ? Math.round(v / m.income * 100) : 0}% من دخل الشهر</small></span><b class="tx-amount" style="color:var(--green-text)">+${WR.money(v)}</b></div>`).join('')}</div></section>` : '';
+    const srcRows = L.incomeBySource(s, key);
+    const incomeBySource = srcRows.length ? `<section class="card">
+      <header class="card-head"><h2>دخلك حسب المصدر</h2><span class="muted">${WR.money(m.income)}</span></header>
+      <div class="tx-list">${srcRows.map(({ name, amount }) => `<div class="income-row">
+        <span class="tx-ic" style="--c:var(--brand-gold)">${WR.icon('income')}</span>
+        <span class="tx-text"><b>${WR.safe(name)}</b><small>${Math.round(amount / m.income * 100)}% من دخل الشهر</small></span>
+        <b class="tx-amount" style="color:var(--green-text)">${WR.money(amount, { sign: '+' })}</b>
+      </div>`).join('')}</div>
+    </section>` : '';
     const unified = L.unifiedWallet(s);
     const { available, reserved } = L.walletTotals(s, b);
     const hasReserve = s.accounts.some(a => !a.archived && a.reserveTarget !== undefined);

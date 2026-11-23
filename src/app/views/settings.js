@@ -34,9 +34,9 @@
         ${unified ? '</details>' : ''}</section>
 
       <section class="card"><header class="card-head"><h2>مصادر الدخل</h2><button type="button" class="btn small ghost" data-action="edit-source">${WR.icon('plus')}مصدر</button></header>
-        <p class="muted">الراتب والحوافز وأي دخل منتظم: يذكّرك البرنامج في موعده حتى تسجّل استلامه.</p>
+        <p class="muted">تابع الدخل حسب المصدر. للمصادر المنتظمة تقدر تضيف يوم تذكير.</p>
         <div class="list">${s.incomeSources.filter(x => !x.archived).map(x => `<button type="button" class="list-row" data-action="edit-source" data-id="${WR.safe(x.id)}">
-          <span class="tx-ic" style="--c:var(--brand-gold)">${WR.icon('income')}</span><span class="tx-text"><b>${WR.safe(x.name)}</b><small>يوم ${x.day} من كل شهر${unified ? '' : ' · ' + WR.safe(WR.account(x.accountId).name)}</small></span>
+          <span class="tx-ic" style="--c:var(--brand-gold)">${WR.icon('income')}</span><span class="tx-text"><b>${WR.safe(x.name)}</b><small>${x.day === null ? 'بدون موعد ثابت' : 'يوم ' + x.day + ' من كل شهر'}${unified ? '' : ' · ' + WR.safe(WR.account(x.accountId).name)}</small></span>
           <span class="tx-amount">${x.amount ? WR.money(x.amount) : '<small class="muted">بدون مبلغ متوقع</small>'}</span></button>`).join('') || '<p class="muted">لا توجد مصادر دخل بعد.</p>'}</div></section>
 
       <section class="card"><header class="card-head"><h2>الفئات</h2><a class="link" href="#budget">إدارتها من الميزانية</a></header>
@@ -90,20 +90,20 @@
   function editSource(id) {
     const s = WR.app.state, unified = L.unifiedWallet(s);
     const accounts = s.accounts.filter(a => !a.archived && a.reserveTarget === undefined);
-    const x = id ? s.incomeSources.find(v => v.id === id) : { name: '', day: 1, amount: 0, accountId: unified ? '' : accounts[0].id };
+    const x = id ? s.incomeSources.find(v => v.id === id) : { name: '', day: null, amount: 0, accountId: unified ? '' : accounts[0].id };
     if (!x) return;
     WR.sheet({
-      title: id ? `«${x.name}»` : 'مصدر دخل جديد', subtitle: 'المبلغ المتوقع اختياري، ويُقترح تلقائياً عند تسجيل الاستلام.',
+      title: id ? `«${x.name}»` : 'مصدر دخل جديد', subtitle: 'اترك اليوم فارغاً إذا كان الدخل يوصلك بدون موعد ثابت.',
       body: WR.field({ label: 'الاسم', name: 'name', value: x.name, attrs: 'required maxlength="40" placeholder="مثلاً: الراتب"' }) +
-        WR.field({ label: 'يوم الاستلام المتوقع من كل شهر', name: 'day', type: 'number', value: x.day, attrs: 'min="1" max="31" required inputmode="numeric"' }) +
+        WR.field({ label: 'يوم الاستلام الشهري (اختياري)', name: 'day', type: 'number', value: x.day ?? '', attrs: 'min="1" max="31" inputmode="numeric"' }) +
         WR.amountField({ label: 'المبلغ المتوقع', name: 'amount', value: x.amount ? F.amountInputValue(x.amount, WR.cur().dec) : '', attrs: '' }) +
         (unified ? '' : WR.chips({ name: 'accountId', value: x.accountId, label: 'يصل إلى حساب', cls: 'chips-row',
           options: s.accounts.filter(a => accounts.includes(a) || a.id === x.accountId).map(a => ({ value: a.id, label: a.name, icon: acctIcon(a) })) })),
       secondary: id ? { label: 'حذف المصدر', danger: true, run: close => { close(); WR.app.commit(L.removeIncomeSource(s, id), 'حُذف مصدر الدخل'); } } : null,
       onSubmit: (d, form, close) => {
-        const name = (d.name || '').trim(), day = Number(d.day);
+        const name = (d.name || '').trim(), day = d.day === '' ? null : Number(d.day);
         if (!name) throw new Error('اكتب اسم مصدر الدخل.');
-        if (!Number.isInteger(day) || day < 1 || day > 31) throw new Error('يوم الاستلام بين 1 و31.');
+        if (day !== null && (!Number.isInteger(day) || day < 1 || day > 31)) throw new Error('يوم الاستلام بين 1 و31.');
         const amount = d.amount ? WR.parseAmount(d.amount, { allowZero: true }) : 0;
         let current = WR.app.state, accountId = unified ? x.accountId : d.accountId;
         if (!accountId && unified) ({ state: current, accountId } = L.ensureWallet(current));

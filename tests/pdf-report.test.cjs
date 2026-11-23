@@ -38,9 +38,10 @@ test('PDF source has all identity fields and the reports page supplies settings.
  for(const label of ['الاسم المسجّل في التحية','تاريخ إنشاء التقرير','وقت إنشاء التقرير','أُعدّ باسم:'])assert.ok(source.includes(label),label);
 });
 test('static PWA manifest uses updated script versions',()=>{
- for(const txt of [html,sw]){
-  assert.match(txt,/report-pdf\.js\?v=3\.1\.0/);
-  assert.match(txt,/views\/reports\.js\?v=3\.1\.0/);
+ for (const file of ['report-pdf.js', 'src/app/views/reports.js']) {
+  const match = [...html.matchAll(/src="(\.\/[^"]+)"/g)].find(([, url]) => url.startsWith('./' + file + '?v='));
+  assert.ok(match, file);
+  assert.ok(sw.includes("'" + match[1] + "'"), file);
  }
 });
 test('PDF pages render every wallet, every transaction, and report identity',async()=>{
@@ -73,7 +74,18 @@ test('PDF pages render every wallet, every transaction, and report identity',asy
  const result=await pdf.download(data);
  assert.ok(clicked);
  assert.equal(result.pages,created);
- assert.ok(result.pages>=5);
+ assert.equal(result.pages,3);
+ assert.ok(!drawn.some(x=>x.includes('لا توجد حركات')));
+ const short = sample();
+ short.incomeSources = [{name:'مساهمة الزوجة',amount:'75,000'}];
+ const compact = await pdf.download(short);
+ assert.equal(compact.pages,1);
+ assert.ok(drawn.includes('مساهمة الزوجة'));
+ const empty = sample();
+ empty.wallets = [];
+ empty.entries = [];
+ assert.equal((await pdf.download(empty)).pages,1);
+ assert.ok(drawn.some(x=>x.includes('لا توجد حركات')));
  assert.ok(drawn.includes('عمار'));
  assert.ok(drawn.some(x=>x.includes('أُعدّ باسم: عمار')));
  assert.ok(drawn.some(x=>x.includes(result.generatedDate)));
