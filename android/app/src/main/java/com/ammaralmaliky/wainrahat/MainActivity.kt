@@ -36,6 +36,8 @@ class MainActivity : ComponentActivity() {
             webView.restoreState(savedInstanceState)
         }
 
+        if (savedInstanceState == null) ReleaseUpdater(this).check()
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (webView.canGoBack()) webView.goBack() else finish()

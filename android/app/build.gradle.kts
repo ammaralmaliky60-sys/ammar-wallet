@@ -16,9 +16,22 @@ android {
         applicationId = "com.ammaralmaliky.wainrahat"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
+
+    signingConfigs {
+        create("release") {
+            val path = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (path != null) {
+                storeFile = file(path)
+                storePassword = System.getenv("ANDROID_STORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes.getByName("release") { signingConfig = signingConfigs.getByName("release") }
 
     sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/webAssets"))
 }
@@ -30,6 +43,8 @@ kotlin {
 }
 
 dependencies {
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.activity:activity-ktx:1.10.0")
     implementation("androidx.webkit:webkit:1.12.1")
 }
@@ -47,4 +62,12 @@ tasks.register<Sync>("syncWebAssets") {
 
 tasks.named("preBuild").configure {
     dependsOn("syncWebAssets")
+}
+
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.name.contains("Release") }) {
+        check(listOf("ANDROID_KEYSTORE_PATH", "ANDROID_STORE_PASSWORD", "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD").all { !System.getenv(it).isNullOrBlank() }) {
+            "Release requires external signing credentials; unsigned release is forbidden."
+        }
+    }
 }

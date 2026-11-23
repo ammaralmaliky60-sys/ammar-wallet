@@ -8,3 +8,10 @@ thukhr-*.json
 thukhr-*.csv
 mizan-ledger-*.csv
 mizan-*.json
+
+# Android signing and local build output
+*.jks
+*.keystore
+android/local.properties
+android/.gradle/
+android/**/build/
