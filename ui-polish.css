@@ -403,10 +403,6 @@ dialog#sheet::backdrop { background: #080F2082; }
     min-height: calc(61px + env(safe-area-inset-top));
     padding: calc(7px + env(safe-area-inset-top)) 16px 7px;
   }
-  html[data-native-shell="android"] .topbar {
-    min-height: calc(61px + var(--android-safe-top, 0px));
-    padding: calc(7px + var(--android-safe-top, 0px)) 16px 7px;
-  }
   #themeBtn span { display: none; }
   main { padding: 17px 16px calc(var(--tabbar-h) + 34px + env(safe-area-inset-bottom)); }
   .page-head { margin-bottom: 16px; }
