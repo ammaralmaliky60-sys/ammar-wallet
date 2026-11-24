@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F4F1FF">
+<meta name="theme-color" content="#F4F8FF">
 <meta name="color-scheme" content="light dark">
 <script>
   (() => {
@@ -11,7 +11,7 @@
     try { saved = localStorage.getItem('thukhr-appearance-v1'); } catch { /* use device setting */ }
     const dark = saved === 'night' || (saved !== 'classic' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    document.querySelector('meta[name="theme-color"]').content = dark ? '#110D1F' : '#F4F1FF';
+    document.querySelector('meta[name="theme-color"]').content = dark ? '#080F20' : '#F4F8FF';
   })();
 </script>
 <meta name="description" content="دبّرها — نظّم دخلك ومصروفك، وتابع الميزانية والتقارير. بياناتك تبقى على جهازك.">
@@ -19,11 +19,11 @@
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="./icon-32.png">
-<link rel="stylesheet" href="./dabburha-tokens.css?v=1.0.3">
+<link rel="stylesheet" href="./dabburha-tokens.css?v=0.046">
 <link rel="stylesheet" href="./styles.css?v=3.0.3">
 <link rel="stylesheet" href="./neo-finance.css?v=3.2.0">
 <link rel="stylesheet" href="./ui-polish.css?v=3.2.10">
-<link rel="stylesheet" href="./dabburha-theme.css?v=1.0.3">
+<link rel="stylesheet" href="./dabburha-theme.css?v=0.046">
 <title>دبّرها</title>
 </head>
 <body>
@@ -58,10 +58,11 @@
 <script src="./src/core/migrate.js?v=3.0.0"></script>
 <script src="./report-pdf.js?v=3.2.4"></script>
 <!-- App -->
+<script src="./src/app/version.js"></script>
 <script src="./src/app/icons.js?v=3.0.5"></script>
 <script src="./src/app/ui.js?v=3.0.0"></script>
 <script src="./src/app/store.js?v=3.2.0"></script>
-<script src="./src/app/main.js?v=3.2.4"></script>
+<script src="./src/app/main.js?v=0.046"></script>
 <script src="./src/app/views/entry.js?v=3.2.4"></script>
 <script src="./src/app/views/home.js?v=3.2.6"></script>
 <script src="./src/app/views/transactions.js?v=3.2.4"></script>

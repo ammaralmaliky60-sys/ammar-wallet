@@ -7,11 +7,12 @@
  *
  * IMPORTANT: every stylesheet/script URL in index.html (including its ?v=
  * query) must appear in ASSETS. tests/assets.test.cjs enforces this.
- * Bump CACHE whenever ASSETS changes.
+ * Bump the web release in src/app/version.js when publishing changes.
  */
 'use strict';
 
-const CACHE = 'dabburha-static-v1.0.3';
+importScripts('./src/app/version.js');
+const CACHE = 'dabburha-static-' + self.WR.version;
 // Older prefixes stay listed so their caches are removed after the update.
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-', 'dabburha-static-'];
 
@@ -30,11 +31,11 @@ const ASSETS = [
   './icon-maskable-512.png',
 
   // Styles and self-hosted fonts
-  './dabburha-tokens.css?v=1.0.3',
+  './dabburha-tokens.css?v=0.046',
   './styles.css?v=3.0.3',
   './neo-finance.css?v=3.2.0',
   './ui-polish.css?v=3.2.10',
-  './dabburha-theme.css?v=1.0.3',
+  './dabburha-theme.css?v=0.046',
   './fonts/dabburha/marhey-400-arabic.woff2',
   './fonts/dabburha/marhey-400-latin.woff2',
   './fonts/dabburha/rubik-400-arabic.woff2',
@@ -51,10 +52,11 @@ const ASSETS = [
   './report-pdf.js?v=3.2.4',
 
   // App
+  './src/app/version.js',
   './src/app/icons.js?v=3.0.5',
   './src/app/ui.js?v=3.0.0',
   './src/app/store.js?v=3.2.0',
-  './src/app/main.js?v=3.2.4',
+  './src/app/main.js?v=0.046',
   './src/app/views/entry.js?v=3.2.4',
   './src/app/views/home.js?v=3.2.6',
   './src/app/views/transactions.js?v=3.2.4',
@@ -73,7 +75,7 @@ const assetPaths = () => new Set(ASSETS.map(p => new URL(p, self.registration.sc
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(ASSETS))
+      .then(cache => cache.addAll(ASSETS.map(path => new Request(path, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });

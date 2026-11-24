@@ -71,7 +71,7 @@
     $('#pageTitle').innerHTML = 'دبّرها / <strong>' + pageLabel + '</strong>';
     const main = $('#main');
     main.innerHTML = view.render(app) + `<footer class="app-signature" aria-label="معلومات التطبيق">
-      <span>إعداد وتنفيذ وتصميم</span><strong>عمار عبدالجبار هاشم</strong><small dir="ltr">v0.045</small>
+      <span>إعداد وتنفيذ وتصميم</span><strong>عمار عبدالجبار هاشم</strong><small dir="ltr">${WR.version}</small>
     </footer>`;
     WR.wireAmounts(main);
     view.bind?.(main, app);
@@ -84,7 +84,7 @@
     const dark = chosen ? chosen === 'night' : systemAppearance.matches;
     const theme = dark ? 'dark' : 'light';
     document.documentElement.dataset.theme = document.body.dataset.theme = theme;
-    $('meta[name="theme-color"]').content = dark ? '#110D1F' : '#F4F1FF';
+    $('meta[name="theme-color"]').content = dark ? '#080F20' : '#F4F8FF';
 
     const btn = $('#themeBtn');
     if (btn.dataset.theme !== theme) {
@@ -145,7 +145,7 @@
     } else {
       WR.views.onboarding.recovery(result);
     }
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {}));
   }
   WR.start = start;
 })(window.WR = window.WR || {});

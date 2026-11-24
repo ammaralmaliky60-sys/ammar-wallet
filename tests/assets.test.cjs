@@ -29,3 +29,14 @@ test('fonts referenced by stylesheets exist',()=>{
  for(const css of fs.readdirSync(root).filter(f=>f.endsWith('.css')))
   for(const m of read(css).matchAll(/url\(["']?(\.\/[^"')]+)["']?\)/g))assert.ok(exists(m[1]),`${css}: missing ${m[1]}`);
 });
+
+test('the footer and offline cache share the same web release number',()=>{
+ const versionPath='./src/app/version.js';
+ const self={};
+ require('node:vm').runInNewContext(read(versionPath),{self});
+ assert.match(self.WR.version,/^v[0-9]+\.[0-9]{3}$/);
+ assert.ok(pageAssets.indexOf(versionPath)>=0 && pageAssets.indexOf(versionPath)<pageAssets.findIndex(u=>u.startsWith('./src/app/main.js')));
+ assert.ok(sw.includes(`importScripts('${versionPath}')`));
+ assert.match(sw,/const CACHE = 'dabburha-static-' \+ self\.WR\.version/);
+ assert.match(read('src/app/main.js'),/<small dir="ltr">\$\{WR\.version\}<\/small>/);
+});
