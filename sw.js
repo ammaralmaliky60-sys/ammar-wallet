@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE = 'dabburha-static-v1.0.1';
+const CACHE = 'dabburha-static-v1.0.2';
 // Older prefixes stay listed so their caches are removed after the update.
 const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-', 'dabburha-static-'];
 
@@ -30,11 +30,11 @@ const ASSETS = [
   './icon-maskable-512.png',
 
   // Styles and self-hosted fonts
-  './dabburha-tokens.css?v=1.0.1',
+  './dabburha-tokens.css?v=1.0.2',
   './styles.css?v=3.0.3',
   './neo-finance.css?v=3.2.0',
   './ui-polish.css?v=3.2.10',
-  './dabburha-theme.css?v=1.0.1',
+  './dabburha-theme.css?v=1.0.2',
   './fonts/dabburha/marhey-400-arabic.woff2',
   './fonts/dabburha/marhey-400-latin.woff2',
   './fonts/dabburha/rubik-400-arabic.woff2',

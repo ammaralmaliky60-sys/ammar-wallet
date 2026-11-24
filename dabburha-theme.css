@@ -46,7 +46,7 @@ body[data-theme="dark"] {
   --text-muted: #ABA5C4;
   --border: #362E52;
   --input-border: #ABA5C4;
-  --brand-green: #5B3DF5;
+  --brand-green: #8B73FF;
   --brand-coral: #FF6B85;
   --brand-gold: #FFB020;
   --green-text: #B5AAFF;
@@ -59,11 +59,11 @@ body[data-theme="dark"] {
   --nav-active-bg: #FFB020;
   --nav-active-fg: #17112E;
   --mark-coin: #FFB020;
-  --hero-1: #5B3DF5;
-  --hero-2: #5B3DF5;
-  --hero-text: #FFFFFF;
-  --hero-muted: #E4DEFF;
-  --selected: #5B3DF5;
+  --hero-1: #8B73FF;
+  --hero-2: #8B73FF;
+  --hero-text: #17112E;
+  --hero-muted: #17112E;
+  --selected: #8B73FF;
   --focus: #FFB020;
   --shadow: 4px 4px 0 #000000;
   --nav-shadow: 4px 4px 0 #000000;
@@ -118,6 +118,30 @@ a, .link { color: var(--green-text); }
 .hero .meter { background: #FFFFFF55; }
 .hero .meter i, .hero .motion-progress-value { background: #FFB020; stroke: #FFB020; }
 .hero .motion-progress-ring { color: #FFB020; }
+:root[data-theme="dark"] .hero, body[data-theme="dark"] .hero {
+  background: #8B73FF !important;
+  color: #17112E;
+}
+:root[data-theme="dark"] .hero .hero-heading h2,
+:root[data-theme="dark"] .hero .hero-hint,
+:root[data-theme="dark"] .hero .hero-budget p,
+:root[data-theme="dark"] .hero .hero-split small,
+:root[data-theme="dark"] .hero .hero-split b,
+:root[data-theme="dark"] .hero .hero-amount small,
+:root[data-theme="dark"] .hero .pill,
+body[data-theme="dark"] .hero .hero-heading h2,
+body[data-theme="dark"] .hero .hero-hint,
+body[data-theme="dark"] .hero .hero-budget p,
+body[data-theme="dark"] .hero .hero-split small,
+body[data-theme="dark"] .hero .hero-split b,
+body[data-theme="dark"] .hero .hero-amount small,
+body[data-theme="dark"] .hero .pill { color: #17112E; }
+:root[data-theme="dark"] .hero-split > span,
+body[data-theme="dark"] .hero-split > span { background: #F4F1FF; border-color: #17112E; }
+:root[data-theme="dark"] .hero .motion-progress-ring,
+body[data-theme="dark"] .hero .motion-progress-ring { color: #17112E; }
+:root[data-theme="dark"] .cinematic-hero,
+body[data-theme="dark"] .cinematic-hero { background: #8B73FF; }
 
 .btn, .icon-btn, .tab-add, .fchip, .chip > span, .seg > button,
 .seg > label > span, .quick-amounts button, .toast-action {
@@ -183,6 +207,9 @@ dialog#sheet::backdrop { background: #17112EBB; -webkit-backdrop-filter: none; b
 @media (max-width: 899px) {
   .tabbar { background: var(--nav-bg); }
 }
+body[data-theme="dark"] .chip input:checked + span,
+body[data-theme="dark"] .fchip[aria-pressed="true"],
+body[data-theme="dark"] .seg > button[aria-pressed="true"] { color: #17112E; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

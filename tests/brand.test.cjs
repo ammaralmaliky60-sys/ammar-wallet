@@ -29,6 +29,13 @@ test('light and dark brand colors keep readable text contrast',()=>{
  }
 });
 
+test('night mode uses the softer violet with readable ink text',()=>{
+ assert.equal(dark['brand-green'],'#8B73FF');
+ assert.equal(dark['hero-1'],'#8B73FF');
+ assert.equal(dark['hero-text'],'#17112E');
+ assert.ok(ratio(rgb('#17112E'),rgb('#8B73FF'))>=4.5);
+});
+
 test('local font files are referenced by the token stylesheet',()=>{
  for(const font of ['marhey-400-arabic','marhey-400-latin','rubik-400-arabic','rubik-400-latin','rubik-600-arabic','rubik-600-latin','rubik-800-arabic','rubik-800-latin']){
   assert.ok(tokens.includes(`./fonts/dabburha/${font}.woff2`),font);
