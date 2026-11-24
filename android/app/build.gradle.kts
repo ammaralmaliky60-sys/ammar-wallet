@@ -20,6 +20,16 @@ android {
         versionName = "1.0.1"
     }
 
+    buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".test"
+            manifestPlaceholders["appLabel"] = "وين راحت؟ - اختبار"
+        }
+        getByName("release") {
+            manifestPlaceholders["appLabel"] = "وين راحت؟"
+        }
+    }
+
     signingConfigs {
         create("release") {
             val path = System.getenv("ANDROID_KEYSTORE_PATH")
