@@ -335,6 +335,13 @@ main:focus-visible { box-shadow: none; }
 }
 .tabbar .nav-item *, .tabbar .tab-add * { -webkit-user-select: none; user-select: none; }
 
+body[data-page="reports"] :where(a, button, summary, [role="button"]),
+body[data-page="reports"] :where(a, button, summary, [role="button"]) * {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 :where(input, textarea)::placeholder { color: var(--text-muted); opacity: 1; }
 .field input, .field select, .search input, .date-pick input[type="date"] {
   border-color: var(--input-border);

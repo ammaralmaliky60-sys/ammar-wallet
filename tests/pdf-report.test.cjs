@@ -37,6 +37,10 @@ test('PDF source has all identity fields and the reports page supplies settings.
  assert.match(view,/ownerName:\s*s\.settings\.name\s*\|\|\s*''/);
  for(const label of ['الاسم المسجّل في التحية','تاريخ إنشاء التقرير','وقت إنشاء التقرير','أُعدّ باسم:'])assert.ok(source.includes(label),label);
 });
+test('reports offer PDF without a CSV export control or handler',()=>{
+ assert.match(view,/data-action="export-pdf"/);
+ assert.doesNotMatch(view,/CSV|export-csv|text\/csv|\.csv/);
+});
 test('static PWA manifest uses updated script versions',()=>{
  for (const file of ['report-pdf.js', 'src/app/views/reports.js']) {
   const match = [...html.matchAll(/src="(\.\/[^"]+)"/g)].find(([, url]) => url.startsWith('./' + file + '?v='));

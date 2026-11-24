@@ -43,3 +43,9 @@ test('site-wide forced bold styling has been reverted', () => {
  const css = read('ui-polish.css');
  assert.doesNotMatch(css, /body,\s*body \*,\s*body input::placeholder/);
 });
+
+test('report controls suppress the native blue tap flash and keep keyboard focus visible', () => {
+ const css = read('ui-polish.css');
+ assert.match(css, /body\[data-page="reports"\][^{]+\{[^}]*-webkit-tap-highlight-color: transparent/s);
+ assert.match(css, /:focus-visible/);
+});

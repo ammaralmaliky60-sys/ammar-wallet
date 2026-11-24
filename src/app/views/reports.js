@@ -1,4 +1,4 @@
-/* وين راحت؟ — reports.js: the month in numbers and charts, comparisons, and PDF/CSV export. */
+/* وين راحت؟ — reports.js: the month in numbers and charts, comparisons, and PDF export. */
 (function (WR) {
   'use strict';
   const L = window.WRLedger, F = window.WRFormat;
@@ -40,7 +40,7 @@
     const rate = m.income ? Math.round(m.net / m.income * 100) : null;
     const netText = !m.income ? 'بعدك ما سجّلت دخل' : m.net > 0 ? `باقيلك ${rate}% من دخلك` : m.net < 0 ? (key === app.currentKey() ? 'صرفك زايد هالشهر!' : 'صرفك زايد بهالشهر!') : 'صرفك كدّ دخلك';
     return WR.pageHead('التقارير', 'وين راحت فلوسك هذا الشهر، وكيف تقارن بما قبله.',
-      '<button type="button" class="btn ghost" data-action="export-csv">' + WR.icon('download') + 'CSV</button><button type="button" class="btn primary" data-action="export-pdf">' + WR.icon('download') + 'PDF</button>') +
+      '<button type="button" class="btn primary" data-action="export-pdf">' + WR.icon('download') + 'PDF</button>') +
       WR.monthBar() +
       `<section class="card"><div class="kpis kpis-3">
         <div><span>الدخل</span><b class="pos">${WR.money(m.income)}</b></div>
@@ -70,15 +70,6 @@
   const TYPE_LABEL = { expense: 'مصروف', income: 'دخل', transfer: 'تحويل' };
   const detail = t => t.type === 'expense' ? WR.category(t.categoryId).name : t.type === 'income' ? L.incomeSourceName(WR.app.state, t) : `${WR.account(t.accountId).name} ← ${WR.account(t.toAccountId).name}`;
 
-  function exportCsv() {
-    const app = WR.app, s = app.state, list = L.transactionsIn(s, app.monthKey).slice().sort((a, b) => a.date.localeCompare(b.date));
-    const dec = WR.cur().dec, cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const rows = [['التاريخ', 'النوع', 'الفئة أو المصدر', 'الحساب', 'إلى حساب', 'المبلغ', 'العملة', 'الملاحظة'],
-      ...list.map(t => [t.date, TYPE_LABEL[t.type], detail(t), WR.account(t.accountId).name, t.toAccountId ? WR.account(t.toAccountId).name : '',
-        F.amountInputValue(t.amount, dec) || '0', s.settings.currency, t.note])];
-    WR.download(`dabburha-${app.monthKey}.csv`, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
-    WR.toast('تم تنزيل حركات الشهر بصيغة CSV');
-  }
   function exportPdf() {
     if (!window.ThukhrPDF?.download) throw new Error('مكوّن PDF غير متاح. أعد تحميل الصفحة.');
     const app = WR.app, s = app.state, key = app.monthKey, today = app.today();
@@ -100,5 +91,5 @@
 
   WR.views = WR.views || {};
   WR.views.reports = { render };
-  WR.actions = Object.assign(WR.actions || {}, { 'export-csv': exportCsv, 'export-pdf': exportPdf });
+  WR.actions = Object.assign(WR.actions || {}, { 'export-pdf': exportPdf });
 })(window.WR = window.WR || {});
