@@ -9,15 +9,16 @@ test('Neo Finance stylesheet is loaded after the existing stylesheet, preserving
  assert.ok(sw.includes("'" + asset[1] + "'"));
  assert.doesNotMatch(css,/localStorage|indexedDB|monthStartDay|transactions|innerHTML/);
 });
-test('approved A logo is visible in both headers and installed app vector',()=>{
- assert.equal((html.match(/<svg class="brand-mark"/g)||[]).length,2);
- assert.match(read('src/app/icons.js'),/WR\.MARK = '<svg class="brand-mark"/);
+test('Dabburha logo is visible in both headers and app welcome view',()=>{
+ assert.equal((html.match(/class="brand-mark" src="\.\/icon\.svg"/g)||[]).length,2);
+ assert.match(read('src/app/icons.js'),/WR\.MARK = '<img class="brand-mark" src="\.\/icon\.svg"/);
  assert.match(read('icon.svg'),/viewBox="0 0 512 512"/);
- assert.match(read('icon.svg'),/fill="#35E3D0"/);
+ assert.match(read('icon.svg'),/fill="#2D5BFF"/);
 });
 test('each scheme gets its own colors and native control appearance', () => {
- assert.match(css, /body\[data-theme="light"\] \{\s*color-scheme: light;/);
- assert.match(css, /body\[data-theme="dark"\] \{\s*color-scheme: dark;/);
- assert.match(css, /--bg: #F4F8FF/);
- assert.match(css, /--bg: #080F20/);
+ const dabburha=read('dabburha-theme.css');
+ assert.match(dabburha, /body\[data-theme="light"\] \{\s*color-scheme: light;/);
+ assert.match(dabburha, /body\[data-theme="dark"\] \{\s*color-scheme: dark;/);
+ assert.match(dabburha, /--bg: #FFE600/);
+ assert.match(dabburha, /--bg: #0E0E14/);
 });

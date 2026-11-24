@@ -117,7 +117,7 @@
   function migrationNotice(report) {
     const app = WR.app, b = report.balances;
     WR.sheet({
-      title: 'أهلاً بك في «وين راحت؟» الجديد', wide: true,
+      title: 'أهلاً بك في «دبّرها»', wide: true,
       body: `<p class="lead">نقلنا بياناتك إلى طريقة العمل الجديدة: تسجّل مصروفك مباشرة من حسابك، والميزانية سقف لكل فئة للمقارنة فقط.</p>
         <ul class="facts"><li>${WR.icon('check')}<span><b>${report.transactions}</b> حركة، و<b>${report.categories}</b> فئة، و<b>${report.incomeSources}</b> مصدر دخل.</span></li>
         <li>${WR.icon('check')}<span>أرصدتك مطابقة للإصدار السابق: النقد ${WR.money(b.cash)} والبطاقة ${WR.money(b.card)}.</span></li>
@@ -159,8 +159,8 @@
   WR.actions = Object.assign(WR.actions || {}, {
     'edit-account': d => editAccount(d.id), 'edit-source': d => editSource(d.id),
     'set-theme': d => { WR.store.setTheme(d.id === 'auto' ? null : d.id); WR.applyTheme(); },
-    backup: () => { WR.download(`ween-rahat-backup-${F.today()}.json`, WR.store.backupText(WR.app.state)); WR.toast('تم تنزيل النسخة الاحتياطية. احفظها في مكان آمن.'); },
+    backup: () => { WR.download(`dabburha-backup-${F.today()}.json`, WR.store.backupText(WR.app.state)); WR.toast('تم تنزيل النسخة الاحتياطية. احفظها في مكان آمن.'); },
     restore, wipe,
-    'legacy-download': () => { const raw = WR.store.legacyRaw(); if (raw) WR.download(`ween-rahat-previous-version-${F.today()}.json`, raw); }
+    'legacy-download': () => { const raw = WR.store.legacyRaw(); if (raw) WR.download(`dabburha-previous-version-${F.today()}.json`, raw); }
   });
 })(window.WR = window.WR || {});

@@ -15,7 +15,7 @@ function load(extra={}){
   return scope.window.ThukhrPDF;
 }
 const sample=()=>({
- brand:'وين راحت؟',period:'2026-11',from:'2026-11-01',to:'2026-11-04',ownerName:'  عمار  ',
+ brand:'دبّرها',period:'2026-11',from:'2026-11-01',to:'2026-11-04',ownerName:'  عمار  ',
  stats:{opening:'200,000',income:'720,000',expenses:'100,000',net:'620,000',total:'820,000',count:'1'},
  wallets:[{name:'المنزل',budget:'150,000',spent:'30,000',balance:'120,000'}],
  entries:[{id:'a',date:'2026-11-04',type:'مصروف',category:'المنزل',note:'مشتريات المنزل',amount:'30,000'}]

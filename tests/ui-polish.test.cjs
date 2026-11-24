@@ -34,7 +34,7 @@ test('dates, placeholders, focus and selected controls use theme tokens', () => 
 
 test('page context is a breadcrumb, but page heading remains the only H1', () => {
   const html = read('index.html'), main = read('src/app/main.js');
-  assert.match(main, /وين راحت؟ \/ /);
+  assert.match(main, /دبّرها \/ /);
   assert.match(main, /<h1>\$\{title\}<\/h1>/);
   assert.match(html, /<span id="pageTitle" class="page-title"><\/span>/);
 });

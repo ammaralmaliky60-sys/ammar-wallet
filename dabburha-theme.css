@@ -1,0 +1,188 @@
+/* دبّرها — visual skin layered over the existing app views and flows. */
+:root,
+body[data-theme="light"] {
+  color-scheme: light;
+  --bg: #FFE600;
+  --surface: #FFFFFF;
+  --surface-2: #FFF8A6;
+  --text: #0D0D0D;
+  --text-muted: #454545;
+  --border: #0D0D0D;
+  --input-border: #0D0D0D;
+  --brand-green: #2D5BFF;
+  --brand-coral: #FF2E93;
+  --brand-gold: #FFE600;
+  --green-text: #1E3FCC;
+  --coral-text: #A5004F;
+  --gold-text: #0D0D0D;
+  --on-green: #FFFFFF;
+  --on-coral: #0D0D0D;
+  --nav-bg: #0D0D0D;
+  --nav-icon: #D9D9D9;
+  --nav-active-bg: #FFE600;
+  --nav-active-fg: #0D0D0D;
+  --mark-coin: #FFE600;
+  --hero-1: #2D5BFF;
+  --hero-2: #2D5BFF;
+  --hero-text: #FFFFFF;
+  --hero-muted: #E4EAFF;
+  --selected: #E3E9FF;
+  --focus: #1E3FCC;
+  --shadow: 4px 4px 0 #0D0D0D;
+  --nav-shadow: 4px 4px 0 #0D0D0D;
+  --hero-shadow: 4px 4px 0 #0D0D0D;
+  --r-card: 20px;
+  --r-btn: 14px;
+  --ring: 0 0 0 3px #2D5BFF;
+}
+
+:root[data-theme="dark"],
+body[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0E0E14;
+  --surface: #1B1B26;
+  --surface-2: #262635;
+  --text: #F5F5F0;
+  --text-muted: #C1C1CC;
+  --border: #F5F5F0;
+  --input-border: #A8A8B8;
+  --brand-green: #6687FF;
+  --brand-coral: #FF61AD;
+  --brand-gold: #FFE600;
+  --green-text: #A9B9FF;
+  --coral-text: #FF9CCB;
+  --gold-text: #FFE600;
+  --on-green: #0D0D0D;
+  --on-coral: #0D0D0D;
+  --nav-bg: #1B1B26;
+  --nav-icon: #A8A8B8;
+  --nav-active-bg: #FFE600;
+  --nav-active-fg: #0D0D0D;
+  --mark-coin: #FFE600;
+  --hero-1: #2D5BFF;
+  --hero-2: #2D5BFF;
+  --hero-text: #FFFFFF;
+  --hero-muted: #E4EAFF;
+  --selected: #28365F;
+  --focus: #FFE600;
+  --shadow: 4px 4px 0 #000000;
+  --nav-shadow: 4px 4px 0 #000000;
+  --hero-shadow: 4px 4px 0 #000000;
+  --ring: 0 0 0 3px #FFE600;
+}
+
+html[data-theme] { background-color: var(--bg); }
+html:has(> body[data-theme="light"]) { background: #FFE600; color-scheme: light; }
+html:has(> body[data-theme="dark"]) { background: #0E0E14; color-scheme: dark; }
+body, button, input, select, textarea { font-family: "Rubik", system-ui, sans-serif; }
+body { background: var(--bg); color: var(--text); }
+h1, h2, h3, .brand-name, .cinematic-welcome-copy h1 { font-family: "Marhey", "Rubik", sans-serif; }
+.hero-amount { font-family: "Marhey", "Rubik", sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Flat, outlined surfaces keep the existing layout while applying the sticker identity. */
+.sidebar, .topbar, .tabbar, .card, .monthbar, dialog#sheet, .sheet-foot,
+.list-row, .balance, .note, .empty-art, .monthbar-label, .tx-ic {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.sidebar, .topbar, .tabbar { background: var(--surface); border-color: var(--border); }
+.card, .monthbar, dialog#sheet, .list-row, .balance, .note {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.card, .monthbar, .list-row, .balance, .note, .empty-art, .tx-ic,
+.btn, .icon-btn, .fchip, .quick-amounts button, .seg > button,
+.tabbar, .cinematic-preview, .cinematic-screen, .cinematic-mini-row i,
+.cinematic-progress i, .cinematic-bars i { background-image: none !important; }
+.card { border-radius: var(--r-card); }
+.topbar { box-shadow: none; }
+.brand-mark { filter: none; animation: none; }
+.brand-q { color: var(--brand-coral); }
+.brand small { color: var(--text-muted); }
+.page-title, .muted, .hint, .privacy { color: var(--text-muted); }
+a, .link { color: var(--green-text); }
+
+.hero {
+  isolation: isolate;
+  background: #2D5BFF !important;
+  color: #FFFFFF;
+  border: 3px solid #0D0D0D;
+  border-radius: 28px;
+  box-shadow: 5px 5px 0 #0D0D0D;
+}
+.hero::before, .hero::after { display: none !important; animation: none !important; }
+.hero .hero-heading h2, .hero .hero-hint, .hero .hero-budget p,
+.hero .hero-split small, .hero .hero-amount small, .hero .pill { color: #E4EAFF; }
+.hero-split > span { background: #214CE5; border-color: #FFFFFF; }
+.hero .meter { background: #FFFFFF55; }
+.hero .meter i, .hero .motion-progress-value { background: #FFE600; stroke: #FFE600; }
+.hero .motion-progress-ring { color: #FFE600; }
+
+.btn, .icon-btn, .tab-add, .fchip, .chip > span, .seg > button,
+.seg > label > span, .quick-amounts button, .toast-action {
+  border: 2px solid var(--border);
+  box-shadow: 2px 2px 0 var(--border);
+  border-radius: var(--r-btn);
+}
+.btn.primary {
+  background: #0D0D0D !important;
+  color: #FFE600 !important;
+  border-color: #0D0D0D;
+  box-shadow: 3px 3px 0 #0D0D0D !important;
+}
+.btn.spend, .tab-add {
+  background: var(--brand-coral) !important;
+  color: #0D0D0D !important;
+  border-color: #0D0D0D;
+  box-shadow: 3px 3px 0 #0D0D0D !important;
+}
+.btn.ghost, .icon-btn, .fchip, .quick-amounts button { background: var(--surface); color: var(--text); }
+.btn.danger { background: #FF2E93; color: #0D0D0D; }
+.btn:active, .icon-btn:active, .tab-add:active, .fchip:active { transform: translate(2px, 2px) scale(.99); box-shadow: none; }
+.btn:focus-visible, .icon-btn:focus-visible, .tab-add:focus-visible,
+.nav-item:focus-visible, .fchip:focus-visible, .list-row:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.field input, .field select, .field textarea, input, select, textarea {
+  background: var(--surface); color: var(--text); border-color: var(--input-border);
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand-green); box-shadow: var(--ring); }
+.chip input:checked + span, .fchip[aria-pressed="true"], .seg > button[aria-pressed="true"] {
+  background: var(--brand-green); color: #FFFFFF; border-color: #0D0D0D;
+}
+.bar-fill, .chart .bar { background: var(--brand-green); fill: var(--brand-green); }
+.empty-art, .tx-ic { border: 2px solid var(--border); background: var(--brand-gold); color: #0D0D0D; }
+.balance.total { background: var(--surface); }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.side-nav .nav-item.active { background: var(--brand-gold); color: #0D0D0D; border: 2px solid #0D0D0D; }
+.side-nav .nav-item.active::after { background: var(--brand-coral); }
+.tabbar { background: var(--nav-bg); color: #FFFFFF; border: 2px solid #0D0D0D; box-shadow: 3px 3px 0 #0D0D0D; }
+.tabbar .nav-item { color: #FFFFFF; }
+.tabbar .nav-item.active { color: var(--nav-active-fg); background: var(--nav-active-bg); box-shadow: 2px 2px 0 #0D0D0D; }
+.tabbar .liquid-indicator { display: none !important; }
+.tabbar .tab-add { border-radius: 50%; }
+.monthbar { border-radius: 16px; }
+.monthbar-label .ic { color: var(--brand-green); }
+#toast { background: #0D0D0D; color: #FFFFFF; border: 2px solid #FFE600; box-shadow: 3px 3px 0 #0D0D0D; }
+.toast-action { background: #FFE600; color: #0D0D0D; border-color: #FFE600; }
+dialog#sheet { box-shadow: 5px 5px 0 #0D0D0D; }
+dialog#sheet::backdrop { background: #0D0D0DBB; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* The existing welcome sequence remains unchanged; only its appearance is reskinned. */
+.cinematic-welcome { background: var(--surface); border-color: var(--border); }
+.cinematic-hero { background: #2D5BFF; border: 3px solid #0D0D0D; border-radius: 26px; }
+.cinematic-hero::after, .cinematic-glow, .cinematic-orbit, .cinematic-spark { display: none; filter: none; }
+.cinematic-preview { border: 2px solid #0D0D0D; background: #0D0D0D; box-shadow: 4px 4px 0 #0D0D0D; }
+.cinematic-screen { border: 2px solid #0D0D0D; border-radius: 16px; background: #FFFFFF; color: #0D0D0D; box-shadow: 3px 3px 0 #0D0D0D; }
+.cinematic-mini-row i { background-color: #FFE600; border-color: #0D0D0D; border-radius: 4px; }
+.cinematic-progress i, .cinematic-bars i { background-color: #FF2E93; border-radius: 4px; }
+.cinematic-welcome-copy h1 { color: var(--text); }
+.cinematic-actions .btn.primary { background: #0D0D0D !important; color: #FFE600 !important; }
+
+@media (max-width: 899px) {
+  .tabbar { background: var(--nav-bg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

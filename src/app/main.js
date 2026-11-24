@@ -68,7 +68,7 @@
     renderNav();
     const view = WR.views[app.page];
     const pageLabel = app.page === 'settings' ? 'الإعدادات' : NAV.find(n => n[0] === app.page)[2];
-    $('#pageTitle').innerHTML = 'وين راحت؟ / <strong>' + pageLabel + '</strong>';
+    $('#pageTitle').innerHTML = 'دبّرها / <strong>' + pageLabel + '</strong>';
     const main = $('#main');
     main.innerHTML = view.render(app) + `<footer class="app-signature" aria-label="معلومات التطبيق">
       <span>إعداد وتنفيذ وتصميم</span><strong>عمار عبدالجبار هاشم</strong><small dir="ltr">v0.045</small>
@@ -84,7 +84,7 @@
     const dark = chosen ? chosen === 'night' : systemAppearance.matches;
     const theme = dark ? 'dark' : 'light';
     document.documentElement.dataset.theme = document.body.dataset.theme = theme;
-    $('meta[name="theme-color"]').content = dark ? '#080F20' : '#F4F8FF';
+    $('meta[name="theme-color"]').content = dark ? '#0E0E14' : '#FFE600';
 
     const btn = $('#themeBtn');
     if (btn.dataset.theme !== theme) {

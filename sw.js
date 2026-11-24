@@ -1,5 +1,5 @@
 /*
- * وين راحت؟ — Service Worker
+ * دبّرها — Service Worker
  *
  * Strategy: network-first for the app's own static assets, falling back to the
  * offline cache. Financial data never passes through here; it lives only in
@@ -11,47 +11,57 @@
  */
 'use strict';
 
-const CACHE = 'weenrahat-static-v3.2.14';
+const CACHE = 'dabburha-static-v1.0.0';
 // Older prefixes stay listed so their caches are removed after the update.
-const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-'];
+const CACHE_PREFIXES = ['mizan-static-', 'thukhr-static-', 'firza-static-', 'weenrahat-static-', 'dabburha-static-'];
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon.svg',
+  './dabburha-icon-maskable.svg',
   './apple-touch-icon.png',
+  './icon-16.png',
+  './icon-32.png',
   './icon-192.png',
   './icon-512.png',
+  './icon-maskable-192.png',
   './icon-maskable-512.png',
 
-  // Styles and font
-  './fonts.css?v=3.0.0',
+  // Styles and self-hosted fonts
+  './dabburha-tokens.css?v=1.0.0',
   './styles.css?v=3.0.3',
   './neo-finance.css?v=3.2.0',
   './ui-polish.css?v=3.2.10',
-  './fonts/readex-pro/ReadexPro-arabic.woff2',
-  './fonts/readex-pro/ReadexPro-latin.woff2',
-  './fonts/readex-pro/ReadexPro-latin-ext.woff2',
+  './dabburha-theme.css?v=1.0.0',
+  './fonts/dabburha/marhey-400-arabic.woff2',
+  './fonts/dabburha/marhey-400-latin.woff2',
+  './fonts/dabburha/rubik-400-arabic.woff2',
+  './fonts/dabburha/rubik-400-latin.woff2',
+  './fonts/dabburha/rubik-600-arabic.woff2',
+  './fonts/dabburha/rubik-600-latin.woff2',
+  './fonts/dabburha/rubik-800-arabic.woff2',
+  './fonts/dabburha/rubik-800-latin.woff2',
 
   // Core (order mirrors index.html)
   './src/core/format.js?v=3.0.0',
   './src/core/ledger.js?v=3.2.4',
   './src/core/migrate.js?v=3.0.0',
-  './report-pdf.js?v=3.2.3',
+  './report-pdf.js?v=3.2.4',
 
   // App
-  './src/app/icons.js?v=3.0.4',
+  './src/app/icons.js?v=3.0.5',
   './src/app/ui.js?v=3.0.0',
   './src/app/store.js?v=3.2.0',
-  './src/app/main.js?v=3.2.3',
+  './src/app/main.js?v=3.2.4',
   './src/app/views/entry.js?v=3.2.4',
   './src/app/views/home.js?v=3.2.6',
   './src/app/views/transactions.js?v=3.2.4',
   './src/app/views/budget.js?v=3.2.2',
-  './src/app/views/reports.js?v=3.2.4',
-  './src/app/views/settings.js?v=3.2.7',
-  './src/app/views/onboarding.js?v=3.2.3',
+  './src/app/views/reports.js?v=3.2.5',
+  './src/app/views/settings.js?v=3.2.8',
+  './src/app/views/onboarding.js?v=3.2.4',
   './src/app/effects.js?v=3.2.0',
   './src/app/motion.js?v=3.0.3',
   './src/app/start.js?v=3.0.0'

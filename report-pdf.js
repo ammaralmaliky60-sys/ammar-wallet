@@ -1,4 +1,4 @@
-/* وين راحت؟ — polished A4 personal financial report.
+/* دبّرها — polished A4 personal financial report.
  * Offline canvas-to-PDF generator; no print dialogs, remote assets, or financial-data writes.
  * The greeting name comes only from state.settings.name; timestamps are captured locally at generation.
  */
@@ -6,13 +6,13 @@
 'use strict';
 const PAGE_W=1240, PAGE_H=1754, PDF_W=595.28, PDF_H=841.89;
 const C={
-  navy:'#10263B', navy2:'#163858', mint:'#35E3D0', mintSoft:'#D9F7F2',
-  mintInk:'#09665B', coral:'#BF3754', rose:'#FBE9ED', paper:'#F4F8FF',
-  ink:'#162A43', gray:'#53657E', line:'#DCE7F1', soft:'#F3F7FC', white:'#FFFFFF'
+  navy:'#0D0D0D', navy2:'#2D5BFF', mint:'#FFE600', mintSoft:'#FFF8A6',
+  mintInk:'#1E3FCC', coral:'#FF2E93', rose:'#FFE6F1', paper:'#FFFFFF',
+  ink:'#0D0D0D', gray:'#454545', line:'#0D0D0D', soft:'#FFF8A6', white:'#FFFFFF'
 };
 const fmt=v=>String(v===undefined||v===null?'':v);
 function font(ctx,size=22,weight=400){
-  ctx.font=weight+' '+size+'px "Readex Pro",Tahoma,Arial,sans-serif';
+  ctx.font=weight+' '+size+'px "Rubik",Tahoma,Arial,sans-serif';
 }
 function rtl(ctx,value,x,y,size=22,color=C.ink,weight=400,maxWidth){
   ctx.save();font(ctx,size,weight);ctx.fillStyle=color;
@@ -69,9 +69,9 @@ function prepareReport(report,when=new Date()){
 }
 function pageHeader(ctx,data,isFirst){
   const height=isFirst?180:117;
-  rect(ctx,0,0,PAGE_W,height,C.navy);
+  rect(ctx,0,0,PAGE_W,height,C.navy2);
   rect(ctx,0,height-4,PAGE_W,4,C.mint);
-  rtl(ctx,data.brand||'وين راحت؟',1172,42,29,C.white,700,660);
+  rtl(ctx,data.brand||'دبّرها',1172,42,29,C.white,700,660);
   if(isFirst){
     rtl(ctx,'ملخص الشهر المالي',1172,96,36,C.white,700,1030);
     rtl(ctx,'الفترة: '+data.from+'  —  '+(data.to||data.from),1172,146,19,'#D4E5F3',450);
@@ -249,9 +249,9 @@ async function download(report){
   const data=prepareReport(report,new Date());
   if(document.fonts&&document.fonts.load){
     await Promise.allSettled([
-      document.fonts.load('400 26px "Readex Pro"','وين راحت؟ 0123'),
-      document.fonts.load('600 26px "Readex Pro"','وين راحت؟ 0123'),
-      document.fonts.load('700 26px "Readex Pro"','وين راحت؟ 0123')
+      document.fonts.load('400 26px "Rubik"','دبّرها 0123'),
+      document.fonts.load('600 26px "Rubik"','دبّرها 0123'),
+      document.fonts.load('800 26px "Rubik"','دبّرها 0123')
     ]);
   }
   const pages=layoutPages(data);

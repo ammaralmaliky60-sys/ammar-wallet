@@ -47,5 +47,5 @@
   };
   WR.icon = (name, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${P[name] || P.dots}"/></svg>`;
   WR.ICON_NAMES = Object.keys(P);
-  WR.MARK = '<svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><rect x="18" y="34" width="84" height="60" rx="16" fill="none" stroke="currentColor" stroke-width="8"/><path d="M24 44V29c0-7 5-12 12-12h51" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="67" y="48" width="37" height="29" rx="9" fill="#35E3D0"/><circle cx="78" cy="62" r="4" fill="#080F20"/><path d="M35 79V68m13 11V59m13 20V51" stroke="#35E3D0" stroke-width="6" stroke-linecap="round"/></svg>';
+  WR.MARK = '<img class="brand-mark" src="./icon.svg" alt="" aria-hidden="true">';
 })(window.WR = window.WR || {});

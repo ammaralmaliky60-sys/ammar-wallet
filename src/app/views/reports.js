@@ -76,7 +76,7 @@
     const rows = [['التاريخ', 'النوع', 'الفئة أو المصدر', 'الحساب', 'إلى حساب', 'المبلغ', 'العملة', 'الملاحظة'],
       ...list.map(t => [t.date, TYPE_LABEL[t.type], detail(t), WR.account(t.accountId).name, t.toAccountId ? WR.account(t.toAccountId).name : '',
         F.amountInputValue(t.amount, dec) || '0', s.settings.currency, t.note])];
-    WR.download(`ween-rahat-${app.monthKey}.csv`, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+    WR.download(`dabburha-${app.monthKey}.csv`, '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
     WR.toast('تم تنزيل حركات الشهر بصيغة CSV');
   }
   function exportPdf() {
@@ -86,7 +86,7 @@
     const list = L.transactionsIn(s, key).slice().sort((a, b) => a.date.localeCompare(b.date));
     const data = {
       period: key, from: p.start, to: end, ownerName: s.settings.name || '',
-      currency: WR.cur().unit, brand: 'وين راحت؟',
+      currency: WR.cur().unit, brand: 'دبّرها',
       stats: { opening: WR.fmt(L.balances(s, F.addDays(p.start, -1)).total), income: WR.fmt(m.income), expenses: WR.fmt(m.expense),
         net: WR.fmt(m.net), total: WR.fmt(L.balances(s, end).total), count: String(list.length) },
       incomeSources: L.incomeBySource(s, key).map(({ name, amount }) => ({ name, amount: WR.fmt(amount) })),

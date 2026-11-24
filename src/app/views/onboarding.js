@@ -26,7 +26,7 @@
         </div>
         <div class="cinematic-spark cinematic-spark-one" aria-hidden="true"></div><div class="cinematic-spark cinematic-spark-two" aria-hidden="true"></div>
       </div>
-      <div class="cinematic-welcome-copy"><h1>وين راحت<span class="brand-q">؟</span></h1><p>اعرف فلوسك وين تروح</p></div>
+      <div class="cinematic-welcome-copy"><h1>دبّرها</h1><p>الشهر طويل والراتب قصير؟ دبّرها.</p></div>
       <div class="cinematic-actions"><button type="button" id="startWelcome" class="btn primary big">ابدأ الآن</button><button type="button" class="btn ghost" data-action="restore">${WR.icon('upload')}عندي نسخة احتياطية</button></div>
       <form id="welcomeForm" class="form-stack" hidden novalidate>
         <h2>1. عنك</h2>
@@ -89,7 +89,7 @@
         ${WR.store.legacyRaw() ? `<button type="button" class="btn primary" data-action="legacy-download">${WR.icon('download')}تنزيل بيانات الإصدار السابق</button>` : ''}
         <button type="button" class="btn ghost" data-action="restore">${WR.icon('upload')}استعادة نسخة احتياطية</button>
         <button type="button" class="btn danger" data-action="start-fresh">ابدأ من جديد</button></div></section>`);
-    WR.actions['download-raw'] = () => WR.download(`ween-rahat-unreadable-${F.today()}.json`, result.raw);
+    WR.actions['download-raw'] = () => WR.download(`dabburha-unreadable-${F.today()}.json`, result.raw);
   }
 
   WR.views = WR.views || {};
