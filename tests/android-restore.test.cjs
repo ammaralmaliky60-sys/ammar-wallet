@@ -40,9 +40,12 @@ test('existing records require a verified safety copy; cancellation aborts impor
 
 test('Android root applies system, cutout, and keyboard insets once', () => {
   assert.ok(mainActivity.includes('WindowCompat.setDecorFitsSystemWindows(window, false)'));
-  assert.ok(mainActivity.includes('WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()'));
-  assert.ok(mainActivity.includes('max(safe.bottom, ime.bottom)'));
-  assert.ok(mainActivity.includes('setPadding(safe.left, safe.top, safe.right,'));
+  assert.ok(mainActivity.includes('WindowInsetsCompat.Type.displayCutout()'));
+  assert.ok(mainActivity.includes('max(cutout.bottom, max(navBar, ime.bottom))'));
+  assert.ok(mainActivity.includes('setPadding(cutout.left, 0, cutout.right,'));
+  assert.ok(mainActivity.includes('insets.isVisible(WindowInsetsCompat.Type.statusBars())'));
+  assert.ok(mainActivity.includes('insets.isVisible(WindowInsetsCompat.Type.navigationBars())'));
+  assert.ok(mainActivity.includes('applyTopSafeArea(max(cutout.top, topBar))'));
   assert.ok(mainActivity.includes('SOFT_INPUT_ADJUST_RESIZE'));
   assert.ok(mainActivity.includes('LAYOUT_DIRECTION_RTL'));
   assert.ok(mainActivity.includes('WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE'));
@@ -72,6 +75,6 @@ test('Android safe-area space keeps the current theme background and avoids doub
   assert.match(mainActivity, /uri\.path == "\/assets\/index\.html"/);
   assert.match(html, /dataset\.nativeShell = 'android'/);
   assert.match(mainActivity, /assets\/index\.html\?shell=android/);
-  assert.match(polish, /html\[data-native-shell="android"\] \.topbar\s*\{\s*min-height: 61px;\s*padding: 7px 16px;/);
+  assert.match(polish, /html\[data-native-shell="android"\] \.topbar\s*\{\s*min-height: calc\(61px \+ var\(--android-safe-top, 0px\)\);\s*padding: calc\(7px \+ var\(--android-safe-top, 0px\)\) 16px 7px;/);
   assert.match(polish, /padding: calc\(7px \+ env\(safe-area-inset-top\)\)/);
 });

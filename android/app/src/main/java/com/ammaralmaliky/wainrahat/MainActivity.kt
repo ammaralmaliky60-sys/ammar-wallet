@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var rootLayout: android.widget.LinearLayout
     private val appOrigin = "https://appassets.androidplatform.net"
     private val startupBackground = Color.rgb(8, 15, 32)
+    private var androidSafeTopCss = 0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,11 +84,13 @@ class MainActivity : ComponentActivity() {
             addView(webView, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
         }
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, insets ->
-            val safe = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
+            val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val topBar = if (insets.isVisible(WindowInsetsCompat.Type.statusBars())) bars.top else 0
+            val navBar = if (insets.isVisible(WindowInsetsCompat.Type.navigationBars())) bars.bottom else 0
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            view.setPadding(safe.left, safe.top, safe.right, max(safe.bottom, ime.bottom))
+            view.setPadding(cutout.left, 0, cutout.right, max(cutout.bottom, max(navBar, ime.bottom)))
+            applyTopSafeArea(max(cutout.top, topBar))
             insets
         }
         rootLayout.setBackgroundColor(startupBackground)
@@ -135,6 +138,7 @@ class MainActivity : ComponentActivity() {
     private fun syncAppBackground(view: WebView) {
         if (!isAppPage(view.url)) return
         view.evaluateJavascript("""(function(){
+          document.documentElement.style.setProperty('--android-safe-top','${androidSafeTopCss}px');
           var read=function(){return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()};
           var send=function(){var c=read();if(/^#[0-9a-f]{6}$/i.test(c)&&window.BackupHost)window.BackupHost.postMessage(JSON.stringify({action:'theme',color:c}));return c};
           if(!window.__wainrahatShellThemeObserver){window.__wainrahatShellThemeObserver=new MutationObserver(send);window.__wainrahatShellThemeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});}
@@ -142,6 +146,14 @@ class MainActivity : ComponentActivity() {
         })()""") { raw ->
             val value = runCatching { JSONTokener(raw).nextValue() as? String }.getOrNull()
             applyShellBackground(value)
+        }
+    }
+
+    private fun applyTopSafeArea(insetPx: Int) {
+        androidSafeTopCss = insetPx / resources.displayMetrics.density
+        if (::webView.isInitialized && isAppPage(webView.url)) {
+            val cssPixels = String.format(java.util.Locale.US, "%.2f", androidSafeTopCss)
+            webView.evaluateJavascript("document.documentElement.style.setProperty('--android-safe-top', '${cssPixels}px')", null)
         }
     }
 
