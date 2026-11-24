@@ -6,9 +6,9 @@
 'use strict';
 const PAGE_W=1240, PAGE_H=1754, PDF_W=595.28, PDF_H=841.89;
 const C={
-  navy:'#0D0D0D', navy2:'#2D5BFF', mint:'#FFE600', mintSoft:'#FFF8A6',
-  mintInk:'#1E3FCC', coral:'#FF2E93', rose:'#FFE6F1', paper:'#FFFFFF',
-  ink:'#0D0D0D', gray:'#454545', line:'#0D0D0D', soft:'#FFF8A6', white:'#FFFFFF'
+  navy:'#17112E', navy2:'#5B3DF5', mint:'#FFB020', mintSoft:'#F4F1FF',
+  mintInk:'#4A2FD6', coral:'#FF5C7A', rose:'#FFE7EC', paper:'#FFFFFF',
+  ink:'#17112E', gray:'#59536E', line:'#ECE8FA', soft:'#F4F1FF', white:'#FFFFFF'
 };
 const fmt=v=>String(v===undefined||v===null?'':v);
 function font(ctx,size=22,weight=400){

@@ -17,7 +17,7 @@ test('Dabburha name, Arabic copy, PWA metadata and supplied icon are active',()=
  assert.match(html,/<title>دبّرها<\/title>/);
  assert.match(html,/الشهر طويل والراتب قصير؟ دبّرها\./);
  assert.equal(manifest.name,'دبّرها');assert.equal(manifest.short_name,'دبّرها');
- assert.equal(manifest.dir,'rtl');assert.equal(manifest.theme_color,'#FFE600');
+ assert.equal(manifest.dir,'rtl');assert.equal(manifest.theme_color,'#F4F1FF');
  assert.match(read('icon.svg'),/<title>دبّرها<\/title>/);
 });
 

@@ -5,7 +5,11 @@
    user has not forced light (<html data-theme="light">).
    ========================================================= */
 
-/* Self-hosted OFL fonts keep the site usable offline. */
+/* Fonts MUST be self-hosted (the app runs offline and inside
+   Android WebView). Put the woff2 files in /fonts/ and keep
+   these paths, or update them. Both families are OFL-licensed
+   on Google Fonts: Marhey (400, 700) and Rubik (400, 600, 800),
+   Arabic + Latin subsets. */
 @font-face { font-family: "Marhey"; src: url("./fonts/dabburha/marhey-400-arabic.woff2") format("woff2"); font-weight: 400 700; font-display: swap; unicode-range: U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF; }
 @font-face { font-family: "Marhey"; src: url("./fonts/dabburha/marhey-400-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family: "Rubik"; src: url("./fonts/dabburha/rubik-400-arabic.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF; }
@@ -17,45 +21,48 @@
 
 :root {
   /* ---- Brand (same in both themes) ---- */
-  --d-yellow: #FFE600;
-  --d-blue: #2D5BFF;
-  --d-pink: #FF2E93;
-  --d-ink: #0D0D0D;
+  --d-violet: #5B3DF5;
+  --d-apricot: #FFB020;
+  --d-rose: #FF5C7A;
+  --d-ink: #17112E;
+  --d-lavender: #F4F1FF;
   --d-white: #FFFFFF;
 
   /* ---- Semantic: LIGHT ---- */
-  --bg: #FFE600;              /* page background */
+  --bg: #F4F1FF;              /* page background (soft lavender) */
   --surface: #FFFFFF;         /* cards, inputs, list rows */
   --surface-soft: rgba(255, 255, 255, 0.6); /* inactive chips, keypad keys */
-  --surface-strong: #0D0D0D;  /* black cards (challenge, totals) */
+  --surface-strong: #17112E;  /* ink cards (challenge, totals) */
   --on-surface-strong: #FFFFFF;
-  --track: #EFEFEF;           /* progress bar empty part */
-  --divider: #EEEEEE;
-  --text: #0D0D0D;
-  --text-muted: #4A4A4A;      /* 4.5:1+ on white and on yellow */
-  --link: #1E3FCC;            /* blue text on white/yellow (AA) */
+  --track: #ECE8FA;           /* progress bar empty part */
+  --divider: #ECE8FA;
+  --text: #17112E;
+  --text-muted: #59536E;      /* 4.5:1+ on white and on lavender */
+  --link: #4A2FD6;            /* violet text on white/lavender (AA) */
 
-  --hero-bg: #2D5BFF;         /* "صرفت هذا الشهر" card */
+  --hero-bg: #5B3DF5;         /* "صرفت هذا الشهر" card */
   --hero-fg: #FFFFFF;
-  --hero-fg-muted: #DCE4FF;
+  --hero-fg-muted: #E4DEFF;
 
-  --accent: #FF2E93;          /* pink: stickers, warnings, FAB */
-  --on-accent: #0D0D0D;
-  --bar: #2D5BFF;             /* budget progress fill */
-  --warn-border: #FF2E93;     /* over-budget card outline */
+  --accent: #FF5C7A;          /* rose: stickers, warnings, FAB */
+  --on-accent: #17112E;
+  --highlight: #FFB020;       /* apricot: active nav, CTA text, hero progress */
+  --on-highlight: #17112E;
+  --bar: #5B3DF5;             /* budget progress fill */
+  --warn-border: #FF5C7A;     /* over-budget card outline */
 
-  --btn-primary-bg: #0D0D0D;  /* main CTA */
-  --btn-primary-fg: #FFE600;
-  --chip-on-bg: #2D5BFF;      /* selected chip / segment */
+  --btn-primary-bg: #17112E;  /* main CTA */
+  --btn-primary-fg: #FFB020;
+  --chip-on-bg: #5B3DF5;      /* selected chip / segment */
   --chip-on-fg: #FFFFFF;
-  --nav-bg: #0D0D0D;
-  --nav-icon: #D9D9D9;
-  --nav-active-bg: #FFE600;
-  --nav-active-fg: #0D0D0D;
-  --fab-ring: #FFE600;        /* ring around the + button = page bg */
-  --outline: #0D0D0D;         /* 3px "sticker" borders */
+  --nav-bg: #17112E;
+  --nav-icon: #D5D0E6;
+  --nav-active-bg: #FFB020;
+  --nav-active-fg: #17112E;
+  --fab-ring: #F4F1FF;        /* ring around the + button = page bg */
+  --outline: #17112E;         /* 3px "sticker" borders */
 
-  /* ---- Type ---- */
+/* ---- Type ---- */
   --font-display: "Marhey", "Rubik", system-ui, sans-serif; /* headings + big numbers */
   --font-ui: "Rubik", system-ui, sans-serif;                /* everything else */
   --fs-hero: 58px;   /* hero amount */
@@ -83,46 +90,49 @@
 
 /* ---- Semantic: DARK ---- */
 :root[data-theme="dark"] {
-  --bg: #0E0E14;
-  --surface: #1B1B26;
-  --surface-soft: #1B1B26;
-  --surface-strong: #262635;
-  --on-surface-strong: #F5F5F0;
-  --track: #2E2E40;
-  --divider: #2E2E40;
-  --text: #F5F5F0;
-  --text-muted: #A8A8B8;
-  --link: #FFE600;
+  --bg: #110D1F;
+  --surface: #1D1830;
+  --surface-soft: #1D1830;
+  --surface-strong: #2A2342;
+  --on-surface-strong: #F5F3FF;
+  --track: #362E52;
+  --divider: #362E52;
+  --text: #F5F3FF;
+  --text-muted: #ABA5C4;
+  --link: #FFB020;
 
-  --hero-bg: #2D5BFF;
+  --hero-bg: #5B3DF5;
   --hero-fg: #FFFFFF;
-  --hero-fg-muted: #DCE4FF;
+  --hero-fg-muted: #E4DEFF;
 
-  --accent: #FF3D9A;      /* slightly lighter pink on dark */
-  --on-accent: #0E0E14;
-  --bar: #4D74FF;         /* lighter blue reads better on dark */
-  --warn-border: #FF3D9A;
+  --accent: #FF6B85;      /* slightly lighter rose on dark */
+  --on-accent: #110D1F;
+  --highlight: #FFB020;
+  --on-highlight: #110D1F;
+  --bar: #8B73FF;         /* lighter violet reads better on dark */
+  --warn-border: #FF6B85;
 
-  --btn-primary-bg: #FFE600;
-  --btn-primary-fg: #0E0E14;
-  --chip-on-bg: #2D5BFF;
+  --btn-primary-bg: #FFB020;
+  --btn-primary-fg: #110D1F;
+  --chip-on-bg: #5B3DF5;
   --chip-on-fg: #FFFFFF;
-  --nav-bg: #1B1B26;
-  --nav-icon: #A8A8B8;
-  --nav-active-bg: #FFE600;
-  --nav-active-fg: #0E0E14;
-  --fab-ring: #0E0E14;
-  --outline: #2E2E40;     /* sticker borders get quiet in dark */
+  --nav-bg: #1D1830;
+  --nav-icon: #ABA5C4;
+  --nav-active-bg: #FFB020;
+  --nav-active-fg: #110D1F;
+  --fab-ring: #110D1F;
+  --outline: #362E52;     /* sticker borders get quiet in dark */
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0E0E14; --surface: #1B1B26; --surface-soft: #1B1B26; --surface-strong: #262635;
-    --on-surface-strong: #F5F5F0; --track: #2E2E40; --divider: #2E2E40; --text: #F5F5F0;
-    --text-muted: #A8A8B8; --link: #FFE600; --accent: #FF3D9A; --on-accent: #0E0E14;
-    --bar: #4D74FF; --warn-border: #FF3D9A; --btn-primary-bg: #FFE600; --btn-primary-fg: #0E0E14;
-    --nav-bg: #1B1B26; --nav-icon: #A8A8B8; --nav-active-bg: #FFE600; --nav-active-fg: #0E0E14;
-    --fab-ring: #0E0E14; --outline: #2E2E40;
+    --bg: #110D1F; --surface: #1D1830; --surface-soft: #1D1830; --surface-strong: #2A2342;
+    --on-surface-strong: #F5F3FF; --track: #362E52; --divider: #362E52; --text: #F5F3FF;
+    --text-muted: #ABA5C4; --link: #FFB020; --accent: #FF6B85; --on-accent: #110D1F;
+    --on-highlight: #110D1F; --bar: #8B73FF; --warn-border: #FF6B85;
+    --btn-primary-bg: #FFB020; --btn-primary-fg: #110D1F;
+    --nav-bg: #1D1830; --nav-icon: #ABA5C4; --nav-active-bg: #FFB020; --nav-active-fg: #110D1F;
+    --fab-ring: #110D1F; --outline: #362E52;
   }
 }
 
