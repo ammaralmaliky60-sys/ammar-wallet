@@ -334,6 +334,9 @@ main:focus-visible { box-shadow: none; }
   user-select: none;
 }
 .tabbar .nav-item *, .tabbar .tab-add * { -webkit-user-select: none; user-select: none; }
+button, a, input, select, textarea, label, summary, [role="button"], [role="tab"], [role="link"], [tabindex]:not([tabindex="-1"]) {
+  -webkit-tap-highlight-color: transparent;
+}
 
 :where(input, textarea)::placeholder { color: var(--text-muted); opacity: 1; }
 .field input, .field select, .search input, .date-pick input[type="date"] {

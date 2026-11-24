@@ -1,7 +1,10 @@
 package com.ammaralmaliky.wainrahat
 
 import android.app.AlertDialog
+import android.net.Uri
+import android.webkit.ValueCallback
 import android.webkit.WebView
+import android.webkit.WebChromeClient
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -19,8 +22,20 @@ class BackupControls(private val activity: ComponentActivity, private val web: W
     private var exporting: String? = null
     private var incoming: String? = null
     private var busy = false
+    private var currentEmpty = false
+    private var webCallback: ValueCallback<Array<Uri>>? = null
     private fun message(text: String) { Toast.makeText(activity, text, Toast.LENGTH_LONG).show() }
-    private fun reset() { exporting = null; incoming = null; busy = false }
+    private fun reset() { exporting = null; incoming = null; currentEmpty = false; busy = false }
+    private fun finishWebPicker() { webCallback?.onReceiveValue(null); webCallback = null }
+    fun handleWebFileChooser(callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean {
+        if (busy || params.isCaptureEnabled || !isAppPage() ||
+            params.acceptTypes.any { it.isNotBlank() && !it.contains("json", true) && !it.contains("octet-stream", true) }) {
+            callback.onReceiveValue(null); return true
+        }
+        webCallback?.onReceiveValue(null); webCallback = callback; busy = true
+        open.launch(arrayOf("application/json", "text/plain", "application/octet-stream")); return true
+    }
+    private fun isAppPage() = web.url?.let { it == "https://appassets.androidplatform.net/assets/index.html" || it.startsWith("https://appassets.androidplatform.net/assets/index.html#") } == true
     private fun js(code: String, result: (String?) -> Unit) {
         if (web.url != "https://appassets.androidplatform.net/assets/index.html" &&
             web.url?.startsWith("https://appassets.androidplatform.net/assets/index.html#") != true) {
@@ -32,22 +47,22 @@ class BackupControls(private val activity: ComponentActivity, private val web: W
     }
     private val save = activity.registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val text = exporting
-        if (uri == null || text == null) { reset(); return@registerForActivityResult }
+        if (uri == null || text == null) { reset(); finishWebPicker(); return@registerForActivityResult }
         activity.lifecycleScope.launch {
             val saved = withContext(Dispatchers.IO) {
                 runCatching {
                     activity.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.toByteArray(Charsets.UTF_8)) }
-                    val actual = activity.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+                    val actual = activity.contentResolver.openInputStream(uri)!!.use { it.readBytesLimited(10_000_000) }
                     require(actual.contentEquals(text.toByteArray(Charsets.UTF_8)))
                 }.isSuccess
             }
-            if (!saved) { message("تعذر حفظ النسخة والتحقق منها؛ لم تُستبدل بياناتك"); reset() }
+            if (!saved) { message("تعذر حفظ النسخة والتحقق منها؛ لم تُستبدل بياناتك"); reset(); finishWebPicker() }
             else if (incoming != null) confirmImport()
             else { message("تم حفظ النسخة والتحقق منها"); reset() }
         }
     }
     private val open = activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri == null) { reset(); return@registerForActivityResult }
+        if (uri == null) { reset(); finishWebPicker(); return@registerForActivityResult }
         activity.lifecycleScope.launch {
             val text = withContext(Dispatchers.IO) {
                 runCatching {
@@ -57,9 +72,9 @@ class BackupControls(private val activity: ComponentActivity, private val web: W
                     }
                 }.getOrNull()
             }
-            if (text == null) { message("تعذر قراءة الملف أو حجمه أكبر من 10 ميغابايت"); reset(); return@launch }
+            if (text == null) { message("تعذر قراءة الملف أو حجمه أكبر من 10 ميغابايت"); reset(); finishWebPicker(); return@launch }
             js("""(function(){try { return WR.store.backupText(WR.store.parseBackup(${JSONObject.quote(text)}).state); } catch(e) { return null; }})()""") { normalized ->
-                if (normalized == null) { message("الملف ليس نسخة احتياطية صالحة"); reset() }
+                if (normalized == null) { message("ملف JSON تالف أو غير صالح"); reset(); finishWebPicker() }
                 else {
                     incoming = normalized
                     exportCurrent(true)
@@ -68,31 +83,44 @@ class BackupControls(private val activity: ComponentActivity, private val web: W
         }
     }
     private fun exportCurrent(beforeImport: Boolean) {
-        js("""(function(){try { var raw=localStorage.getItem(WR.store.KEY); if(!raw) return null; return WR.store.backupText(WR.store.parseBackup(raw).state); } catch(e) { return null; }})()""") { text ->
-            if (text == null) { message("تعذر التحقق من البيانات الحالية؛ أُوقفت العملية لحمايتها"); reset() }
-            else {
-                exporting = text
-                if (beforeImport) message("احفظ نسخة من بياناتك الحالية أولاً؛ إلغاء الحفظ يلغي الاستعادة")
-                save.launch(if (beforeImport) "wain-rahat-before-restore.json" else "wain-rahat-backup.json")
+        js("""(function(){try { var raw=localStorage.getItem(WR.store.KEY); if(raw===null) return 'EMPTY'; return 'VALID:' + WR.store.backupText(WR.store.parseBackup(raw).state); } catch(e) { return 'CORRUPT'; }})()""") { text ->
+            when {
+                text == "EMPTY" && beforeImport -> { currentEmpty = true; confirmImport() }
+                text == "EMPTY" -> { message("لا توجد بيانات محفوظة لنسخها بعد"); reset() }
+                text == "CORRUPT" || text == null -> { message("تعذر التحقق من البيانات الحالية؛ أُوقفت العملية لحمايتها"); reset(); finishWebPicker() }
+                text.startsWith("VALID:") -> {
+                    exporting = text.removePrefix("VALID:")
+                    if (beforeImport) {
+                        val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+                        save.launch("wain-rahat-before-restore-$stamp.json")
+                    } else save.launch("wain-rahat-backup.json")
+                }
             }
         }
     }
     private fun confirmImport() {
         AlertDialog.Builder(activity).setTitle("استعادة النسخة؟")
-            .setMessage("حُفظت نسخة مستقلة من سجلاتك الحالية وتم التحقق منها. الاستعادة تستبدل السجلات ولا تدمجها. تستطيع الرجوع باستيراد النسخة المحفوظة.")
-            .setNegativeButton("إلغاء") { _, _ -> reset() }
-            .setOnCancelListener { reset() }
+            .setMessage(if (currentEmpty) "تحقق التطبيق من عدم وجود بيانات حالية. هل تريد الاستعادة؟" else "حُفظت نسخة أمان مستقلة وتم التحقق منها. ستُستبدل السجلات بالنسخة.")
+            .setNegativeButton("إلغاء") { _, _ -> reset(); finishWebPicker() }
+            .setOnCancelListener { reset(); finishWebPicker() }
             .setPositiveButton("استعادة") { _, _ ->
                 val text = incoming ?: return@setPositiveButton
-                val previous = exporting ?: return@setPositiveButton
+                val expectedEmpty = currentEmpty
+                val previousJson = JSONObject.quote(exporting ?: "")
+                val incomingJson = JSONObject.quote(text)
                 js("""(function(){try {
-                    var current=WR.store.backupText(WR.store.parseBackup(localStorage.getItem(WR.store.KEY)).state);
-                    if(JSON.stringify(JSON.parse(current).data)!==JSON.stringify(JSON.parse(${JSONObject.quote(previous)}).data)) return 'changed';
-                    var s=WR.store.parseBackup(${JSONObject.quote(text)}).state;
+                    var raw=localStorage.getItem(WR.store.KEY);
+                    if($expectedEmpty ? raw!==null : raw===null) return 'changed';
+                    if(!$expectedEmpty) {
+                      var current=WR.store.backupText(WR.store.parseBackup(raw).state);
+                      if(JSON.stringify(JSON.parse(current).data)!==JSON.stringify(JSON.parse($previousJson).data)) return 'changed';
+                    }
+                    var s=WR.store.parseBackup($incomingJson).state;
                     WR.store.save(s); WR.app.state=s; WR.app.monthKey=null; WR.render(); return 'ok';
                 } catch(e) { return 'error'; }})()""") { outcome ->
                     message(if (outcome == "ok") "تمت الاستعادة؛ نسختك السابقة محفوظة في الملف الذي اخترته" else "لم تكتمل الاستعادة؛ أعد المحاولة مع نسخة حديثة من بياناتك")
                     reset()
+                    finishWebPicker()
                 }
             }.show()
     }
