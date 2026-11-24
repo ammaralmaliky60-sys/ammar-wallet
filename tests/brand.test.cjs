@@ -13,12 +13,10 @@ function declarations(source,selector){
  return source.slice(at+selector.length+1,source.indexOf('}',at));
 }
 function palette(mode){
- const base=read('styles.css'),wallet=read('neo-finance.css');
- const prefix=mode==='light'?':root,\n':'';
- const selector=prefix+'body[data-theme="'+mode+'"]';
- const walletSelector=(mode==='dark'?':root[data-theme="dark"],\n':'')+selector+' ';
+ const tokenSelector=mode==='dark'?':root[data-theme="dark"] ':':root ';
+ const themeSelector=tokenSelector.trimEnd()+',\nbody[data-theme="'+mode+'"] ';
  const colors={};
- for(const source of [declarations(base,selector),declarations(wallet,walletSelector),declarations(theme,':root,\nbody[data-theme] ')]){
+ for(const source of [declarations(tokens,tokenSelector),declarations(theme,themeSelector)]){
   for(const [,key,hex,alias] of source.matchAll(/--([a-z0-9-]+):\s*(?:(#[0-9a-f]{6})|var\(--([a-z0-9-]+)\))/gi)){
    colors[key]=hex?hex.toUpperCase():colors[alias];
   }
@@ -31,7 +29,7 @@ test('Dabburha name, Arabic copy, PWA metadata and supplied icon are active',()=
  assert.match(html,/<title>دبّرها<\/title>/);
  assert.match(html,/الشهر طويل والراتب قصير؟ دبّرها\./);
  assert.equal(manifest.name,'دبّرها');assert.equal(manifest.short_name,'دبّرها');
- assert.equal(manifest.dir,'rtl');assert.equal(manifest.theme_color,light.bg);
+ assert.equal(manifest.dir,'rtl');assert.equal(manifest.theme_color,'#F4F1FF');
  assert.match(read('icon.svg'),/<title>دبّرها<\/title>/);
 });
 
@@ -44,21 +42,19 @@ test('light and dark brand colors keep readable text contrast',()=>{
 });
 
 test('night summary surfaces are subdued and small labels stay readable',()=>{
- for(const key of ['hero-1','selected']){
+ for(const key of ['hero-1','selected','chip-on-bg']){
   assert.ok(lum(rgb(dark[key]))<0.06,`--${key} is too bright for a night card`);
  }
- for(const [fg,bg] of [['hero-muted','hero-1'],['green-text','selected']]){
+ for(const [fg,bg] of [['hero-muted','hero-1'],['green-text','selected'],['chip-on-fg','chip-on-bg']]){
   assert.ok(ratio(rgb(dark[fg]),rgb(dark[bg]))>=4.5,`${fg} on ${bg}`);
  }
 });
 
-test('night spending badges pair each status ink with a readable background',()=>{
- const selectors=['[data-tone="ok"]',':is([data-tone="fast"], [data-tone="warn"])','[data-tone="over"]'];
- for(const selector of selectors){
-  const rule=declarations(theme,'body[data-theme="dark"] .pill'+selector+' ');
-  const [,ink]=rule.match(/color:\s*var\(--([\w-]+)\)/);
-  const [,background]=rule.match(/background:\s*(#[\da-f]{6})/i);
-  assert.ok(ratio(rgb(dark[ink]),rgb(background))>=4.5,selector);
+test('light and night spending badges pair each status ink with a readable background',()=>{
+ const pairs=[['pace-ok','pace-ok-bg'],['pace-warning','pace-warning-bg'],['pace-over','pace-over-bg']];
+ for(const [ink,background] of pairs){
+  assert.ok(ratio(rgb(light[ink]),rgb(light[background]))>=4.5,`light ${ink}`);
+  assert.ok(ratio(rgb(dark[ink]),rgb(dark[background]))>=4.5,`dark ${ink}`);
  }
 });
 

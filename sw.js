@@ -31,11 +31,11 @@ const ASSETS = [
   './icon-maskable-512.png',
 
   // Styles and self-hosted fonts
-  './dabburha-tokens.css?v=0.046',
+  './dabburha-tokens.css?v=0.047',
   './styles.css?v=3.0.3',
   './neo-finance.css?v=3.2.0',
   './ui-polish.css?v=3.2.10',
-  './dabburha-theme.css?v=0.046',
+  './dabburha-theme.css?v=0.047',
   './fonts/dabburha/marhey-400-arabic.woff2',
   './fonts/dabburha/marhey-400-latin.woff2',
   './fonts/dabburha/rubik-400-arabic.woff2',
@@ -56,7 +56,7 @@ const ASSETS = [
   './src/app/icons.js?v=3.0.5',
   './src/app/ui.js?v=3.0.0',
   './src/app/store.js?v=3.2.0',
-  './src/app/main.js?v=0.046',
+  './src/app/main.js?v=0.047',
   './src/app/views/entry.js?v=3.2.4',
   './src/app/views/home.js?v=3.2.6',
   './src/app/views/transactions.js?v=3.2.4',

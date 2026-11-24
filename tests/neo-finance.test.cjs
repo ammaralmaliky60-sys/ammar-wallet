@@ -13,12 +13,12 @@ test('Dabburha logo is visible in both headers and app welcome view',()=>{
  assert.equal((html.match(/class="brand-mark" src="\.\/icon\.svg"/g)||[]).length,2);
  assert.match(read('src/app/icons.js'),/WR\.MARK = '<img class="brand-mark" src="\.\/icon\.svg"/);
  assert.match(read('icon.svg'),/viewBox="0 0 512 512"/);
- assert.match(read('icon.svg'),/fill="#35E3D0"/);
+ assert.match(read('icon.svg'),/fill="#5B3DF5"/);
 });
 test('each scheme gets its own colors and native control appearance', () => {
- assert.match(css, /body\[data-theme="light"\] \{\s*color-scheme: light;/);
- assert.match(css, /body\[data-theme="dark"\] \{\s*color-scheme: dark;/);
- assert.match(css, /--bg: #F4F8FF/);
- assert.match(css, /--bg: #080F20/);
- assert.doesNotMatch(read('dabburha-theme.css'),/--(?:bg|surface|brand-green):/);
+ const dabburha=read('dabburha-theme.css');
+ assert.match(dabburha, /body\[data-theme="light"\] \{\s*color-scheme: light;/);
+ assert.match(dabburha, /body\[data-theme="dark"\] \{\s*color-scheme: dark;/);
+ assert.match(dabburha, /--bg: #F4F1FF/);
+ assert.match(dabburha, /--bg: #110D1F/);
 });

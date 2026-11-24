@@ -2,11 +2,11 @@
   <title>دبّرها (maskable)</title>
   <!-- Full-bleed square for Android adaptive / PWA maskable icons.
        The artwork is scaled to 80% so it stays inside the safe zone. -->
-  <rect width="512" height="512" fill="#080F20"/>
+  <rect width="512" height="512" fill="#5B3DF5"/>
   <g transform="translate(51.2 51.2) scale(0.8)">
-    <path d="M321 143 A130 130 0 1 1 191 143" fill="none" stroke="#35E3D0" stroke-width="40" stroke-linecap="round"/>
-    <path d="M150 104 L236 120 L182 190 Z" fill="#35E3D0" stroke="#35E3D0" stroke-width="10" stroke-linejoin="round"/>
-    <circle cx="256" cy="256" r="66" fill="#EAF8FF"/>
-    <path d="M256 214 L268 244 L298 256 L268 268 L256 298 L244 268 L214 256 L244 244 Z" fill="#16283F"/>
+    <path d="M321 143 A130 130 0 1 1 191 143" fill="none" stroke="#FFB020" stroke-width="40" stroke-linecap="round"/>
+    <path d="M150 104 L236 120 L182 190 Z" fill="#FFB020" stroke="#FFB020" stroke-width="10" stroke-linejoin="round"/>
+    <circle cx="256" cy="256" r="66" fill="#FF5C7A"/>
+    <path d="M256 214 L268 244 L298 256 L268 268 L256 298 L244 268 L214 256 L244 244 Z" fill="#17112E"/>
   </g>
 </svg>

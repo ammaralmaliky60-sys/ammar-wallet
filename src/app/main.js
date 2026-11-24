@@ -84,7 +84,7 @@
     const dark = chosen ? chosen === 'night' : systemAppearance.matches;
     const theme = dark ? 'dark' : 'light';
     document.documentElement.dataset.theme = document.body.dataset.theme = theme;
-    $('meta[name="theme-color"]').content = dark ? '#080F20' : '#F4F8FF';
+    $('meta[name="theme-color"]').content = dark ? '#110D1F' : '#F4F1FF';
 
     const btn = $('#themeBtn');
     if (btn.dataset.theme !== theme) {
