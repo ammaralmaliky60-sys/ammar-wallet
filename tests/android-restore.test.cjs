@@ -10,6 +10,8 @@ const activity = read('android/app/src/main/java/com/ammaralmaliky/wainrahat/Mai
 const settings = read('src/app/views/settings.js');
 const onboarding = read('src/app/views/onboarding.js');
 const mainActivity = read('android/app/src/main/java/com/ammaralmaliky/wainrahat/MainActivity.kt');
+const html = read('index.html');
+const polish = read('ui-polish.css');
 
 test('WebView file inputs route to the Android SAF picker on the app origin', () => {
   assert.match(activity, /onShowFileChooser/);
@@ -53,10 +55,23 @@ test('Android root applies system, cutout, and keyboard insets once', () => {
 test('Android backup export channel is restricted to trusted top-level app page', () => {
   assert.match(mainActivity, /WebViewCompat\.addWebMessageListener/);
   assert.match(mainActivity, /setOf\(appOrigin\)/);
-  assert.match(mainActivity, /backup\.handleBackupMessage\(message\.data, origin, isMainFrame\)/);
+  assert.match(mainActivity, /handleAppMessage\(backup, message\.data, origin, isMainFrame\)/);
+  assert.match(mainActivity, /"save" -> backup\.handleBackupMessage\(data, origin, isMainFrame\)/);
   assert.match(backup, /!isMainFrame/);
   assert.match(backup, /origin\.host != "appassets\.androidplatform\.net"/);
   assert.match(backup, /!isAppPage\(\)/);
   assert.match(backup, /request\.optString\("action"\) != "save"/);
   assert.match(backup, /JSONTokener\(content\)/);
+});
+
+test('Android safe-area space keeps the current theme background and avoids double top inset', () => {
+  assert.match(mainActivity, /window\.setBackgroundDrawable\(ColorDrawable\(startupBackground\)\)/);
+  assert.match(mainActivity, /rootLayout\.setBackgroundColor\(color\)/);
+  assert.match(mainActivity, /getPropertyValue\('--bg'\)/);
+  assert.match(mainActivity, /action:'theme',color:c/);
+  assert.match(mainActivity, /uri\.path == "\/assets\/index\.html"/);
+  assert.match(html, /dataset\.nativeShell = 'android'/);
+  assert.match(mainActivity, /assets\/index\.html\?shell=android/);
+  assert.match(polish, /html\[data-native-shell="android"\] \.topbar\s*\{\s*min-height: 61px;\s*padding: 7px 16px;/);
+  assert.match(polish, /padding: calc\(7px \+ env\(safe-area-inset-top\)\)/);
 });

@@ -9,6 +9,7 @@ import android.webkit.WebChromeClient
 import android.net.Uri
 import android.webkit.ValueCallback
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.view.View
 import android.view.WindowManager
@@ -22,13 +23,18 @@ import kotlin.math.max
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import org.json.JSONObject
+import org.json.JSONTokener
 
 class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
+    private lateinit var rootLayout: android.widget.LinearLayout
     private val appOrigin = "https://appassets.androidplatform.net"
+    private val startupBackground = Color.rgb(8, 15, 32)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setBackgroundDrawable(ColorDrawable(startupBackground))
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
@@ -43,6 +49,7 @@ class MainActivity : ComponentActivity() {
         }
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         webView = WebView(this).apply {
+            setBackgroundColor(startupBackground)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.allowFileAccess = false
@@ -53,13 +60,14 @@ class MainActivity : ComponentActivity() {
                 WebViewAssetLoader.Builder()
                     .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this@MainActivity))
                     .build(),
-                appOrigin
+                appOrigin,
+                ::syncAppBackground
             )
         }
         val backup = BackupControls(this, webView)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             WebViewCompat.addWebMessageListener(webView, "BackupHost", setOf(appOrigin)) { _, message, origin, isMainFrame, _ ->
-                backup.handleBackupMessage(message.data, origin, isMainFrame)
+                handleAppMessage(backup, message.data, origin, isMainFrame)
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
@@ -69,12 +77,12 @@ class MainActivity : ComponentActivity() {
                 fileChooserParams: FileChooserParams
             ): Boolean = backup.handleWebFileChooser(filePathCallback, fileChooserParams)
         }
-        val layout = android.widget.LinearLayout(this).apply {
+        rootLayout = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             addView(webView, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        ViewCompat.setOnApplyWindowInsetsListener(layout) { view, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, insets ->
             val safe = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
@@ -82,11 +90,12 @@ class MainActivity : ComponentActivity() {
             view.setPadding(safe.left, safe.top, safe.right, max(safe.bottom, ime.bottom))
             insets
         }
-        setContentView(layout)
-        applyImmersiveMode(layout)
-        ViewCompat.requestApplyInsets(layout)
+        rootLayout.setBackgroundColor(startupBackground)
+        setContentView(rootLayout)
+        applyImmersiveMode(rootLayout)
+        ViewCompat.requestApplyInsets(rootLayout)
         if (savedInstanceState == null) {
-            webView.loadUrl("$appOrigin/assets/index.html")
+            webView.loadUrl("$appOrigin/assets/index.html?shell=android")
         } else {
             webView.restoreState(savedInstanceState)
         }
@@ -123,9 +132,46 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun syncAppBackground(view: WebView) {
+        if (!isAppPage(view.url)) return
+        view.evaluateJavascript("""(function(){
+          var read=function(){return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()};
+          var send=function(){var c=read();if(/^#[0-9a-f]{6}$/i.test(c)&&window.BackupHost)window.BackupHost.postMessage(JSON.stringify({action:'theme',color:c}));return c};
+          if(!window.__wainrahatShellThemeObserver){window.__wainrahatShellThemeObserver=new MutationObserver(send);window.__wainrahatShellThemeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});}
+          return send();
+        })()""") { raw ->
+            val value = runCatching { JSONTokener(raw).nextValue() as? String }.getOrNull()
+            applyShellBackground(value)
+        }
+    }
+
+    private fun handleAppMessage(backup: BackupControls, data: String?, origin: Uri, isMainFrame: Boolean) {
+        if (!isMainFrame || origin.scheme != "https" || origin.host != "appassets.androidplatform.net" ||
+            !isAppPage(webView.url) || data.isNullOrBlank()) return
+        val request = runCatching { JSONObject(data) }.getOrNull() ?: return
+        when (request.optString("action")) {
+            "save" -> backup.handleBackupMessage(data, origin, isMainFrame)
+            "theme" -> applyShellBackground(request.optString("color"))
+        }
+    }
+
+    private fun applyShellBackground(value: String?) {
+        if (value == null || !value.matches(Regex("#[0-9a-fA-F]{6}"))) return
+        val color = runCatching { Color.parseColor(value) }.getOrNull() ?: return
+        rootLayout.setBackgroundColor(color)
+        webView.setBackgroundColor(color)
+        window.setBackgroundDrawable(ColorDrawable(color))
+    }
+
+    private fun isAppPage(url: String?): Boolean {
+        val uri = url?.let { runCatching { Uri.parse(it) }.getOrNull() } ?: return false
+        return uri.scheme == "https" && uri.host == "appassets.androidplatform.net" && uri.path == "/assets/index.html"
+    }
+
     private class OfflineAssetClient(
         private val assetLoader: WebViewAssetLoader,
-        private val appOrigin: String
+        private val appOrigin: String,
+        private val onAppPageFinished: (WebView) -> Unit
     ) : WebViewClient() {
         override fun shouldInterceptRequest(
             view: WebView,
@@ -144,6 +190,7 @@ class MainActivity : ComponentActivity() {
 
         override fun onPageFinished(view: WebView, url: String) {
             view.settings.textZoom = 100
+            onAppPageFinished(view)
             super.onPageFinished(view, url)
         }
     }

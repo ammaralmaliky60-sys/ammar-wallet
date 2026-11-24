@@ -50,10 +50,12 @@ class BackupControls(private val activity: ComponentActivity, private val web: W
         exporting = content
         save.launch(filename)
     }
-    private fun isAppPage() = web.url?.let { it == "https://appassets.androidplatform.net/assets/index.html" || it.startsWith("https://appassets.androidplatform.net/assets/index.html#") } == true
+    private fun isAppPage(): Boolean {
+        val uri = web.url?.let { runCatching { Uri.parse(it) }.getOrNull() } ?: return false
+        return uri.scheme == "https" && uri.host == "appassets.androidplatform.net" && uri.path == "/assets/index.html"
+    }
     private fun js(code: String, result: (String?) -> Unit) {
-        if (web.url != "https://appassets.androidplatform.net/assets/index.html" &&
-            web.url?.startsWith("https://appassets.androidplatform.net/assets/index.html#") != true) {
+        if (!isAppPage()) {
             reset(); message("انتظر اكتمال فتح التطبيق"); return
         }
         web.evaluateJavascript(code) { raw ->
