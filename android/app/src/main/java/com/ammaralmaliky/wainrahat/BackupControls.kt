@@ -35,6 +35,21 @@ class BackupControls(private val activity: ComponentActivity, private val web: W
         webCallback?.onReceiveValue(null); webCallback = callback; busy = true
         open.launch(arrayOf("application/json", "text/plain", "application/octet-stream")); return true
     }
+    fun handleBackupMessage(data: String?, origin: Uri, isMainFrame: Boolean) {
+        if (!isMainFrame || origin.scheme != "https" || origin.host != "appassets.androidplatform.net" ||
+            !isAppPage() || busy || data.isNullOrBlank()) return
+        val request = runCatching { JSONObject(data) }.getOrNull() ?: return
+        if (request.optString("action") != "save") return
+        val content = request.optString("content")
+        val filename = request.optString("filename", "wain-rahat-backup.json")
+            .filter { it.isLetterOrDigit() || it in "-_." }.take(80).ifBlank { "wain-rahat-backup.json" }
+        if (content.isBlank() || runCatching { JSONTokener(content).nextValue() as? JSONObject }.getOrNull() == null) {
+            message("تعذر تجهيز ملف JSON صالح"); return
+        }
+        busy = true
+        exporting = content
+        save.launch(filename)
+    }
     private fun isAppPage() = web.url?.let { it == "https://appassets.androidplatform.net/assets/index.html" || it.startsWith("https://appassets.androidplatform.net/assets/index.html#") } == true
     private fun js(code: String, result: (String?) -> Unit) {
         if (web.url != "https://appassets.androidplatform.net/assets/index.html" &&

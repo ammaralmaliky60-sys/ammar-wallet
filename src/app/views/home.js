@@ -102,20 +102,13 @@
     const unified = L.unifiedWallet(s);
     const { available, reserved } = L.walletTotals(s, b);
     const hasReserve = s.accounts.some(a => !a.archived && a.reserveTarget !== undefined);
-    const accounts = `<section class="card ${unified ? 'home-wallet' : ''}">
-      <header class="card-head"><h2>${unified ? 'فلوسي' : 'أرصدتك الآن'}</h2>
+    const accountDetails = unified
+      ? `<div class="balance ${b.total < 0 ? 'neg' : ''}"><span class="balance-label">${WR.icon('wallet')}المجموع الكلي</span><b>${WR.money(b.total)}</b></div>${hasReserve ? `<a href="#budget" class="balance reserve-link"><span class="balance-label">${WR.icon('wallet')}المبالغ المعزولة</span><b>${WR.money(reserved)}${WR.icon('next')}</b></a>` : ''}`
+      : s.accounts.filter(a => !a.archived).map(a => `<div class="balance ${b.accounts[a.id] < 0 ? 'neg' : ''}"><span class="balance-label">${WR.icon(a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet')}${WR.safe(a.name)}</span><b>${WR.money(b.accounts[a.id])}</b></div>`).join('');
+    const accounts = `<section class="card home-wallet">
+      <header class="card-head"><h2>تفاصيل الحسابات</h2>
         ${!unified ? `<a href="#settings" class="link">الحسابات${WR.icon('next')}</a>` : ''}</header>
-      <div class="balances">
-        <div class="balance total ${(unified ? available : b.total) < 0 ? 'neg' : ''}">
-          <span class="balance-label">${WR.icon('wallet')}${unified ? 'المتاح للصرف' : 'المجموع'}</span>
-          <b>${WR.money(unified ? available : b.total)}</b>
-          ${reserved ? `<small class="balance-after-reserve">${unified ? 'المجموع ' + WR.money(b.total) : 'المتاح للصرف ' + WR.money(available)}</small>` : ''}
-        </div>
-        ${unified ? (hasReserve ? `<a href="#budget" class="balance reserve-link"><span class="balance-label">${WR.icon('wallet')}المبالغ المعزولة</span>
-          <b>${WR.money(reserved)}${WR.icon('next')}</b></a>` : '') :
-          s.accounts.filter(a => !a.archived).map(a => `<div class="balance ${b.accounts[a.id] < 0 ? 'neg' : ''}">
-            <span class="balance-label">${WR.icon(a.id === 'card' ? 'card' : a.id === 'cash' ? 'cash' : 'wallet')}${WR.safe(a.name)}</span><b>${WR.money(b.accounts[a.id])}</b></div>`).join('')}
-      </div>
+      <div class="balances">${accountDetails}</div>
     </section>`;
 
     const where = `<section class="card">
@@ -129,10 +122,10 @@
         WR.empty('list', 'ما سجلت شي هذا الشهر', 'ابدأ بأول مصروف، يكفي المبلغ والفئة.', '<button type="button" class="btn primary" data-action="add">' + WR.icon('plus') + 'سجّل مصروف</button>')}
     </section>`;
 
-    return WR.pageHead(greeting(s.settings.name), WR.safe(F.dateLabel(today, { long: true, digits: s.settings.digits })),
-      WR.monthBar()) + `<div class="home-grid">
-        <div class="col">${hero}${additionalIncome}${latest}</div>
-        <div class="col">${accounts}${where}${incomeCard}</div>
+    const availableStrip = `<div class="available-strip" aria-label="فلوسي المتاحة"><span>${WR.icon('wallet')}فلوسي المتاحة</span><strong>${WR.money(available)}</strong></div>`;
+    return WR.pageHead(greeting(s.settings.name)) + `<div class="home-overview">${WR.monthBar()}${availableStrip}</div><div class="home-grid">
+        <div class="col">${hero}${additionalIncome}${incomeCard}${latest}</div>
+        <div class="col">${where}${accounts}</div>
       </div>`;
   }
 

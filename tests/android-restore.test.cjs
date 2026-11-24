@@ -43,4 +43,20 @@ test('Android root applies system, cutout, and keyboard insets once', () => {
   assert.ok(mainActivity.includes('setPadding(safe.left, safe.top, safe.right,'));
   assert.ok(mainActivity.includes('SOFT_INPUT_ADJUST_RESIZE'));
   assert.ok(mainActivity.includes('LAYOUT_DIRECTION_RTL'));
+  assert.ok(mainActivity.includes('WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE'));
+  assert.ok(mainActivity.includes('hide(WindowInsetsCompat.Type.systemBars())'));
+  assert.ok(mainActivity.includes('LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES'));
+  assert.ok(mainActivity.includes('onWindowFocusChanged'));
+  assert.doesNotMatch(mainActivity, /addView\(backup\.view\(\)\)/);
+});
+
+test('Android backup export channel is restricted to trusted top-level app page', () => {
+  assert.match(mainActivity, /WebViewCompat\.addWebMessageListener/);
+  assert.match(mainActivity, /setOf\(appOrigin\)/);
+  assert.match(mainActivity, /backup\.handleBackupMessage\(message\.data, origin, isMainFrame\)/);
+  assert.match(backup, /!isMainFrame/);
+  assert.match(backup, /origin\.host != "appassets\.androidplatform\.net"/);
+  assert.match(backup, /!isAppPage\(\)/);
+  assert.match(backup, /request\.optString\("action"\) != "save"/);
+  assert.match(backup, /JSONTokener\(content\)/);
 });

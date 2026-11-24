@@ -106,6 +106,35 @@ main:focus-visible { box-shadow: none; }
 }
 .page-actions .monthbar { margin-bottom: 0; }
 
+.home-overview {
+  display: grid;
+  grid-template-columns: minmax(250px, 286px) minmax(170px, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  width: min(100%, 520px);
+  margin: 0 0 16px;
+}
+.home-overview .monthbar { width: auto; min-width: 0; margin: 0; }
+.available-strip {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.available-strip > span { display: inline-flex; min-width: 0; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; }
+.available-strip > span .ic { flex: none; width: 16px; height: 16px; color: var(--green-text); }
+.available-strip > strong { min-width: 0; color: var(--text); font-size: clamp(14px, 1.6vw, 18px); overflow-wrap: anywhere; text-align: end; }
+.home-overview .monthbar .icon-btn { width: 36px; height: 36px; }
+.home-overview .monthbar-label { min-width: 0; gap: 5px; }
+.home-overview .monthbar-label > span { min-width: 0; }
+.home-overview .monthbar-label b { font-size: 13px; }
+.home-overview .monthbar-label small { margin-top: 1px; font-size: 10px; }
+
 .card {
   background: var(--surface);
   border-color: var(--border);
@@ -151,8 +180,8 @@ main:focus-visible { box-shadow: none; }
   color: #C6F7E7;
 }
 .hero-amount {
-  margin: 2px 0 18px;
-  font-size: clamp(32px, 5.2vw, 55px);
+  margin: 4px 0 18px;
+  font-size: clamp(40px, 7vw, 62px);
   line-height: 1.18;
   font-weight: 700;
 }
@@ -383,10 +412,19 @@ dialog#sheet::backdrop { background: #080F2082; }
   .monthbar { width: 100%; }
   .monthbar .icon-btn { width: 44px; height: 44px; }
   .home-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .home-overview { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); width: 100%; gap: 7px; margin-bottom: 12px; }
+  .home-overview .monthbar { gap: 1px; padding: 3px; border-radius: 14px; }
+  .home-overview .monthbar .icon-btn { width: 32px; height: 34px; padding: 0; }
+  .home-overview .monthbar-label { gap: 3px; }
+  .home-overview .monthbar-label .ic { display: none; }
+  .home-overview .monthbar-label b { font-size: 12px; }
+  .home-overview .monthbar-label small { font-size: 9px; line-height: 1.1; }
+  .available-strip { flex-wrap: wrap; align-content: center; gap: 1px 5px; padding: 5px 8px; border-radius: 14px; }
+  .available-strip > span { font-size: 11px; }
+  .available-strip > strong { width: 100%; font-size: clamp(13px, 4vw, 16px); }
   .card + .card, .col > .card + .card { margin-top: 14px; }
   .home-grid .col { display: contents; }
   .home-grid .col > .card { margin-top: 0; }
-  .home-wallet { grid-column: 1; grid-row: 1; }
   .tabbar {
     align-items: center;
     inset: auto max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
@@ -436,6 +474,9 @@ dialog#sheet::backdrop { background: #080F2082; }
 
 @media (max-width: 374px) {
   main { padding-inline: 12px; }
+  .home-overview { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr); gap: 5px; }
+  .home-overview .monthbar .icon-btn { width: 29px; }
+  .available-strip { padding-inline: 6px; }
   .hero-split > span { padding-inline: 8px; }
   .appearance-options .ic { display: none; }
   .reserve-item .btn .ic { display: none; }

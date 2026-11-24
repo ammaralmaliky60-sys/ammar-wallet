@@ -159,7 +159,15 @@
   WR.actions = Object.assign(WR.actions || {}, {
     'edit-account': d => editAccount(d.id), 'edit-source': d => editSource(d.id),
     'set-theme': d => { WR.store.setTheme(d.id === 'auto' ? null : d.id); WR.applyTheme(); },
-    backup: () => { WR.download(`ween-rahat-backup-${F.today()}.json`, WR.store.backupText(WR.app.state)); WR.toast('تم تنزيل النسخة الاحتياطية. احفظها في مكان آمن.'); },
+    backup: () => {
+      const filename = `ween-rahat-backup-${F.today()}.json`, content = WR.store.backupText(WR.app.state);
+      if (window.BackupHost && typeof window.BackupHost.postMessage === 'function') {
+        window.BackupHost.postMessage(JSON.stringify({ action: 'save', filename, content }));
+      } else {
+        WR.download(filename, content);
+        WR.toast('تم تنزيل النسخة الاحتياطية. احفظها في مكان آمن.');
+      }
+    },
     restore, wipe,
     'legacy-download': () => { const raw = WR.store.legacyRaw(); if (raw) WR.download(`ween-rahat-previous-version-${F.today()}.json`, raw); }
   });
