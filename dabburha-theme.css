@@ -59,11 +59,14 @@ body[data-theme="dark"] {
   --nav-active-bg: #FFB020;
   --nav-active-fg: #17112E;
   --mark-coin: #FFB020;
-  --hero-1: #8B73FF;
-  --hero-2: #8B73FF;
-  --hero-text: #17112E;
-  --hero-muted: #17112E;
-  --selected: #8B73FF;
+  --hero-1: var(--hero-bg);
+  --hero-2: var(--hero-bg);
+  --hero-text: var(--hero-fg);
+  --hero-muted: var(--hero-fg-muted);
+  --selected: #332E43;
+  --pace-ok: #ADCDBF;
+  --pace-warning: #E2C495;
+  --pace-over: #E8B2BC;
   --focus: #FFB020;
   --shadow: 4px 4px 0 #000000;
   --nav-shadow: 4px 4px 0 #000000;
@@ -105,43 +108,61 @@ a, .link { color: var(--green-text); }
 
 .hero {
   isolation: isolate;
-  background: #5B3DF5 !important;
-  color: #FFFFFF;
+  background: var(--hero-1) !important;
+  color: var(--hero-text);
   border: 3px solid #17112E;
   border-radius: 34px;
   box-shadow: 5px 5px 0 #17112E;
 }
 .hero::before, .hero::after { display: none !important; animation: none !important; }
 .hero .hero-heading h2, .hero .hero-hint, .hero .hero-budget p,
-.hero .hero-split small, .hero .hero-amount small, .hero .pill { color: #E4DEFF; }
+.hero .hero-split small, .hero .hero-amount small, .hero .pill { color: var(--hero-muted); }
 .hero-split > span { background: #4930D0; border-color: #FFFFFF; }
 .hero .meter { background: #FFFFFF55; }
 .hero .meter i, .hero .motion-progress-value { background: #FFB020; stroke: #FFB020; }
 .hero .motion-progress-ring { color: #FFB020; }
-:root[data-theme="dark"] .hero, body[data-theme="dark"] .hero {
-  background: #8B73FF !important;
-  color: #17112E;
+/* Night cards keep large surfaces quiet. Color is reserved for the figures,
+   indicators and status labels that distinguish the spending states. */
+body[data-theme="dark"] .hero { border-color: var(--border); }
+body[data-theme="dark"] .hero-split,
+body[data-theme="dark"] .hero-icon {
+  background: var(--surface);
+  border-color: var(--border);
 }
-:root[data-theme="dark"] .hero .hero-heading h2,
-:root[data-theme="dark"] .hero .hero-hint,
-:root[data-theme="dark"] .hero .hero-budget p,
-:root[data-theme="dark"] .hero .hero-split small,
-:root[data-theme="dark"] .hero .hero-split b,
-:root[data-theme="dark"] .hero .hero-amount small,
-:root[data-theme="dark"] .hero .pill,
-body[data-theme="dark"] .hero .hero-heading h2,
-body[data-theme="dark"] .hero .hero-hint,
-body[data-theme="dark"] .hero .hero-budget p,
-body[data-theme="dark"] .hero .hero-split small,
-body[data-theme="dark"] .hero .hero-split b,
-body[data-theme="dark"] .hero .hero-amount small,
-body[data-theme="dark"] .hero .pill { color: #17112E; }
-:root[data-theme="dark"] .hero-split > span,
-body[data-theme="dark"] .hero-split > span { background: #F4F1FF; border-color: #17112E; }
-:root[data-theme="dark"] .hero .motion-progress-ring,
-body[data-theme="dark"] .hero .motion-progress-ring { color: #17112E; }
-:root[data-theme="dark"] .cinematic-hero,
-body[data-theme="dark"] .cinematic-hero { background: #8B73FF; }
+body[data-theme="dark"] .hero-split > span {
+  background: transparent;
+  border-color: var(--border);
+}
+body[data-theme="dark"] .hero-split .neg { color: var(--pace-over); }
+body[data-theme="dark"] .hero-icon,
+body[data-theme="dark"] .hero .motion-progress-ring { color: var(--hero-muted); }
+
+body[data-theme="dark"] .pill[data-tone] {
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+body[data-theme="dark"] .pill[data-tone="ok"] {
+  color: var(--pace-ok);
+  background: #283831;
+}
+body[data-theme="dark"] .pill:is([data-tone="fast"], [data-tone="warn"]) {
+  color: var(--pace-warning);
+  background: #3A3127;
+}
+body[data-theme="dark"] .pill[data-tone="over"] {
+  color: var(--pace-over);
+  background: #3F2D38;
+}
+
+body[data-theme="dark"] .meter { background: var(--track); }
+body[data-theme="dark"] .meter i[data-level="ok"] { background: var(--pace-ok); }
+body[data-theme="dark"] .meter i:is([data-level="fast"], [data-level="warn"]) { background: var(--pace-warning); }
+body[data-theme="dark"] .meter i[data-level="over"] { background: var(--pace-over); }
+body[data-theme="dark"] .hero .motion-progress-track { stroke: var(--track); }
+body[data-theme="dark"] .hero .motion-progress-value { stroke: currentColor; }
+body[data-theme="dark"] .hero-budget:has([data-level="ok"]) .motion-progress-value { stroke: var(--pace-ok); }
+body[data-theme="dark"] .hero-budget:has([data-level="fast"]) .motion-progress-value { stroke: var(--pace-warning); }
+body[data-theme="dark"] .hero-budget:has([data-level="over"]) .motion-progress-value { stroke: var(--pace-over); }
 
 .btn, .icon-btn, .tab-add, .fchip, .chip > span, .seg > button,
 .seg > label > span, .quick-amounts button, .toast-action {
@@ -209,7 +230,24 @@ dialog#sheet::backdrop { background: #17112EBB; -webkit-backdrop-filter: none; b
 }
 body[data-theme="dark"] .chip input:checked + span,
 body[data-theme="dark"] .fchip[aria-pressed="true"],
-body[data-theme="dark"] .seg > button[aria-pressed="true"] { color: #17112E; }
+body[data-theme="dark"] .seg > button[aria-pressed="true"] {
+  background: var(--chip-on-bg);
+  color: var(--chip-on-fg);
+  border-color: var(--green-text);
+}
+body[data-theme="dark"] :is(.empty-art, .tx-ic) {
+  background: var(--surface-2);
+  color: var(--green-text);
+}
+body[data-theme="dark"] .cinematic-hero { background: var(--hero-bg); }
+body[data-theme="dark"] .cinematic-screen {
+  background: var(--surface);
+  color: var(--text);
+}
+body[data-theme="dark"] :is(.cinematic-label, .cinematic-screen small) { color: var(--text-muted); }
+body[data-theme="dark"] .cinematic-mini-row i,
+body[data-theme="dark"] .cinematic-progress { background: var(--track); border-color: var(--border); }
+body[data-theme="dark"] :is(.cinematic-bars i, .cinematic-progress i) { background: var(--green-text); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

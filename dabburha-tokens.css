@@ -101,9 +101,9 @@
   --text-muted: #ABA5C4;
   --link: #FFB020;
 
-  --hero-bg: #8B73FF;
-  --hero-fg: #17112E;
-  --hero-fg-muted: #17112E;
+  --hero-bg: #282435;
+  --hero-fg: #F1EEF5;
+  --hero-fg-muted: #C8C1D3;
 
   --accent: #FF6B85;      /* slightly lighter rose on dark */
   --on-accent: #110D1F;
@@ -114,8 +114,8 @@
 
   --btn-primary-bg: #FFB020;
   --btn-primary-fg: #110D1F;
-  --chip-on-bg: #8B73FF;
-  --chip-on-fg: #17112E;
+  --chip-on-bg: #332E43;
+  --chip-on-fg: #E5DEF2;
   --nav-bg: #1D1830;
   --nav-icon: #ABA5C4;
   --nav-active-bg: #FFB020;
@@ -129,10 +129,10 @@
     --bg: #110D1F; --surface: #1D1830; --surface-soft: #1D1830; --surface-strong: #2A2342;
     --on-surface-strong: #F5F3FF; --track: #362E52; --divider: #362E52; --text: #F5F3FF;
     --text-muted: #ABA5C4; --link: #FFB020; --accent: #FF6B85; --on-accent: #110D1F;
-    --hero-bg: #8B73FF; --hero-fg: #17112E; --hero-fg-muted: #17112E;
+    --hero-bg: #282435; --hero-fg: #F1EEF5; --hero-fg-muted: #C8C1D3;
     --highlight: #FFB020; --on-highlight: #110D1F; --bar: #8B73FF; --warn-border: #FF6B85;
     --btn-primary-bg: #FFB020; --btn-primary-fg: #110D1F;
-    --chip-on-bg: #8B73FF; --chip-on-fg: #17112E;
+    --chip-on-bg: #332E43; --chip-on-fg: #E5DEF2;
     --nav-bg: #1D1830; --nav-icon: #ABA5C4; --nav-active-bg: #FFB020; --nav-active-fg: #110D1F;
     --fab-ring: #110D1F; --outline: #362E52;
   }
