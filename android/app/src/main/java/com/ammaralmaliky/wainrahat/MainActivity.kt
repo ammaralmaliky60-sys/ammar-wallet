@@ -29,7 +29,13 @@ class MainActivity : ComponentActivity() {
                 appOrigin
             )
         }
-        setContentView(webView)
+        val backup = BackupControls(this, webView)
+        val layout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            addView(backup.view())
+            addView(webView, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
+        }
+        setContentView(layout)
         if (savedInstanceState == null) {
             webView.loadUrl("$appOrigin/assets/index.html")
         } else {
