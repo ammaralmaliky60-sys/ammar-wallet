@@ -342,6 +342,12 @@ body[data-page="reports"] :where(a, button, summary, [role="button"]) * {
   user-select: none;
 }
 
+.report-filters { display: grid; gap: 14px; margin-bottom: 14px; }
+.report-filter-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.report-filter-head p { margin-top: 3px; font-size: 12px; }
+.report-date-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .report-date-range { grid-template-columns: minmax(0, 1fr); } }
+
 :where(input, textarea)::placeholder { color: var(--text-muted); opacity: 1; }
 .field input, .field select, .search input, .date-pick input[type="date"] {
   border-color: var(--input-border);

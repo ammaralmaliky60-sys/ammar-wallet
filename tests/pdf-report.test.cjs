@@ -41,6 +41,13 @@ test('reports offer PDF without a CSV export control or handler',()=>{
  assert.match(view,/data-action="export-pdf"/);
  assert.doesNotMatch(view,/CSV|export-csv|text\/csv|\.csv/);
 });
+test('reports expose category and date filters and apply them to the PDF data',()=>{
+ assert.match(view,/data-report-date="from"/);
+ assert.match(view,/data-report-date="to"/);
+ assert.match(view,/data-action="report-category"/);
+ assert.match(view,/const \{ f, m, incomeSources \} = reportData\(app\)/);
+ assert.match(view,/from: m\.from, to: m\.to/);
+});
 test('static PWA manifest uses updated script versions',()=>{
  for (const file of ['report-pdf.js', 'src/app/views/reports.js']) {
   const match = [...html.matchAll(/src="(\.\/[^"]+)"/g)].find(([, url]) => url.startsWith('./' + file + '?v='));
