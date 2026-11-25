@@ -24,10 +24,27 @@
 <link rel="stylesheet" href="./neo-finance.css?v=3.2.0">
 <link rel="stylesheet" href="./ui-polish.css?v=3.2.12">
 <link rel="stylesheet" href="./dabburha-theme.css?v=0.047">
+<link rel="stylesheet" href="./splash.css?v=1.0.0">
 <title>دبّرها</title>
 </head>
 <body>
 <script>document.body.dataset.theme = document.documentElement.dataset.theme;</script>
+<div id="splash" class="splash" aria-hidden="true">
+  <div class="splash-mark">
+    <svg viewBox="0 0 512 512" focusable="false">
+      <g class="splash-tile">
+        <rect width="512" height="512" rx="116" fill="#5B3DF5"/>
+        <path class="splash-ring" pathLength="100" d="M321 143 A130 130 0 1 1 191 143" fill="none" stroke="#FFB020" stroke-width="40" stroke-linecap="round"/>
+        <g class="splash-arrow-turn"><path class="splash-arrow" d="M150 104 L236 120 L182 190 Z" fill="#FFB020" stroke="#FFB020" stroke-width="10" stroke-linejoin="round"/></g>
+        <circle class="splash-dot" cx="256" cy="256" r="66" fill="#FF5C7A"/>
+        <path class="splash-star" d="M256 214 L268 244 L298 256 L268 268 L256 298 L244 268 L214 256 L244 244 Z" fill="#17112E"/>
+      </g>
+    </svg>
+  </div>
+  <p class="splash-name">دبّر<b>ها</b></p>
+  <p class="splash-tag">الشهر طويل والراتب قصير؟</p>
+</div>
+<script src="./src/app/splash.js?v=1.0.0"></script>
 <a class="skip" href="#main">تخطَّ إلى المحتوى</a>
 <div class="shell">
   <aside class="sidebar" aria-label="التنقل الرئيسي">

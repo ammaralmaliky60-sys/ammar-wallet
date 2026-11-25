@@ -1,4 +1,4 @@
 /* Shared by the page footer and the offline cache. */
 'use strict';
 self.WR = self.WR || {};
-self.WR.version = 'v0.049';
+self.WR.version = 'v0.050';

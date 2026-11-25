@@ -36,6 +36,7 @@ const ASSETS = [
   './neo-finance.css?v=3.2.0',
   './ui-polish.css?v=3.2.12',
   './dabburha-theme.css?v=0.047',
+  './splash.css?v=1.0.0',
   './fonts/dabburha/marhey-400-arabic.woff2',
   './fonts/dabburha/marhey-400-latin.woff2',
   './fonts/dabburha/rubik-400-arabic.woff2',
@@ -53,6 +54,7 @@ const ASSETS = [
 
   // App
   './src/app/version.js',
+  './src/app/splash.js?v=1.0.0',
   './src/app/icons.js?v=3.0.5',
   './src/app/ui.js?v=3.0.0',
   './src/app/store.js?v=3.2.0',

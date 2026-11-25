@@ -1,0 +1,63 @@
+/* دبّرها — splash.css: the launch screen shown once while the app opens.
+   Continues from the system splash (same --bg and icon), then animates the
+   brand mark and name in the app's own fonts (Marhey for the name, Rubik for
+   the tagline) before fading into the app. Purely decorative. */
+.splash{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  background:var(--bg,#F4F1FF);color:var(--text,#17112E);
+  padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+  overflow:hidden;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.splash[hidden]{display:none}
+/* Soft brand glow behind the mark */
+.splash::before{
+  content:"";position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-300px 0 0 -260px;
+  border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--d-violet,#5B3DF5) 22%,transparent) 0%,transparent 62%);
+  opacity:0;transform:scale(.6);
+  animation:splash-glow 1.4s .15s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.splash-mark{position:relative;width:132px;height:132px;filter:drop-shadow(0 14px 28px rgba(91,61,245,.32))}
+.splash-mark svg{width:100%;height:100%;display:block;overflow:visible}
+.splash-tile{transform-origin:256px 256px;transform:scale(.55);opacity:0;animation:splash-pop .7s cubic-bezier(.34,1.56,.64,1) forwards}
+.splash-ring{transform-origin:256px 256px;stroke-dasharray:100;stroke-dashoffset:100;
+  animation:splash-draw .75s .3s cubic-bezier(.65,0,.35,1) forwards,splash-turn .9s 1.15s cubic-bezier(.65,0,.35,1) forwards}
+.splash-arrow{transform-origin:182px 150px;transform:scale(0);animation:splash-pop .45s .95s cubic-bezier(.34,1.56,.64,1) forwards}
+.splash-arrow-turn{transform-origin:256px 256px;animation:splash-turn .9s 1.15s cubic-bezier(.65,0,.35,1) forwards}
+.splash-dot{transform-origin:256px 256px;transform:scale(0);animation:splash-pop .5s .45s cubic-bezier(.34,1.56,.64,1) forwards}
+.splash-star{transform-origin:256px 256px;transform:scale(0) rotate(-90deg);
+  animation:splash-star .6s .7s cubic-bezier(.34,1.56,.64,1) forwards,splash-twinkle 1.6s 1.4s ease-in-out infinite}
+.splash-name{
+  margin:0;font-family:var(--font-display,"Marhey","Rubik",system-ui,sans-serif);font-weight:700;
+  font-size:46px;line-height:1.25;letter-spacing:0;color:var(--text,#17112E);
+  clip-path:inset(0 0 0 100%);transform:translateY(10px);opacity:0;
+  animation:splash-write .8s .85s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.splash-name b{color:var(--d-violet,#5B3DF5);font-weight:inherit}
+:root[data-theme="dark"] .splash-name b{color:var(--highlight,#FFB020)}
+.splash-tag{
+  margin:-12px 0 0;font-family:var(--font-ui,"Rubik",system-ui,sans-serif);font-weight:400;
+  font-size:15px;color:var(--text-muted,#59536E);
+  opacity:0;transform:translateY(8px);animation:splash-rise .6s 1.35s ease-out forwards;
+}
+/* Leaving: mark lifts slightly while the screen dissolves into the app */
+.splash.is-leaving{animation:splash-out .45s cubic-bezier(.4,0,.2,1) forwards;pointer-events:none}
+.splash.is-leaving .splash-mark{animation:splash-lift .45s cubic-bezier(.4,0,.2,1) forwards}
+
+@keyframes splash-pop{to{transform:scale(1) rotate(0);opacity:1}}
+@keyframes splash-draw{to{stroke-dashoffset:0}}
+@keyframes splash-turn{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes splash-star{to{transform:scale(1) rotate(0)}}
+@keyframes splash-twinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.18) rotate(45deg)}}
+@keyframes splash-glow{to{opacity:1;transform:scale(1)}}
+@keyframes splash-write{to{clip-path:inset(0 0 0 0);transform:none;opacity:1}}
+@keyframes splash-rise{to{opacity:1;transform:none}}
+@keyframes splash-out{to{opacity:0;visibility:hidden}}
+@keyframes splash-lift{to{transform:scale(1.12) translateY(-6px)}}
+
+/* No motion: show the finished launch screen briefly, then fade. */
+@media (prefers-reduced-motion:reduce){
+  .splash *,.splash::before{animation:none!important;transform:none!important;opacity:1!important;clip-path:none!important;stroke-dashoffset:0!important}
+}
