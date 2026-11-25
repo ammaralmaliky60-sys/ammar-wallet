@@ -37,6 +37,7 @@ const ASSETS = [
   './ui-polish.css?v=3.2.12',
   './dabburha-theme.css?v=0.047',
   './splash.css?v=1.0.0',
+  './touch.css?v=1.0.0',
   './fonts/dabburha/marhey-400-arabic.woff2',
   './fonts/dabburha/marhey-400-latin.woff2',
   './fonts/dabburha/rubik-400-arabic.woff2',

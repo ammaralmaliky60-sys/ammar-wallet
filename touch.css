@@ -1,0 +1,36 @@
+/* دبّرها — touch.css: no blue flash anywhere on touch screens.
+   Loaded last so it wins over every other stylesheet.
+   1) Android/iOS paint a blue box over any tapped link, button or label
+      (-webkit-tap-highlight-color). It is turned off for every element.
+   2) A long press or quick double tap on a label/button selects its text in
+      blue. Controls and labels are not selectable; typed text still is.
+   3) A tap must not leave a focus ring; the keyboard ring (:focus-visible)
+      stays for accessibility.
+   4) Native radio/checkbox ticks, text selection and the caret use brand
+      colors instead of the system blue. */
+html, *, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+
+:where(a, button, label, summary, select, option, [role="button"], [role="tab"], [data-action],
+  .btn, .icon-btn, .nav-item, .tab-add, .fchip, .chip, .seg, .tx, .list-row, .budget-row, .bar-row,
+  .balance, .card-head, .brand, .mobile-brand, .page-title, .month-bar, .tabbar, .sidebar),
+:where(a, button, label, summary, [role="button"], [role="tab"], [data-action],
+  .btn, .icon-btn, .nav-item, .tab-add, .fchip, .chip, .seg, .tx, .list-row, .budget-row, .bar-row,
+  .balance, .card-head, .brand, .mobile-brand, .tabbar, .sidebar) * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+:where(input, textarea, [contenteditable="true"]) {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+:where(a, button, label, summary, select, input, [role="button"], [data-action]) { touch-action: manipulation; }
+
+:focus:not(:focus-visible) { outline: none; }
+:where(a, button, label, summary, [role="button"], [data-action], .btn, .icon-btn, .nav-item, .tab-add,
+  .fchip, .chip, .tx, .list-row, .budget-row, .bar-row, dialog):focus:not(:focus-visible) { box-shadow: none; }
+
+:root { accent-color: var(--d-violet, #5B3DF5); caret-color: var(--d-violet, #5B3DF5); }
+:root[data-theme="dark"] { accent-color: var(--highlight, #FFB020); caret-color: var(--highlight, #FFB020); }
+::selection { background: color-mix(in srgb, var(--highlight, #FFB020) 45%, transparent); color: inherit; }

@@ -44,6 +44,16 @@ test('site-wide forced bold styling has been reverted', () => {
  assert.doesNotMatch(css, /body,\s*body \*,\s*body input::placeholder/);
 });
 
+test('every element suppresses the native blue tap flash, site-wide', () => {
+  const html = read('index.html'), sw = read('sw.js'), css = read('touch.css');
+  const links = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(m => m[1]);
+  assert.match(links.at(-1), /^\.\/touch\.css\?/, 'touch.css must load last so nothing overrides it');
+  assert.ok(sw.includes("'" + links.at(-1) + "'"), 'touch.css must be cached offline');
+  assert.match(css, /html, \*, \*::before, \*::after \{ -webkit-tap-highlight-color: transparent; \}/);
+  assert.match(css, /:where\(input, textarea[^)]*\) \{[^}]*user-select: text/s, 'typed text must stay selectable');
+  assert.match(css, /:focus:not\(:focus-visible\)/);
+});
+
 test('report controls suppress the native blue tap flash and keep keyboard focus visible', () => {
  const css = read('ui-polish.css');
  assert.match(css, /body\[data-page="reports"\][^{]+\{[^}]*-webkit-tap-highlight-color: transparent/s);
