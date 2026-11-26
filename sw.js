@@ -51,7 +51,7 @@ const ASSETS = [
   './src/core/format.js?v=3.0.0',
   './src/core/ledger.js?v=3.2.4',
   './src/core/migrate.js?v=3.0.0',
-  './report-pdf.js?v=3.2.4',
+  './report-pdf.js?v=3.3.0',
 
   // App
   './src/app/version.js',

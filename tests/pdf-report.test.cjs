@@ -57,7 +57,7 @@ test('static PWA manifest uses updated script versions',()=>{
 });
 test('PDF pages render every wallet, every transaction, and report identity',async()=>{
  const drawn=[],ctx={
-  save(){},restore(){},beginPath(){},closePath(){},moveTo(){},lineTo(){},arcTo(){},
+  save(){},restore(){},setTransform(){},beginPath(){},closePath(){},moveTo(){},lineTo(){},arcTo(){},
   fill(){},stroke(){},fillRect(){},strokeRect(){},
   fillText(s){drawn.push(String(s));},
   measureText(s){return {width:String(s).length*11};}
@@ -106,4 +106,12 @@ test('PDF pages render every wallet, every transaction, and report identity',asy
 });
 test('PDF module stays offline and never alters stored financial records',()=>{
  assert.doesNotMatch(source,/localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.sendBeacon/);
+});
+
+test('PDF pages are rendered at print resolution so zoomed text stays sharp',()=>{
+ assert.match(source,/const SCALE=Math\.min\(2\.5,/);
+ assert.match(source,/canvas\.width=IMG_W;canvas\.height=IMG_H;/);
+ assert.match(source,/ctx\.setTransform\(IMG_W\/PAGE_W,0,0,IMG_H\/PAGE_H,0,0\)/);
+ assert.match(source,/\/Width '\+IMG_W\+' \/Height '\+IMG_H/);
+ assert.match(source,/JPEG_QUALITY=\.9\d/);
 });

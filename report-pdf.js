@@ -5,6 +5,11 @@
 (function(root){
 'use strict';
 const PAGE_W=1240, PAGE_H=1754, PDF_W=595.28, PDF_H=841.89;
+/* Pages are laid out in PAGE_W×PAGE_H units but drawn SCALE times larger, so
+   text stays sharp when zoomed (2.5 → about 375 DPI on A4). Kept under the
+   16.7M-pixel canvas limit of iPhone Safari. */
+const SCALE=Math.min(2.5,Math.sqrt(16e6/(PAGE_W*PAGE_H))), IMG_W=Math.round(PAGE_W*SCALE), IMG_H=Math.round(PAGE_H*SCALE);
+const JPEG_QUALITY=.92;
 const C={
   navy:'#17112E', navy2:'#5B3DF5', mint:'#FFB020', mintSoft:'#F4F1FF',
   mintInk:'#4A2FD6', coral:'#FF5C7A', rose:'#FFE7EC', paper:'#FFFFFF',
@@ -190,9 +195,10 @@ function footer(ctx,data,page,total){
 }
 function renderPage(data,sections,pageNo,totalPages){
   const firstPage=pageNo===1;
-  const canvas=document.createElement('canvas');canvas.width=PAGE_W;canvas.height=PAGE_H;
+  const canvas=document.createElement('canvas');canvas.width=IMG_W;canvas.height=IMG_H;
   const ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx)throw Error('المتصفح لا يدعم إنشاء صفحات التقرير.');
+  ctx.setTransform(IMG_W/PAGE_W,0,0,IMG_H/PAGE_H,0,0);
   rect(ctx,0,0,PAGE_W,PAGE_H,C.paper);
   pageHeader(ctx,data,firstPage);
   if(firstPage){
@@ -210,7 +216,7 @@ function renderPage(data,sections,pageNo,totalPages){
   }
   sections.forEach(section=>drawSection(ctx,section,data));
   footer(ctx,data,pageNo,totalPages);
-  const url=canvas.toDataURL('image/jpeg',.84);
+  const url=canvas.toDataURL('image/jpeg',JPEG_QUALITY);
   canvas.width=1;canvas.height=1;
   const b64=url.slice(url.indexOf(',')+1),binary=atob(b64),bytes=new Uint8Array(binary.length);
   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
@@ -234,7 +240,7 @@ function buildPDF(jpegs,searchRows=[]){
     const layer=(searchable[i]||[]).map((s,j)=>'BT /F1 5 Tf 3 Tr 10 '+(25+j*7)+' Td ('+s+') Tj ET\n').join('');
     const stream='q\n'+PDF_W+' 0 0 '+PDF_H+' 0 0 cm\n/Im0 Do\nQ\n'+layer;
     object(content,'<< /Length '+encoder.encode(stream).length+' >>\nstream\n'+stream+'endstream');
-    offsets[image]=size;put(image+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+PAGE_W+' /Height '+PAGE_H+
+    offsets[image]=size;put(image+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+IMG_W+' /Height '+IMG_H+
       ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');
     put(jpg);put('\nendstream\nendobj\n');
   });
